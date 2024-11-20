@@ -1,0 +1,54 @@
+name: tdm
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./site/static:${APP_MAIN_DIR}/static:ro
+    ports:
+      - ${NGINX_OUTER_PORT}:80
+    env_file:
+      - ./.env
+    depends_on:
+      - python
+  python:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+      args:
+        - APP_MAIN_DIR=${APP_MAIN_DIR}
+    volumes:
+      - ./site:${APP_MAIN_DIR}/app:ro
+      - doc_files:${DOC_FILES_DIR}:rw
+    env_file:
+      - ./.env
+      - ./.psql.env
+    depends_on:
+      - psql
+    expose:
+      - 5000
+  psql:
+    build:
+      context: ./psql
+      dockerfile: Dockerfile
+    volumes:
+      - ./psql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - psql_data:/var/lib/postgresql/data/db-files:rw
+    env_file:
+      - ./.psql.env
+    environment:
+      - PGDATA=/var/lib/postgresql/data/db-files/
+    expose:
+      - 5432
+    depends_on:
+      - psql_base
+  psql_base:
+    build:
+      context: ./psql/base
+      dockerfile: Dockerfile
+    command: ["echo", "\"locpaper_postgres_base:latest EXIT\""]
+volumes:
+  doc_files:
+  psql_data:
