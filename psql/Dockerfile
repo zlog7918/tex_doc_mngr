@@ -1,1 +1,1 @@
-FROM zesp_proj-psql_base:latest
+FROM tdm-psql_base:latest
