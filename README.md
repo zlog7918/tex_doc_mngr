@@ -20,7 +20,7 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
         ```
         POSTGRES_DB=<nazwa bazy>
         POSTGRES_USER=<nazwa użytkownika bazy>
-        POSTGRES_PASSWORD=<hasło użytkonika>
+        POSTGRES_PASSWORD=<hasło użytkownika>
         ```
 3. By uruchomić projekt będąc w głównym folderze należy uruchomić komendę:\
     `docker compose up --build -d`
