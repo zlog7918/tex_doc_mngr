@@ -12,7 +12,7 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
 2. Po sklonowaniu projektu należy utworzyć dwa pliki w głównym folderze zawierające:
     - `.env`
         ```
-        APP_MAIN_DIR=<ścieżka w której ma być zawarta mehanika aplikacji>
+        APP_MAIN_DIR=<ścieżka w której ma być zawarta mechanika aplikacji>
         DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
         NGINX_OUTER_PORT=<port na który ma być udostępniana usługa>
         ```
