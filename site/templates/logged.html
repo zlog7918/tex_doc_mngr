@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>TDM</title>
+        <script src="/static/js/funcs.js"></script>
+    </head>
+    <body>
+        <h1>Hello, you managed to loggin</h1>
+        <form method="GET">
+            <button type="button">Log out</button>
+        </form>
+        <script>
+            (function() {
+                let form;
+                let setup;
+
+                setup=()=>{
+                    form=document.querySelector('body>h1+form');
+                    let btn=form.querySelector('button');
+                    btn.addEventListener('click', ()=>{
+                        ajax_json_call('/do/logout').then(data=>{
+                            if('error' in data)
+                                if(data['error'])
+                                    alert(`Err: ${data['message']}`);
+                                else
+                                    reload_page();
+                            else
+                                alert(`Err: ${JSON.stringify(data)}`);
+                        }, err=>{
+                            alert(`Err: ${JSON.stringify(err)}`);
+                        });
+                    }, false);
+                };
+
+                setup();
+            })();
+        </script>
+    </body>
+</html>

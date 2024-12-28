@@ -1,3 +1,5 @@
 flask
 uwsgi
 psycopg2
+# psycopg2-binary
+Flask-Login

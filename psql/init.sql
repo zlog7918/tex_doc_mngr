@@ -1,5 +1,6 @@
-CREATE TABLE test (
-    t TEXT NOT NULL
+CREATE TABLE usr (
+    id INTEGER NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY
+    ,nick TEXT NOT NULL
+    ,passwd TEXT NOT NULL
 );
 
-INSERT INTO test VALUES ('value_from_psql');
