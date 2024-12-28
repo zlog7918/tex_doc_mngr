@@ -14,8 +14,18 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
         ```
         APP_MAIN_DIR=<ścieżka w której ma być zawarta mechanika aplikacji>
         DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
-        NGINX_OUTER_PORT=<port na który ma być udostępniana usługa>
         ```
+    - `.ngnix.env`
+        ```
+        CERT_DIR=<ścieżka w której będą przechowywane certyfikaty ssl do https>
+        NGINX_OUTER_PORT=<port na który ma być udostępniana usługa http>
+        NGINX_HTTPS_OUTER_PORT=<port na który ma być udostępniana usługa https>
+        ```
+    - `.python.env` 
+        ```
+        FLASK_KEY=<sekretny klucz aplikacji flask>
+        ```
+        komenda do wygenerowania sekretnego klucza: `python -c 'import os; print(os.urandom(24).hex())'`
     - `.psql.env`
         ```
         POSTGRES_DB=<nazwa bazy>
