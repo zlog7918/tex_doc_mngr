@@ -4,3 +4,11 @@ CREATE TABLE usr (
     ,passwd TEXT NOT NULL
 );
 
+CREATE TABLE log (
+    id INTEGER NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY
+    ,ip TEXT NOT NULL
+    ,is_success BOOLEAN NOT NULL
+    ,"action" TEXT NOT NULL
+    ,timest TIMESTAMP NOT NULL
+    ,"log" TEXT NOT NULL
+);

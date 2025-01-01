@@ -1,4 +1,5 @@
 import sys
+import inspect
 import psycopg2
 import psycopg2._psycopg
 from typing import Callable
@@ -17,6 +18,7 @@ class DB_PgSQL(DB_Driver):
         conn=err=traceback=None
         try:
             conn=self.conn_fun()
+            err=None
         except (Exception, psycopg2.DatabaseError) as error:
             _,_,traceback=sys.exc_info()
             err=error
@@ -26,7 +28,7 @@ class DB_PgSQL(DB_Driver):
             if err is not None:
                 raise err.with_traceback(traceback)
 
-    def query(self, sql: str, data: list|dict|tuple=()) -> list[tuple]:
+    def query(self, sql: str, data: list|dict|tuple=(), is_return: bool=True) -> list[tuple]:
         if type(data) is list:
             if len(data)>0:
                 if data[0] is list or data[0] is tuple or data[0] is dict:
@@ -39,12 +41,20 @@ class DB_PgSQL(DB_Driver):
             cur: psycopg2._psycopg.cursor=conn.cursor()
 
             cur.execute(sql, data)
-            ret=cur.fetchall()
+            ret=cur.fetchall() if is_return else None
 
             cur.close()
+            err=None
         except (Exception, psycopg2.DatabaseError) as error:
+            _,_,traceback=sys.exc_info()
+            err=error
+            if conn is not None:
+                conn.rollback()
             print(error)
         finally:
             if conn is not None:
+                conn.commit()
                 conn.close()
+            if err is not None:
+                raise err.with_traceback(traceback)
         return ret if ret is not None else []

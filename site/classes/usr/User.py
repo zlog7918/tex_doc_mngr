@@ -14,10 +14,11 @@ class User(UserMixin):
         return self.__nick
     def get_nick(self) -> str:
         return self.__nick
+    def get_passwd(self) -> str:
+        return self.__passwd
     def verify_pass(self, passwd: str) -> bool:
-        return passwd==self.__passwd
-        # return sha256_crypt.verify(passwd, self.__passwd)
-    def ch_pass(self, passwd: str) -> str|False:
+        return sha256_crypt.verify(passwd, self.__passwd)
+    def ch_pass(self, passwd: str) -> str|bool:
         if self.verify_pass(passwd):
             return False
         self.__passwd=sha256_crypt.hash(passwd)

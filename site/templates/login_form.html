@@ -1,44 +1,37 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>TDM</title>
-        <script src="/static/js/funcs.js"></script>
-    </head>
-    <body>
-        <h1>Hello</h1>
-        <form method="POST" action="/login">
-            Nick: <input type="text" name="nick"><br>
-            Pass: <input type="password" name="passwd"><br>
-            <br>
-            <button type="button">Log in</button>
-        </form>
-        <script>
-            (function() {
-                let form;
-                let setup;
+{% extends "base.html" %}
 
-                setup=()=>{
-                    form=document.querySelector('body>h1+form');
-                    let btn=form.querySelector('button');
-                    btn.addEventListener('click', ()=>{
-                        ajax_json_call('/do/login', null, form).then(data=>{
-                            if('error' in data)
-                                if(data['error'])
-                                    alert(`Err: ${data['message']}`);
-                                else
-                                    reload_page();
+{% block body %}
+    <h1>Hello</h1>
+    <form method="POST" action="/login">
+        Nick: <input type="text" name="nick"><br>
+        Pass: <input type="password" name="passwd"><br>
+        <br>
+        <button type="button">Log in</button>
+    </form>
+    <script>
+        (function() {
+            let form;
+            let setup;
+
+            setup=()=>{
+                form=document.querySelector('body>h1+form');
+                let btn=form.querySelector('button');
+                btn.addEventListener('click', ()=>{
+                    ajax_json_call('/do/login', null, form).then(data=>{
+                        if('error' in data)
+                            if(data['error'])
+                                alert(`Err: ${data['message']}`);
                             else
-                                alert(`Err: ${JSON.stringify(data)}`);
-                        }, err=>{
-                            alert(`Err: ${JSON.stringify(err)}`);
-                        });
-                    }, false);
-                };
+                                reload_page();
+                        else
+                            alert(`Err: ${JSON.stringify(data)}`);
+                    }, err=>{
+                        alert(`Err: ${JSON.stringify(err)}`);
+                    });
+                }, false);
+            };
 
-                setup();
-            })();
-        </script>
-    </body>
-</html>
+            setup();
+        })();
+    </script>
+{% endblock %}

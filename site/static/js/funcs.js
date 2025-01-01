@@ -15,7 +15,7 @@ function ajax_call(path, get, data) {
     data=(is_post_method && data instanceof HTMLFormElement) ? (new FormData(data)):data;
     return new Promise((resolve, reject)=>{
         let ajax_req=new XMLHttpRequest();
-        ajax_req.open(is_post_method ? "POST":"GET", `${path}/${get}`);
+        ajax_req.open(is_post_method ? "POST":"GET", `${path}${(get!==undefined && get!==null) ? `/${get}`:''}`);
         ajax_req.onreadystatechange=function() {
             if(this.readyState==XMLHttpRequest.DONE)
                 if(this.status==200)

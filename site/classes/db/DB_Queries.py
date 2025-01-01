@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import inspect
+import traceback
 from flask import request
 from typing import Callable
 from datetime import datetime,timezone
@@ -16,50 +17,35 @@ class DB_Queries:
 
     def get_user(self, nick: str) -> tuple[str, str]:
         try:
-            ret=self.__db.query('SELECT nick, passwd FROM user WHERE nick=?', (nick, ))[0]
+            ret=self.__db.query('SELECT nick, passwd FROM usr WHERE nick=%(nick)s', {'nick':nick})[0]
         except Exception as err:
-            _,_,traceback=sys.exc_info()
             self.__log_activity(
                 inspect.currentframe().f_code.co_name,
                 False,
-                {'err': err, 'traceback': traceback}
+                {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
             )
             ret='ERROR', f'{err}'
         return ret
 
     def change_user_passwd(self, nick: str, passwd: str) -> bool:
         try:
-            self.__db.query('UPDATE user SET passwd=? FROM user WHERE nick=?', (passwd, nick))
+            self.__db.query('UPDATE usr SET passwd=%(passwd)s WHERE nick=%(nick)s', {'nick':nick, 'passwd':passwd}, False)
         except Exception as err:
-            _,_,traceback=sys.exc_info()
             self.__log_activity(
                 inspect.currentframe().f_code.co_name,
                 False,
-                {'err': err, 'traceback': traceback}
+                {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
             )
             return False
         return True
-
-    # def get_test(self) -> str:
-    #     try:
-    #         ret=self.__db.query('SELECT t FROM test LIMIT 1')[0][0]
-    #     except Exception as err:
-    #         _,_,traceback=sys.exc_info()
-    #         self.__log_activity(
-    #             inspect.currentframe().f_code.co_name,
-    #             False,
-    #             {'err': err, 'traceback': traceback}
-    #         )
-    #         ret='ERROR'
-    #     return ret
 
     def is_connection(self) -> bool:
         return self.__db is not None
 
     def __log_activity(self, action: str, is_success: bool, log: dict) -> None:
         try:
-            q=self.__db.query('''
-                INSERT INTO log(ip, is_success, action, timest, log) VALUES
+            self.__db.query('''
+                INSERT INTO log(ip, is_success, "action", timest, "log") VALUES
                     (%(ip)s, %(is_success)s, %(act)s, %(timest)s, %(log)s)
             ''', {
                 'ip':request.environ['REMOTE_ADDR'],
@@ -67,7 +53,7 @@ class DB_Queries:
                 'act':action,
                 'timest':self.__get_timestamp(),
                 'log':json.dumps(log),
-            })
+            }, False)
         except Exception as e:
             print('<h1>Operation failed, please inform an administrator.</h1>', action, log, self.__get_timestamp())
 

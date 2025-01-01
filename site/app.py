@@ -1,9 +1,10 @@
 import os
 # from collections import deque
 from classes.usr.User import User
+from classes.utils.utils import url_last_edit
 from classes.db.DB_Queries import DB_Queries
+from flask import Flask, render_template, request, jsonify
 from classes.db.DB_Factory import DB_Factory, DB_QueriesOpt
-from flask import Flask, render_template, request, redirect, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 
 app=Flask(__name__)
@@ -12,8 +13,6 @@ login_manager=LoginManager()
 login_manager.init_app(app)
 
 app.secret_key=os.environ.get('FLASK_KEY', 'FLASK_KEY')
-    
-# recent_users=deque(maxlen=3)
 
 @login_manager.user_loader
 def user_loader(nick: str|None) -> User|None:
@@ -60,7 +59,7 @@ def ch_pass():
     rep_passwd=request.form.get('rep_passwd')
     if new_passwd!=rep_passwd:
         return jsonify({'error': True, 'message': 'Podane nowe hasła nie pasują do siebie'})
-    user: User=current_user
+    user: User=current_user._get_current_object()
     if user.verify_pass(passwd):
         passwd=user.ch_pass(new_passwd)
         del new_passwd, rep_passwd
@@ -78,57 +77,7 @@ def ch_pass():
 
 @app.route('/')
 def index():
-    return render_template('logged.html' if current_user.is_authenticated else 'login_form.html')
+    return render_template('logged.html' if current_user.is_authenticated else 'login_form.html', url_last_edit=url_last_edit)
 
 if __name__=='__main__':
     app.run(debug=True)
-
-
-
-# from flask import Flask, render_template, request, make_response, redirect
-# from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-# import markdown
-# from collections import deque
-# from passlib.hash import sha256_crypt
-# import sqlite3
-
-# @app.route('/hello', methods=['GET'])
-# @login_required
-# def hello():
-#     if request.method=='GET':
-#         print(current_user.id)
-#         nick=current_user.id
-
-#         db=sqlite3.connect(DATABASE)
-#         sql=db.cursor()
-#         sql.execute(f'SELECT id FROM notes WHERE nick==?', (nick, ))
-#         notes=sql.fetchall()
-
-#         return render_template('hello.html', nick=nick, notes=notes)
-
-# @app.route('/render', methods=['POST'])
-# @login_required
-# def render():
-#     md=request.form.get('markdown','')
-#     rendered=markdown.markdown(md)
-#     nick=current_user.id
-#     db=sqlite3.connect(DATABASE)
-#     sql=db.cursor()
-#     sql.execute(f'INSERT INTO notes (nick, note) VALUES (?, ?)', (nick, rendered))
-#     db.commit()
-#     return render_template('markdown.html', rendered=rendered)
-
-# # @app.route('/render/<rendered_id>')
-# # @login_required
-# # def render_old(rendered_id):
-# #     db=sqlite3.connect(DATABASE)
-# #     sql=db.cursor()
-# #     sql.execute(f'SELECT nick, note FROM notes WHERE id==?', (rendered_id, ))
-
-# #     try:
-# #         nick, rendered=sql.fetchone()
-# #         if nick != current_user.id:
-# #             return 'Access to note forbidden', 403
-# #         return render_template('markdown.html', rendered=rendered)
-# #     except:
-# #         return 'Note not found', 404
