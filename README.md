@@ -12,18 +12,24 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
 2. Po sklonowaniu projektu należy utworzyć dwa pliki w głównym folderze zawierające:
     - `.env`
         ```
+        NGINX_OUTER_PORT=<port na który ma być udostępniana usługa http>
+        NGINX_HTTPS_OUTER_PORT=<port na który ma być udostępniana usługa https>
         APP_MAIN_DIR=<ścieżka w której ma być zawarta mechanika aplikacji>
         DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
         ```
     - `.ngnix.env`
         ```
         CERT_DIR=<ścieżka w której będą przechowywane certyfikaty ssl do https>
-        NGINX_OUTER_PORT=<port na który ma być udostępniana usługa http>
-        NGINX_HTTPS_OUTER_PORT=<port na który ma być udostępniana usługa https>
         ```
     - `.python.env` 
         ```
         FLASK_KEY=<sekretny klucz aplikacji flask>
+        MAIL_HOST=<adres serwera smtp>
+        MAIL_PORT=<port serwera smtp>
+        MAIL_ADDRESS=<adres email wysyłającego>
+        MAIL_USERNAME=<nick wysyłającego na serwerze email>
+        MAIL_PASSWORD=<hasło wysyłającego na serwerze email>
+        MAIL_AUTH_TYPE=<typ autoryzacji: ssl|tsl|plain>
         ```
         komenda do wygenerowania sekretnego klucza: `python -c 'import os; print(os.urandom(24).hex())'`
     - `.psql.env`
