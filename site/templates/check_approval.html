@@ -1,12 +1,9 @@
 {% extends "base.html" %}
 
 {% block body %}
-    <h1>Cześć</h1>
-    <form>
-        Nick: <input type="text" name="nick"><br>
-        Hasło: <input type="password" name="passwd"><br>
-        <br>
-        <button type="button">Zaloguj</button>
+    <h1>Cześć, zalogowałeś się, proszę potwierdzić swoje konto kodem z mail'a:</h1>
+    <form method="GET">
+        <button type="button">Wyloguj</button>
     </form>
     <script>
         (function() {
@@ -17,7 +14,7 @@
                 form=document.querySelector('body>h1+form');
                 let btn=form.querySelector('button');
                 btn.addEventListener('click', ()=>{
-                    ajax_json_call('/do/login', null, form).then(data=>{
+                    ajax_json_call('/do/logout').then(data=>{
                         if('error' in data)
                             if(data['error'])
                                 alert(`Err: ${data['message']}`);
@@ -34,13 +31,10 @@
             setup();
         })();
     </script><br><br><br>
-    <form>
-        Nick: <input type="text" name="nick"><br>
-        Email: <input type="email" name="email"><br>
-        Hasło: <input type="password" name="passwd"><br>
-        Powtórz hasło: <input type="password" name="rep_passwd"><br>
+    <form method="GET">
+        Kod: <input type="text" name="code"><br>
         <br>
-        <button type="button">Załóż konto</button>
+        <button type="button">Potwierdź</button>
     </form>
     <script>
         (function() {
@@ -51,7 +45,7 @@
                 form=document.querySelector('body>br+form');
                 let btn=form.querySelector('button');
                 btn.addEventListener('click', ()=>{
-                    ajax_json_call('/do/signup', null, form).then(data=>{
+                    ajax_json_call('/do/approve', null, form).then(data=>{
                         if('error' in data)
                             if(data['error'])
                                 alert(`Err: ${data['message']}`);
