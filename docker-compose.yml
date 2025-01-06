@@ -52,7 +52,7 @@ services:
     build:
       context: ./psql/base
       dockerfile: Dockerfile
-    command: ["echo", "\"locpaper_postgres_base:latest EXIT\""]
+    command: ["echo", "\"tdm-psql_base:latest EXIT\""]
 volumes:
   doc_files:
   psql_data:
