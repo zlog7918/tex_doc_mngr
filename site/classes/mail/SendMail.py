@@ -10,7 +10,6 @@ class SendMail:
             ,os.environ.get('MAIL_PASSWORD')
             ,os.environ.get('MAIL_AUTH_TYPE')
         )
-        pass
 
     def sendCode(self, recievers: list[str], code: str) -> bool:
         try:
