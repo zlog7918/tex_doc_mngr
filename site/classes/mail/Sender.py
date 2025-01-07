@@ -45,7 +45,7 @@ class Sender:
         mail.sendmail(self.__sender, recievers, msg.as_string())
         mail.quit()
 
-    def __prep_mail_sender(self) -> smtplib.SMTP|smtplib.SMTP_SSL:
+    def __prep_mail_sender(self) -> smtplib.SMTP:
         mail=smtplib.SMTP(self.__host, self.__port)
         match self.__auth_type:
             case SenderLoginOpt.SSL:
