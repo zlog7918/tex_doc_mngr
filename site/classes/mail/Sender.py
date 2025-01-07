@@ -7,6 +7,7 @@ class SenderLoginOpt(StrEnum):
     TSL='tsl'
     SSL='ssl'
     PLAIN='plain'
+    NONE='none'
 
 class Sender:
     def __init__(self, host: str, port: int, sender: str, user: str, passwd: str, auth_type: SenderLoginOpt):
@@ -40,15 +41,25 @@ class Sender:
         msg['From']=self.__sender
         msg['To']=','.join(recievers)
 
+        mail=self.__prep_mail_sender()
+        mail.sendmail(self.__sender, recievers, msg.as_string())
+        mail.quit()
+
+    def __prep_mail_sender(self) -> smtplib.SMTP|smtplib.SMTP_SSL:
         mail=smtplib.SMTP(self.__host, self.__port)
         match self.__auth_type:
+            case SenderLoginOpt.SSL:
+                # Not tested yet
+                mail=smtplib.SMTP_SSL(self.__host, self.__port)
             case SenderLoginOpt.TSL:
                 mail.ehlo()
                 mail.starttls()
-                mail.login(self.__user, self.__passwd)
+            case SenderLoginOpt.NONE:
+                # Not tested yet
+                return mail
             case _:
-                # TODO
+                # Not tested yet
                 pass
-        mail.sendmail(self.__sender, recievers, msg.as_string())
-        mail.quit()
+        mail.login(self.__user, self.__passwd)
+        return mail
 

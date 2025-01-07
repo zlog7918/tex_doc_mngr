@@ -29,7 +29,7 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
         MAIL_ADDRESS=<adres email wysyłającego>
         MAIL_USERNAME=<nick wysyłającego na serwerze email>
         MAIL_PASSWORD=<hasło wysyłającego na serwerze email>
-        MAIL_AUTH_TYPE=<typ autoryzacji: ssl|tsl|plain>
+        MAIL_AUTH_TYPE=<typ autoryzacji: ssl|tsl|plain|none>
         ```
         komenda do wygenerowania sekretnego klucza: `python -c 'import os; print(os.urandom(24).hex())'`
     - `.psql.env`
