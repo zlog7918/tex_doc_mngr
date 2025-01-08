@@ -16,9 +16,6 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
         NGINX_HTTPS_OUTER_PORT=<port na który ma być udostępniana usługa https>
         APP_MAIN_DIR=<ścieżka w której ma być zawarta mechanika aplikacji>
         DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
-        ```
-    - `.ngnix.env`
-        ```
         CERT_DIR=<ścieżka w której będą przechowywane certyfikaty ssl do https>
         ```
     - `.python.env` 
