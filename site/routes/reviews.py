@@ -35,3 +35,11 @@ def review(review_id):
 @review_bp.route("/<int:article_id>/details", methods=["GET"])
 def article_details(article_id):
     return "Not implemented", 501
+
+@review_bp.route("/<int: article_id>/accept", methods=["POST"])
+def accept_article(article_id):
+    db: DB_Queries = DB_Factory.get_db(DB_QueriesOpt.DB_Queries)
+    try:
+        return {""}, 200
+    except Exception as err:
+        return {"error": str(err)}, 500
