@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block body %}
+    <h1>Cześć, zalogowałeś się, proszę potwierdzić swoje konto kodem z mail'a:</h1>
+    <form method="GET">
+        <button type="button">Wyloguj</button>
+    </form>
+    <script>
+        (function() {
+            let form;
+            let setup;
+
+            setup=()=>{
+                form=document.querySelector('body>h1+form');
+                let btn=form.querySelector('button');
+                btn.addEventListener('click', ()=>{
+                    ajax_json_call('/user/logout').then(data=>{
+                        if('error' in data)
+                            if(data['error'])
+                                alert(`Err: ${data['message']}`);
+                            else
+                                reload_page();
+                        else
+                            alert(`Err: ${JSON.stringify(data)}`);
+                    }, err=>{
+                        alert(`Err: ${JSON.stringify(err)}`);
+                    });
+                }, false);
+            };
+
+            setup();
+        })();
+    </script><br><br><br>
+    <form method="GET">
+        Kod: <input type="text" name="code"><br>
+        <br>
+        <button type="button">Potwierdź</button>
+    </form>
+    <script>
+        (function() {
+            let form;
+            let setup;
+
+            setup=()=>{
+                form=document.querySelector('body>br+form');
+                let btn=form.querySelector('button');
+                btn.addEventListener('click', ()=>{
+                    ajax_json_call('/user/approve', null, form).then(data=>{
+                        if('error' in data)
+                            if(data['error'])
+                                alert(`Err: ${data['message']}`);
+                            else
+                                reload_page();
+                        else
+                            alert(`Err: ${JSON.stringify(data)}`);
+                    }, err=>{
+                        alert(`Err: ${JSON.stringify(err)}`);
+                    });
+                }, false);
+            };
+
+            setup();
+        })();
+    </script>
+{% endblock %}

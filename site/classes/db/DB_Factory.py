@@ -2,7 +2,7 @@ import os
 from threading import Lock
 from enum import Enum, auto
 from typing import Callable
-from .DB_Queries import DB_Queries
+from .DBQ_Articles import DB_Queries
 from .db_drivers.DB_PgSQL import DB_PgSQL
 from .db_drivers.DB_Driver import DB_Driver
 
@@ -43,23 +43,23 @@ class DB_QueriesOpt(Enum):
                 return os.environ.get('POSTGRES_PASSWORD', 'POSTGRES_PASSWORD')
 
 class DB_Factory:
-    __dbs: dict[DB_QueriesOpt, DB_Queries]={}
+    __dbs: dict[tuple[DB_QueriesOpt, type[DB_Queries]], DB_Queries]={}
     __lock=Lock()
 
     @staticmethod
-    def get_db(opt: DB_QueriesOpt) -> DB_Queries:
+    def get_db(opt: DB_QueriesOpt, class_type: type[DB_Queries]) -> DB_Queries:
         try:
             DB_Factory.__lock.acquire()
         except:
             pass
-        db=DB_Factory.__get_db_fun(opt)
+        db=DB_Factory.__get_db_fun(opt, class_type)
         DB_Factory.__lock.release()
         return db
 
     @staticmethod
-    def __get_db_fun(opt: DB_QueriesOpt) -> DB_Queries:
+    def __get_db_fun(opt: DB_QueriesOpt, class_type: type[DB_Queries]) -> DB_Queries:
         if opt in DB_Factory.__dbs:
-            return DB_Factory.__dbs[opt]
+            return DB_Factory.__dbs[(opt, class_type)]
         db=opt.get_fun()
-        db=DB_Factory.__dbs[opt]=DB_Queries(db)
+        db=DB_Factory.__dbs[(opt, class_type)]=class_type(db)
         return db
