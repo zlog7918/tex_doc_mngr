@@ -33,16 +33,16 @@
             })
             .then(data => {
                 alert(data.message);
-                reload_page();
+                window.location.reload();
             })
             .catch(error => {
                 alert('Failed to update status: ' + error.message);
-                reload_page();
+                window.location.reload();
             });
         }
         function rejectArticle() {
             alert('Article Rejected!');
-            reload_page();
+            window.location.reload();
         }
     </script>
 </body>

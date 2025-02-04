@@ -1,0 +1,19 @@
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/templates/default.conf.template:ro
+      - ./site/static:${APP_MAIN_DIR}/static:ro
+      - nginx_ssl:${CERT_DIR}:rw
+    ports:
+      - ${NGINX_OUTER_PORT}:80
+      - ${NGINX_HTTPS_OUTER_PORT}:443
+    env_file:
+      - ./.env
+      - ./.nginx.env
+    depends_on:
+      - python
+volumes:
+  nginx_ssl:
