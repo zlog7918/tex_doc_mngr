@@ -1,0 +1,8 @@
+<div>
+    <h2>Reviews Summary</h2>
+    <ul>
+        {% for review in article.rounds[-1].reviews %}
+            <li>{{ review }}</li>
+        {% endfor %}
+    </ul>
+</div>

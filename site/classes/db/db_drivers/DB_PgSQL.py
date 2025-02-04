@@ -1,4 +1,5 @@
 import sys
+import inspect
 import psycopg2
 import psycopg2._psycopg
 from typing import Callable
@@ -17,6 +18,7 @@ class DB_PgSQL(DB_Driver):
         conn=err=traceback=None
         try:
             conn=self.conn_fun()
+            err=None
         except (Exception, psycopg2.DatabaseError) as error:
             _,_,traceback=sys.exc_info()
             err=error
@@ -26,25 +28,30 @@ class DB_PgSQL(DB_Driver):
             if err is not None:
                 raise err.with_traceback(traceback)
 
-    def query(self, sql: str, data: list|dict|tuple=()) -> list[tuple]:
+    def query(self, sql: str, data: list|dict|tuple=(), is_return: bool=True) -> list[tuple]:
         if type(data) is list:
             if len(data)>0:
                 if data[0] is list or data[0] is tuple or data[0] is dict:
                     raise AttributeError('query does not support multiple datas')
             data=tuple(data)
 
-        conn=ret=None
+        conn=ret=err=None
         try:
             conn=self.conn_fun()
             cur: psycopg2._psycopg.cursor=conn.cursor()
 
             cur.execute(sql, data)
-            ret=cur.fetchall()
+            ret=cur.fetchall() if is_return else None
 
             cur.close()
         except (Exception, psycopg2.DatabaseError) as error:
-            print(error)
+            err=error, error.__traceback__
+            if conn is not None:
+                conn.rollback()
         finally:
             if conn is not None:
+                conn.commit()
                 conn.close()
+        if err is not None:
+            raise Exception(f'{err[0]}').with_traceback(err[1])
         return ret if ret is not None else []
