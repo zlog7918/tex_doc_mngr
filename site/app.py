@@ -1,12 +1,11 @@
 import os
-# from collections import deque
-from classes.usr.User import User
-from classes.utils.utils import url_last_edit
-from classes.db.DB_Queries import DB_Queries
-from classes.mail.SendMail import SendMail
-from flask import Flask, render_template, request, jsonify
-from classes.db.DB_Factory import DB_Factory, DB_QueriesOpt
-from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from paths.users.users import user_bp
+from flask import Flask, render_template
+from paths.routes.reviews import review_bp
+from classes.utils.utils import url_last_edit, render_base_template
+from paths.routes.articles import articles_bp
+from classes.usr.User import User, user_loader
+from flask_login import LoginManager, current_user
 
 app=Flask(__name__)
 
@@ -15,18 +14,13 @@ login_manager.init_app(app)
 
 app.secret_key=os.environ.get('FLASK_KEY', 'FLASK_KEY')
 
-@login_manager.user_loader
-def user_loader(nick: str|None) -> User|None:
-    if nick is None:
-        return None
+app.register_blueprint(articles_bp, url_prefix="/articles")
+app.register_blueprint(review_bp, url_prefix="/reviews")
+app.register_blueprint(user_bp, url_prefix="/user")
 
-    db: DB_Queries=DB_Factory.get_db(DB_QueriesOpt.DB_Queries)
-    try:
-        nick, email, passwd, is_approved=db.get_user(nick)
-    except:
-        return None
-    user=User(nick, email, passwd, is_approved)
-    return user
+@login_manager.user_loader
+def ul(nick: str|None) -> User|None:
+    return user_loader(nick)
 
 @login_manager.request_loader
 def request_loader(request):
@@ -34,105 +28,10 @@ def request_loader(request):
     user=user_loader(nick)
     return user
 
-@app.route('/do/login', methods=['POST'])
-def login():
-    nick=request.form.get('nick')
-    passwd=request.form.get('passwd')
-    user=user_loader(nick)
-    if user is None:
-        return jsonify({'error': True, 'message': 'Nieprawidłowy login lub hasło'})
-    if user.verify_pass(passwd):
-        login_user(user)
-        return jsonify({'error': False, 'data': True})
-    else:
-        return jsonify({'error': True, 'message': 'Nieprawidłowy login lub hasło'})
-
-@app.route('/do/logout', methods=['GET', 'POST'])
-def logout():
-    logout_user()
-    return jsonify({'error': False, 'data': True})
-
-@app.route('/do/signup', methods=['POST'])
-def signup():
-    nick=request.form.get('nick')
-    email=request.form.get('email')
-    passwd=request.form.get('passwd')
-    rep_passwd=request.form.get('rep_passwd')
-    if passwd!=rep_passwd:
-        return jsonify({'error': True, 'message': 'Podane nowe hasła nie pasują do siebie'})
-    user=User(nick, email)
-    passwd=user.ch_pass(passwd)
-    ret={'error': True, 'message': 'Konto nie zostało utworzone'}
-    if passwd is False:
-        return jsonify(ret)
-    db: DB_Queries=DB_Factory.get_db(DB_QueriesOpt.DB_Queries)
-    try:
-        code, code_exp=db.add_user(nick, email, passwd)
-    except Exception as e:
-        return jsonify(ret)
-    
-    try:
-        flag=False
-        s=SendMail()
-        if not s.sendCode([email], code):
-            flag=True
-    except Exception as e:
-        flag=True
-    finally:
-        if flag:
-            db.del_user(nick)
-            return jsonify(ret)
-    
-    login_user(user)
-    return jsonify({'error': False, 'data': {'message':f'Proszę potwierdzić konto za pomocą kodu z mail\'a w: {code_exp/60}min'}})
-
-@app.route('/do/approve', methods=['POST'])
-@login_required
-def approve():
-    user: User=current_user
-    if user.is_approved():
-        # return jsonify({'error': False, 'data': True})
-        return jsonify({'error': True, 'message': 'Konto nie wymaga potwierdzenia'})
-    code=request.form.get('code')
-    db: DB_Queries=DB_Factory.get_db(DB_QueriesOpt.DB_Queries)
-    try:
-        flag=db.approve_user(user.get_nick(), code)
-    except:
-        return jsonify({'error': True, 'message': 'Konto nie zostało potwierdzone'})
-    if flag:
-        user=user_loader(user.get_nick())
-        login_user(user)
-        return jsonify({'error': False, 'data': True})
-    return jsonify({'error': True, 'message': 'Konto nie zostało potwierdzone'})
-
-@app.route('/do/ch_pass', methods=['POST'])
-@login_required
-def ch_pass():
-    passwd=request.form.get('passwd')
-    new_passwd=request.form.get('new_passwd')
-    rep_passwd=request.form.get('rep_passwd')
-    if new_passwd!=rep_passwd:
-        return jsonify({'error': True, 'message': 'Podane nowe hasła nie pasują do siebie'})
-    user: User=current_user._get_current_object()
-    if user.verify_pass(passwd):
-        passwd=user.ch_pass(new_passwd)
-        del new_passwd, rep_passwd
-        ret={'error': True, 'message': 'Hasło nie zostało zmienione'}
-        if passwd is False:
-            return jsonify(ret)
-        db: DB_Queries=DB_Factory.get_db(DB_QueriesOpt.DB_Queries)
-        try:
-            flag=db.change_user_passwd(user.get_nick(), passwd)
-        except:
-            return jsonify(ret)
-        return jsonify({'error': False, 'data': True} if flag else ret)
-    else:
-        return jsonify({'error': True, 'message': 'Nieprawidłowe stare hasło'})
-
 @app.route('/')
 def index():
     user: User=current_user
-    return render_template(('logged.html' if user.is_approved() else 'check_approval.html') if current_user.is_authenticated else 'login_form.html', url_last_edit=url_last_edit)
+    return render_base_template(('logged.html' if user.is_approved() else 'check_approval.html') if current_user.is_authenticated else 'login_form.html')
 
 if __name__=='__main__':
     app.run(debug=True)

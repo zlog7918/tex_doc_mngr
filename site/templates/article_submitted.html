@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }}</title>
+</head>
+<body>
+    <h1>{{ article.title }}</h1>
+    <p><strong>Author:</strong> {{ article.author }}</p>
+    <p><strong>Content:</strong> {{ article.content }}</p>
+    
+    <div style="margin-top: 20px;">
+        <button onclick="acceptArticle()">Accept</button>
+        <button onclick="rejectArticle()">Reject</button>
+    </div>
+    <script>
+        function acceptArticle() {
+            fetch(`/articles/{{ article.id }}/accept`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Unknown error occurred');
+                    });
+                }
+            })
+            .then(data => {
+                alert(data.message);
+                reload_page();
+            })
+            .catch(error => {
+                alert('Failed to update status: ' + error.message);
+                reload_page();
+            });
+        }
+        function rejectArticle() {
+            alert('Article Rejected!');
+            reload_page();
+        }
+    </script>
+</body>
+</html>

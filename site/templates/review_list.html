@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Journal Management</title>
+</head>
+<body>
+    <h1>Articles</h1>
+    <ul>
+        {% for article in articles %}
+        <li>
+            {{ article.title }} - Status: {{ article.status }}
+            <a href="{{ url_for('review', article_id=article.id) }}">Review</a>
+            {% if article.status == "Pending Review" %}
+            <a href="{{ url_for('next_round', article_id=article.id) }}">Move to Next Round</a>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

@@ -14,7 +14,7 @@
                 form=document.querySelector('body>h1+form');
                 let btn=form.querySelector('button');
                 btn.addEventListener('click', ()=>{
-                    ajax_json_call('/do/logout').then(data=>{
+                    ajax_json_call('/user/logout').then(data=>{
                         if('error' in data)
                             if(data['error'])
                                 alert(`Err: ${data['message']}`);
@@ -45,7 +45,7 @@
                 form=document.querySelector('body>br+form');
                 let btn=form.querySelector('button');
                 btn.addEventListener('click', ()=>{
-                    ajax_json_call('/do/approve', null, form).then(data=>{
+                    ajax_json_call('/user/approve', null, form).then(data=>{
                         if('error' in data)
                             if(data['error'])
                                 alert(`Err: ${data['message']}`);
