@@ -319,6 +319,23 @@ class DBQ_Articles(DB_Queries):
         except Exception as err:
             return False
 
+    # def update_review_status(self, review_id: int, status: str) -> bool:
+    #     try:
+    #         self.__db.query('UPDATE reviews SET status = %(status)s WHERE id = %(review_id)s;', {
+    #             'review_id': review_id,
+    #             'status': status
+    #         }, False)
+    #         print("works")
+    #     except Exception as err:
+    #         print("exception: " + str(err))
+    #         self.__log_activity(
+    #             inspect.currentframe().f_code.co_name,
+    #             False,
+    #             {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
+    #         )
+    #         return False
+    #     return True
+
     def change_user_passwd(self, nick: str, passwd: str) -> bool:
         try:
             self.__db.query('UPDATE usr SET passwd=%(passwd)s WHERE nick=%(nick)s', {'nick':nick, 'passwd':passwd}, False)
