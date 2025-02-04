@@ -1,0 +1,20 @@
+services:
+  python:
+    build:
+      context: ./python
+      dockerfile: Dockerfile
+      args:
+        - APP_MAIN_DIR=${APP_MAIN_DIR}
+    volumes:
+      - ./site:${APP_MAIN_DIR}/app:ro
+      - doc_files:${DOC_FILES_DIR}:rw
+    env_file:
+      - ./.env
+      - ./.psql.env
+      - ./.python.env
+    depends_on:
+      - psql
+    expose:
+      - 5000
+volumes:
+  doc_files:

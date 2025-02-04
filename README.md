@@ -16,13 +16,19 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
         ```
     - `.nginx.env` 
         ```
-        CERT_DIR=<ścieżka w której będą przechowywane certyfikaty ssl do https>
         NGINX_OUTER_PORT=<port na który ma być udostępniana usługa http>
         NGINX_HTTPS_OUTER_PORT=<port na który ma być udostępniana usługa https>
+        CERT_DIR=<ścieżka w której będą przechowywane certyfikaty ssl do https>
         ```
     - `.python.env` 
         ```
         FLASK_KEY=<sekretny klucz aplikacji flask>
+        MAIL_HOST=<adres serwera smtp>
+        MAIL_PORT=<port serwera smtp>
+        MAIL_ADDRESS=<adres email wysyłającego>
+        MAIL_USERNAME=<nick wysyłającego na serwerze email>
+        MAIL_PASSWORD=<hasło wysyłającego na serwerze email>
+        MAIL_AUTH_TYPE=<typ autoryzacji: ssl|tsl|plain|none>
         DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
         ```
         komenda do wygenerowania sekretnego klucza: `python -c 'import os; print(os.urandom(24).hex())'`
