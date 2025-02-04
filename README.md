@@ -12,10 +12,12 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
 2. Po sklonowaniu projektu należy utworzyć dwa pliki w głównym folderze zawierające:
     - `.env`
         ```
+        APP_MAIN_DIR=<ścieżka w której ma być zawarta mechanika aplikacji>
+        ```
+    - `.nginx.env` 
+        ```
         NGINX_OUTER_PORT=<port na który ma być udostępniana usługa http>
         NGINX_HTTPS_OUTER_PORT=<port na który ma być udostępniana usługa https>
-        APP_MAIN_DIR=<ścieżka w której ma być zawarta mechanika aplikacji>
-        DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
         CERT_DIR=<ścieżka w której będą przechowywane certyfikaty ssl do https>
         ```
     - `.python.env` 
@@ -27,6 +29,7 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
         MAIL_USERNAME=<nick wysyłającego na serwerze email>
         MAIL_PASSWORD=<hasło wysyłającego na serwerze email>
         MAIL_AUTH_TYPE=<typ autoryzacji: ssl|tsl|plain|none>
+        DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
         ```
         komenda do wygenerowania sekretnego klucza: `python -c 'import os; print(os.urandom(24).hex())'`
     - `.psql.env`
