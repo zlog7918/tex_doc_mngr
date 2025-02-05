@@ -41,7 +41,6 @@ def article_details(article_id):
     # Renderowanie odpowiedniego szablonu dla treści zakładki
     if article.status == "Accepted":
         reviewers = db.get_available_reviewers(article_id)
-        print("reviewers: " + str(len(reviewers)))
         assigned_reviewers = db.get_assigned_reviewers(article_id)
         tab_content = render_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers)
     elif article.status == "In review":

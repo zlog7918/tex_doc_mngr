@@ -16,7 +16,7 @@
     </div>
     <script>
         function acceptArticle() {
-            fetch(`/reviews/{{ article.id }}/accept`, {
+            fetch(`/reviews/{{ review_id }}/accept`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

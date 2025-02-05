@@ -134,7 +134,6 @@ class DBQ_Articles(DB_Queries):
                 'article_id': article_id,
                 'status': status
             }, False)
-            print("works")
         except Exception as err:
             print("exception: " + str(err))
             self.__log_activity(
@@ -193,15 +192,15 @@ class DBQ_Articles(DB_Queries):
         return True
 
     def add_reviewer_to_article(self, article_id: int, reviewer_id: int, deadline_confirm: str, deadline_submit: str) -> bool:
-        existing_reviews = [r for r in tmp_assigned_reviewers if r["article_id"] == article_id]
-        round_number = max([r["round"] for r in existing_reviews], default=1)
-        tmp_assigned_reviewers.append({
-            "article_id": article_id,
-            "round": round_number,
-            "reviewer_id": reviewer_id,
-            "deadline_confirm": deadline_confirm,
-            "deadline_submit": deadline_submit
-        })
+        # existing_reviews = [r for r in tmp_assigned_reviewers if r["article_id"] == article_id]
+        # round_number = max([r["round"] for r in existing_reviews], default=1)
+        # tmp_assigned_reviewers.append({
+        #     "article_id": article_id,
+        #     "round": round_number,
+        #     "reviewer_id": reviewer_id,
+        #     "deadline_confirm": deadline_confirm,
+        #     "deadline_submit": deadline_submit
+        # })
 
         try:
             round_query = "SELECT id FROM rounds WHERE article_id = %(article_id)s ORDER BY round_number DESC LIMIT 1"
@@ -274,10 +273,11 @@ class DBQ_Articles(DB_Queries):
         try:
             result = self.__db.query(
                 '''
-                SELECT a.id, a.title, a.author, a.content, a.status, r.id AS review_id
+                SELECT a.id, a.title, a.author_id, a.editor_id, a.content, article_status.stat, r.id AS review_id
                 FROM articles a
                 INNER JOIN rounds ro ON a.id = ro.article_id
                 INNER JOIN reviews r ON ro.id = r.round_id
+                JOIN article_status ON a.status_id = article_status.id
                 WHERE r.reviewer_id = %(reviewer_id)s
                 AND r.status IN ('Pending confirmation', 'Accepted by reviewer');
                 ''',
@@ -288,9 +288,10 @@ class DBQ_Articles(DB_Queries):
                     Article(
                         id=row[0],
                         title=row[1],
-                        author=row[2],
-                        content=row[3],
-                        status=row[4]
+                        author_id=row[2],
+                        editor_id=row[3],
+                        content=row[4],
+                        status=row[5]
                     ),
                 row[5]
                 )
@@ -331,6 +332,31 @@ class DBQ_Articles(DB_Queries):
             print(f"Error: {err}")
             return []
 
+    def get_review(self, article_id: int, reviewer_id: int) -> Review:
+        try:
+            result = self.__db.query(
+                '''
+                SELECT r.id, r.round_id, r.review_text, r.status, r.deadline_confirm, r.deadline_submit
+                FROM reviews r
+                JOIN rounds ro ON r.round_id = ro.id
+                WHERE ro.article_id = %(article_id)s
+                AND r.reviewer_id = %(reviewer_id)s;
+                ''',
+                {'article_id': article_id, 'reviewer_id': reviewer_id},
+            )[0]
+            return Review(
+                id=result[0],
+                round_id=result[1],
+                review_text=result[2],
+                status=result[3],
+                deadline_confirm=result[4],
+                deadline_submit=result[5],
+                reviewer_id=reviewer_id,
+            )
+        except Exception as err:
+            print(f"Error: {err}")
+            return []
+
     def post_review(self, review: Review) -> bool:
         try:
             query = '''
@@ -350,22 +376,20 @@ class DBQ_Articles(DB_Queries):
         except Exception as err:
             return False
 
-    # def update_review_status(self, review_id: int, status: str) -> bool:
-    #     try:
-    #         self.__db.query('UPDATE reviews SET status = %(status)s WHERE id = %(review_id)s;', {
-    #             'review_id': review_id,
-    #             'status': status
-    #         }, False)
-    #         print("works")
-    #     except Exception as err:
-    #         print("exception: " + str(err))
-    #         self.__log_activity(
-    #             inspect.currentframe().f_code.co_name,
-    #             False,
-    #             {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
-    #         )
-    #         return False
-    #     return True
+    def update_review_status(self, review_id: int, status: str) -> bool:
+        try:
+            self.__db.query('UPDATE reviews SET status = %(status)s WHERE id = %(review_id)s;', {
+                'review_id': review_id,
+                'status': status
+            }, False)
+        except Exception as err:
+            self.__log_activity(
+                inspect.currentframe().f_code.co_name,
+                False,
+                {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
+            )
+            return False
+        return True
 
     def is_connection(self) -> bool:
         return self.__db is not None
