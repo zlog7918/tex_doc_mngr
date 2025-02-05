@@ -16,9 +16,9 @@ class DBQ_Users(DB_Queries):
         except Exception as e:
             self.__db=None
 
-    def get_user(self, nick: str) -> tuple[str, str, str, bool]:
+    def get_user(self, nick: str) -> tuple[int, str, str, str, bool]:
         try:
-            ret=self.__db.query('SELECT nick, email, passwd, approved FROM usr WHERE nick=%(nick)s', {'nick':nick})[0]
+            ret=self.__db.query('SELECT id, nick, email, passwd, approved FROM usr WHERE nick=%(nick)s', {'nick':nick})[0]
         except Exception as err:
             self.__log_activity(
                 inspect.currentframe().f_code.co_name,
