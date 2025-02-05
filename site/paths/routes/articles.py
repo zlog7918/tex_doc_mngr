@@ -20,7 +20,7 @@ Final - artykół jest zakończony, nie wymaga poprawek, wersja końcowa
 def show_articles():
     db: DBQ_Articles=DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
-        articles = db.get_articles_as_editor(current_user.get_id())
+        articles = db.get_articles_as_editor(current_user.get__id())
     except Exception as err:
         return str(err), 500
     return render_template("articles.html", articles=articles)
@@ -41,6 +41,7 @@ def article_details(article_id):
     # Renderowanie odpowiedniego szablonu dla treści zakładki
     if article.status == "Accepted":
         reviewers = db.get_available_reviewers(article_id)
+        print("reviewers: " + str(len(reviewers)))
         assigned_reviewers = db.get_assigned_reviewers(article_id)
         tab_content = render_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers)
     elif article.status == "In review":

@@ -4,7 +4,7 @@
         <label for="reviewer">Select a reviewer:</label>
         <select id="reviewer" name="reviewer" required>
             {% for reviewer in reviewers %}
-                <option value="{{ reviewer.id }}">{{ reviewer.name }}</option>
+                <option value="{{ reviewer.id }}">{{ reviewer.nick }}</option>
             {% endfor %}
         </select>
 
@@ -20,7 +20,7 @@
     <h3>Assigned Reviewers:</h3>
     <ul>
         {% for reviewer in assigned_reviewers %}
-            <li>{{ reviewer.name }}</li>
+            <li>{{ reviewer.nick }}</li>
         {% endfor %}
     </ul>
 </div>

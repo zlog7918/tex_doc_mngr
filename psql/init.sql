@@ -58,9 +58,6 @@ CREATE TABLE reviews (
     FOREIGN KEY (round_id) REFERENCES rounds(id)
 );
 
-INSERT INTO usr (nick, email, passwd, approved, code, code_exp) VALUES 
-('mazimare', 'mazimare0@gmail.com', '$5$rounds=535000$00jq09uCU64jjV2X$TCH6GvPFp5XLIRI1OhwKGU1FgJdSXnlhkMm4qqqooW9', TRUE, '', '2025-02-05 00:31:54.716565');
-
 -- Wstawianie danych do tabeli articles
 INSERT INTO articles (title, author_id, content, status_id, editor_id) VALUES 
 ('Introduction to Flask', 1, 'This is a beginner-friendly guide to Flask.', 1, 1),
