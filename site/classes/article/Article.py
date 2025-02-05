@@ -10,10 +10,11 @@ class ArticleStatus(Enum):
     FINAL = "Final"
 
 class Article:
-    def __init__(self, id: int, title: str, author: str, content: str, status: str):
+    def __init__(self, id: int, author_id: int, editor_id: int|None, title: str, content: str, status: str):
         self.id = id
+        self.author_id = author_id
+        self.editor_id = editor_id
         self.title = title
-        self.author = author
         self.content = content
         self.status = status
         self.rounds = []
@@ -22,4 +23,4 @@ class Article:
         self.rounds.append(round)
 
     def __str__(self):
-        return f"Article(id={self.id}, title={self.title}, author={self.author}, content={self.content}, status={self.status})"
+        return f"Article(id={self.id}, title={self.title}, author={self.author_id}, content={self.content}, status={self.status})"

@@ -2,6 +2,7 @@ from classes.article import Article
 from classes.db.DBQ_Articles import DBQ_Articles
 from classes.db.DB_Factory import DB_Factory, DB_QueriesOpt
 from flask import request, redirect, url_for, Blueprint, jsonify, render_template
+from flask_login import login_required, current_user
 articles_bp = Blueprint("articles", __name__, template_folder="templates")
 
 '''
@@ -15,10 +16,11 @@ Final - artykół jest zakończony, nie wymaga poprawek, wersja końcowa
 '''
 
 @articles_bp.route('/')
+@login_required
 def show_articles():
     db: DBQ_Articles=DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
-        articles = db.get_all_articles()
+        articles = db.get_articles_as_editor(current_user.get_id())
     except Exception as err:
         return str(err), 500
     return render_template("articles.html", articles=articles)
@@ -62,7 +64,7 @@ def accept_article(article_id):
             return "Article not found", 404
         
         # Zmiana statusu na 'Accepted'
-        result = db.update_article_status(article_id, "Accepted")
+        result = db.update_article_status(article_id, 2)
         if not result:
             return {"warning": "Article status not updated"}, 500
 
@@ -128,7 +130,7 @@ def reject_article(article_id):
         return jsonify({"success": False}), 404
 
     # Oznaczanie artykułu jako odrzucony
-    result = db.update_article_status(article_id, "Rejected")
+    result = db.update_article_status(article_id, 5)
     return jsonify({"success": True})
 
 @articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
@@ -144,7 +146,7 @@ def update_article_status(article_id):
         # Sprawdzenie obecnego statusu i zmiana
         if current_status == "Accepted":
             # Ustawienie statusu na "In review"
-            result = db.update_article_status(article_id, "In review")
+            result = db.update_article_status(article_id, 3)
             if not result:
                 return {"error": "Failed to update status to 'In review'"}, 500
 
@@ -164,7 +166,7 @@ def update_article_status(article_id):
 
             total_reviews = len(latest_round["reviews"])
             if total_reviews >= 3:  # Zakładamy, że wymagane są 3 recenzje
-                result = db.update_article_status(article_id, "Reviewed")
+                result = db.update_article_status(article_id, 4)
                 if result:
                     return {"message": "All reviews submitted. Status updated to 'Reviewed'"}, 200
                 else:

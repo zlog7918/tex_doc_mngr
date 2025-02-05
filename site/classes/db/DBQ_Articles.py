@@ -30,19 +30,28 @@ class DBQ_Articles(DB_Queries):
             raise err.with_traceback(err.__traceback__)
         return ret
     
-    def get_all_articles(self) -> list[Article]:
+    def get_articles_as_editor(self, editor_id: int) -> list[Article]:
         try:
-            results = self.__db.query('SELECT id, title, author, content, status FROM articles;')
+            results = self.__db.query(
+                '''
+                SELECT a.id, a.author_id, a.editor_id, a.title, a.content, article_status.stat
+                FROM articles a
+                JOIN article_status ON a.status_id = article_status.id
+                WHERE a.editor_id = %(editor_id)s;
+                ''', {'editor_id': editor_id}
+            )
             articles = [
                 Article(
                     id=row[0],
-                    title=row[1],
-                    author=row[2],
-                    content=row[3],
-                    status=row[4]
+                    author_id=row[1],
+                    editor_id=row[2],
+                    title=row[3],
+                    content=row[4],
+                    status=row[5]
                 ) for row in results
             ]
         except Exception as err:
+            print("Error: " + str(err))
             self.__log_activity(
                 inspect.currentframe().f_code.co_name,
                 False,
@@ -54,15 +63,21 @@ class DBQ_Articles(DB_Queries):
     def get_article(self, article_id: int) -> Article:
         try:
             result = self.__db.query(
-                'SELECT id, title, author, content, status FROM articles WHERE id=%(article_id)s',
+                '''
+                SELECT a.id, title, a.author_id, a.editor_id, a.content, article_status.stat
+                FROM articles a
+                JOIN article_status ON a.status_id = article_status.id
+                WHERE a.id=%(article_id)s;
+                ''',
                 {'article_id': article_id}
             )[0]
             article = Article(
                 id=result[0],
                 title=result[1],
-                author=result[2],
-                content=result[3],
-                status=result[4]
+                author_id=result[2],
+                editor_id=result[3],
+                content=result[4],
+                status=result[5]
             )
         except Exception as err:
             self.__log_activity(
@@ -113,9 +128,9 @@ class DBQ_Articles(DB_Queries):
             return False
         return True
     
-    def update_article_status(self, article_id: int, status: str) -> bool:
+    def update_article_status(self, article_id: int, status: int) -> bool:
         try:
-            self.__db.query('UPDATE articles SET status = %(status)s WHERE id = %(article_id)s;', {
+            self.__db.query('UPDATE articles SET status_id = %(status)s WHERE id = %(article_id)s;', {
                 'article_id': article_id,
                 'status': status
             }, False)
@@ -335,77 +350,6 @@ class DBQ_Articles(DB_Queries):
     #         )
     #         return False
     #     return True
-
-    def change_user_passwd(self, nick: str, passwd: str) -> bool:
-        try:
-            self.__db.query('UPDATE usr SET passwd=%(passwd)s WHERE nick=%(nick)s', {'nick':nick, 'passwd':passwd}, False)
-        except Exception as err:
-            self.__log_activity(
-                inspect.currentframe().f_code.co_name,
-                False,
-                {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
-            )
-            return False
-        return True
-
-    def add_user(self, nick: str, email: str, passwd: str) -> tuple[str, int]|None:
-        r=random.Random()
-        code=r.randint(0, 999999)
-        code=f"{code:06d}"
-        code_exp=TIME_TO_EXPIRE
-        try:
-            self.__db.query('''
-                INSERT INTO usr(nick, email, passwd, code, code_exp) VALUES
-                    (%(nick)s, %(email)s, %(passwd)s, %(code)s, (NOW()+((interval \'1 second\')*%(code_exp)s)))
-            ''', {
-                'nick': nick
-                ,'email': email
-                ,'passwd': passwd
-                ,'code': code
-                ,'code_exp': code_exp
-            }, False)
-        except Exception as err:
-            self.__log_activity(
-                inspect.currentframe().f_code.co_name,
-                False,
-                {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
-            )
-            return None
-        return code, code_exp
-
-    def approve_user(self, nick: str, code: str) -> bool:
-        try:
-            ret=self.__db.query('''
-                UPDATE usr SET
-                    code=''
-                    ,approved=TRUE
-                WHERE nick=%(nick)s
-                    AND code=%(code)s
-                    AND approved=FALSE
-                    AND code_exp>=NOW()
-                RETURNING approved
-            ''', {'nick': nick, 'code': code})
-            ret=len(ret)>0
-        except Exception as err:
-            self.__log_activity(
-                inspect.currentframe().f_code.co_name,
-                False,
-                {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
-            )
-            return False
-        return ret
-
-    def del_user(self, nick: str) -> bool:
-        try:
-            self.__db.query('DELETE FROM usr WHERE nick=%(nick)s', {'nick': nick}, False)
-        except Exception as err:
-            self.__log_activity(
-                inspect.currentframe().f_code.co_name,
-                False,
-                {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
-            )
-            return False
-        return True
 
     def is_connection(self) -> bool:
         return self.__db is not None
