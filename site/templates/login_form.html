@@ -1,71 +1,195 @@
 {% extends "base.html" %}
 
 {% block body %}
-    <h1>Cześć</h1>
-    <form>
-        Nick: <input type="text" name="nick"><br>
-        Hasło: <input type="password" name="passwd"><br>
-        <br>
-        <button type="button">Zaloguj</button>
-    </form>
-    <script>
-        (function() {
-            let form;
-            let setup;
+<div class="container">
+    <div class="info">
+        <h1>(La)TeX Document Manager</h1>
+        <p>A system for publishing articles and scientific papers for students and employees of the Faculty of Electrical Engineering at the Warsaw University of Technology.</p>
+    </div>
 
-            setup=()=>{
-                form=document.querySelector('body>h1+form');
-                let btn=form.querySelector('button');
-                btn.addEventListener('click', ()=>{
-                    ajax_json_call('/user/login', null, form).then(data=>{
-                        if('error' in data)
-                            if(data['error'])
-                                alert(`Err: ${data['message']}`);
-                            else
-                                reload_page();
-                        else
-                            alert(`Err: ${JSON.stringify(data)}`);
-                    }, err=>{
-                        alert(`Err: ${JSON.stringify(err)}`);
-                    });
-                }, false);
-            };
+    <!-- LOGOWANIE -->
+    <div class="login-box" id="login-box">
+        <h2>Logowanie</h2>
+        <form id="login-form">
+            <label>Login:</label>
+            <input type="text" name="nick" required>
 
-            setup();
-        })();
-    </script><br><br><br>
-    <form>
-        Nick: <input type="text" name="nick"><br>
-        Email: <input type="email" name="email"><br>
-        Hasło: <input type="password" name="passwd"><br>
-        Powtórz hasło: <input type="password" name="rep_passwd"><br>
-        <br>
-        <button type="button">Załóż konto</button>
-    </form>
-    <script>
-        (function() {
-            let form;
-            let setup;
+            <label>Hasło:</label>
+            <input type="password" name="passwd" required>
+            
+            <a href="#" class="forgot-password">Zapomniałeś hasła?</a>
+            
+            <button type="button" id="login-btn" class="primary-btn">Zaloguj</button>
+        </form>
+        <hr>
+        <button type="button" id="show-register" class="secondary-btn">Załóż konto</button>
+    </div>
 
-            setup=()=>{
-                form=document.querySelector('body>br+form');
-                let btn=form.querySelector('button');
-                btn.addEventListener('click', ()=>{
-                    ajax_json_call('/user/signup', null, form).then(data=>{
-                        if('error' in data)
-                            if(data['error'])
-                                alert(`Err: ${data['message']}`);
-                            else
-                                reload_page();
-                        else
-                            alert(`Err: ${JSON.stringify(data)}`);
-                    }, err=>{
-                        alert(`Err: ${JSON.stringify(err)}`);
-                    });
-                }, false);
-            };
+    <!-- REJESTRACJA -->
+    <div class="register-box" id="register-box" style="display: none;">
+        <h2>Rejestracja</h2>
+        <form id="register-form">
+            <label>Nick:</label>
+            <input type="text" name="nick" required>
+            
+            <label>E-mail:</label>
+            <input type="email" name="email" required>
+            
+            <label>Hasło:</label>
+            <input type="password" name="passwd" required>
+            
+            <label>Powtórz hasło:</label>
+            <input type="password" name="rep_passwd" required>
+            
+            <button type="button" id="signup-btn" class="primary-btn">Zarejestruj</button>
+        </form>
+        <hr>
+        <button type="button" id="back-to-login" class="secondary-btn">Mam już konto</button>
+    </div>
+</div>
 
-            setup();
-        })();
-    </script>
+<style>
+    /* Globalne ustawienia */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #f9f9f9;
+    margin: 0;
+    padding: 0;
+}
+
+/* Układ kontenera */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    padding: 20px;
+    gap: 50px;
+}
+
+/* Sekcja z informacją */
+.info {
+    max-width: 600px;
+    text-align: left;
+}
+
+.info h1 {
+    font-size: 48px; /* Duży nagłówek */
+    font-weight: 700;
+    color: #2d1053; /* Kolor pasujący do przycisków */
+    margin-bottom: 10px;
+}
+
+.info p {
+    font-size: 20px;
+    color: #333;
+    line-height: 1.5;
+}
+
+/* Boxy logowania i rejestracji */
+.login-box, .register-box {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+    width: 350px;
+    text-align: center;
+}
+
+/* Formularze */
+input {
+    width: 90%;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding: 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+/* Link do resetowania hasła */
+.forgot-password {
+    display: block;
+    text-align: right;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: #5a3d90;
+}
+
+/* Przyciski */
+button {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 5px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+/* Główne przyciski akcji */
+.primary-btn {
+    background: #5a3d90;
+    color: white;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.primary-btn:hover {
+    background: #4a1e87;
+}
+
+/* Drugorzędne przyciski */
+.secondary-btn {
+    background: #2d1053;
+    color: white;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.secondary-btn:hover {
+    background: #1f083c;
+}
+
+</style>
+
+<script>
+    document.getElementById("show-register").addEventListener("click", function () {
+        document.getElementById("login-box").style.display = "none";
+        document.getElementById("register-box").style.display = "block";
+    });
+
+    document.getElementById("back-to-login").addEventListener("click", function () {
+        document.getElementById("register-box").style.display = "none";
+        document.getElementById("login-box").style.display = "block";
+    });
+
+    document.getElementById("login-btn").addEventListener("click", function () {
+        let form = document.getElementById("login-form");
+        ajax_json_call('/user/login', null, form).then(data => {
+            if ('error' in data) {
+                if (data['error'])
+                    alert(`Błąd: ${data['message']}`);
+                else
+                    window.location.reload(); 
+            } else {
+                alert(`Błąd: ${JSON.stringify(data)}`);
+            }
+        }).catch(err => alert(`Błąd: ${JSON.stringify(err)}`));
+    });
+
+    document.getElementById("signup-btn").addEventListener("click", function () {
+        let form = document.getElementById("register-form");
+        ajax_json_call('/user/signup', null, form).then(data => {
+            if ('error' in data) {
+                if (data['error'])
+                    alert(`Błąd: ${data['message']}`);
+                else
+                    window.location.reload();  
+            } else {
+                alert(`Błąd: ${JSON.stringify(data)}`);
+            }
+        }).catch(err => alert(`Błąd: ${JSON.stringify(err)}`));
+    });
+</script>
 {% endblock %}
