@@ -27,7 +27,17 @@ def article_details(article_id):
         if review.status == "Pending confirmation":
             return render_template("review_tabs/pending_confirmation.html", article=article, review_id=review.id)
         elif review.status == "Accepted":
-            return render_template("review_form.html", article=article)
+            questions = db.get_questions_by_article(article_id)
+
+            if not questions:
+                return "No questions found for the article.", 404
+
+            for question in questions:
+                if question['is_abc']:
+                    answers = db.get_question_answers(question['id'])
+                    question['answers'] = answers if answers else [{"id": 0, "answer": "No answers available"}]
+
+            return render_template("review_form.html", questions=questions)
         else:
             return "Not implemented", 501
     except Exception as err:

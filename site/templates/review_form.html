@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Review Form</title>
+    <title>Review Questions</title>
 </head>
 <body>
-    <h1>Review Article</h1>
+    <h1>Answer Questions</h1>
     <form method="POST">
-        <label for="reviewer">Reviewer Name:</label>
-        <input type="text" id="reviewer" name="reviewer" required><br>
-        <label for="comments">Comments:</label>
-        <textarea id="comments" name="comments" required></textarea><br>
-        <label for="rating">Rating:</label>
-        <select id="rating" name="rating" required>
-            <option value="Fine as it is">Fine as it is</option>
-            <option value="Requires small changes">Requires small changes</option>
-            <option value="Needs major revisions">Needs major revisions</option>
-            <option value="Rejected">Rejected</option>
-        </select><br>
-        <button type="submit">Submit Review</button>
+        {% for question in questions %}
+            <label>{{ question["text"] }}</label><br>
+            {% if question["is_abc"] %}
+                {% for option in question["answers"] %}
+                    <input type="radio" id="option{{ option["id"] }}" name="question_{{ question['id'] }}" value="{{ option['answer'] }}" required>
+                    <label for="option{{ option["id"] }}">{{ option["answer"] }}</label><br>
+                {% endfor %}
+            {% else %}
+                <input type="text" name="question_{{ question['id'] }}" required><br>
+            {% endif %}
+        {% endfor %}
+        <button type="submit">Submit</button>
     </form>
 </body>
 </html>
