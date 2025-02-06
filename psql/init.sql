@@ -66,5 +66,3 @@ INSERT INTO articles (title, author_id, content, status_id, editor_id) VALUES
 ('Advanced Flask Techniques2', 3, 'Further techniques in Flask for experienced users.', 1, 1),
 ('Common Pitfalls', 4, 'Discusses common pitfalls to avoid in Flask.', 1, 1);
 
-INSERT INTO usr (nick, email, passwd, approved, code, code_exp)
-VALUES ('testuser', 'test@example.com', 'hashedpassword', TRUE, '123456', '2025-12-31 23:59:59');

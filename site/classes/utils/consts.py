@@ -1,1 +1,3 @@
 TIME_TO_EXPIRE=900 # s
+
+ALLOWED_EXTENSIONS = {'pdf', 'tex'}

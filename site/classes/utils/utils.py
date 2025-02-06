@@ -11,3 +11,9 @@ def url_last_edit(path: str) -> str:
 
 def render_base_template(name: str, **kwargs) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)
+
+def get_upload_folder():
+    return os.getenv('DOC_FILES_DIR', '/var/www/uploads')
+
+def get_temp_folder():
+    return os.getenv('TEMP_FOLDER', '/tmp')

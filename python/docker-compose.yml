@@ -9,7 +9,7 @@ services:
         - TEMP_FOLDER=${TEMP_FOLDER}
     volumes:
       - ./site:${APP_MAIN_DIR}/app:ro
-      - ${DOC_FILES_DIR}:/var/doc_files:rw
+      - doc_files:${DOC_FILES_DIR}:rw
     env_file:
       - ./.env
       - ./.psql.env

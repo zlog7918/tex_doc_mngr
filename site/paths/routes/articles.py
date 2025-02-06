@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 import shutil
+from classes.utils.utils import get_temp_folder, get_upload_folder
 
 articles_bp = Blueprint("articles", __name__, template_folder="templates")
 
@@ -196,23 +197,6 @@ def update_article_status(article_id):
     except Exception as err:
         return {"error": str(err)}, 500
 
-
-ALLOWED_EXTENSIONS = {'pdf', 'tex'}
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-def get_upload_folder():
-    return os.getenv('DOC_FILES_DIR', '/var/www/uploads')
-
-def get_temp_folder():
-    return os.getenv('TEMP_FOLDER', '/tmp')
-
-
-os.makedirs(get_upload_folder(), exist_ok=True)
-os.makedirs(get_temp_folder(), exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf', 'tex'}
