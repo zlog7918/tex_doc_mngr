@@ -52,6 +52,8 @@ def article_details(article_id):
         tab_content = render_template("round_tabs/in_review.html", article=article, reviews_remaining=reviews_remaining)
     elif article.status == "Reviewed":
         tab_content = render_template("round_tabs/reviewed.html", article=article)
+    elif article.status == "Rejected":
+        return render_template("round_tabs/rejected.html")
     else:
         tab_content = "<p>No content available for this status.</p>"
 
@@ -131,12 +133,9 @@ def assign_reviewers(article_id):
 @login_required
 def reject_article(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
-    article = db.get_article(article_id)
-    if not article:
-        return jsonify({"success": False}), 404
-
-    # Oznaczanie artykułu jako odrzucony
     result = db.update_article_status(article_id, 5)
+    if not result:
+            return {"warning": "Article status not updated"}, 500
     return jsonify({"success": True})
 
 @articles_bp.route('/<int:article_id>/update_status', methods=['POST'])

@@ -28,7 +28,7 @@ def article_details(article_id):
         
         if review.status == "Pending confirmation":
             return render_template("review_tabs/pending_confirmation.html", article=article, review_id=review.id)
-        elif review.status == "Accepted":
+        elif review.status == "Accepted by reviewer":
             questions = db.get_questions_by_article(article_id)
 
             if not questions:
@@ -55,5 +55,18 @@ def accept_article(review_id):
             return {"message": "Accepted reviewing the article"}, 200
         else:
             return {"error": "Failed to accept the review"}, 500
+    except Exception as err:
+        return {"error": str(err)}, 500
+    
+@review_bp.route("/<int:review_id>/reject", methods=["POST"])
+@login_required
+def reject_article(review_id):
+    db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
+    try:
+        result = db.update_review_status(review_id, "Rejected by reviewer")
+        if result:
+            return {"message": "Rejected reviewing the article"}, 200
+        else:
+            return {"error": "Failed to reject the review"}, 500
     except Exception as err:
         return {"error": str(err)}, 500
