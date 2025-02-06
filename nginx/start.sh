@@ -21,5 +21,6 @@ func_if_exists() {
     return 1
 }
 
+
 func_start
 sh /docker-entrypoint.sh nginx -g 'daemon off;'

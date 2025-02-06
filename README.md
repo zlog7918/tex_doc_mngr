@@ -30,6 +30,7 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
         MAIL_PASSWORD=<hasło wysyłającego na serwerze email>
         MAIL_AUTH_TYPE=<typ autoryzacji: ssl|tsl|plain|none>
         DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
+        TEMP_FOLDER=<ścieżka gdzie będą przechowywane tymczasowo pliki latex po pogdlądu jako pdf>
         ```
         komenda do wygenerowania sekretnego klucza: `python -c 'import os; print(os.urandom(24).hex())'`
     - `.psql.env`

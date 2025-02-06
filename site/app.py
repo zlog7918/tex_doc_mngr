@@ -14,6 +14,8 @@ login_manager.init_app(app)
 
 app.secret_key=os.environ.get('FLASK_KEY', 'FLASK_KEY')
 
+app.config['UPLOAD_FOLDER'] = os.getenv('DOC_FILES_DIR', '/var/www/uploads')
+app.config['TEMP_FOLDER'] = os.getenv('TEMP_FOLDER', '/var/www/uploads/tmp')
 app.register_blueprint(articles_bp, url_prefix="/articles")
 app.register_blueprint(review_bp, url_prefix="/reviews")
 app.register_blueprint(user_bp, url_prefix="/user")

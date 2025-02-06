@@ -5,22 +5,24 @@ import traceback
 from flask import request
 from typing import Callable
 from .DB_Queries import DB_Queries
-from datetime import datetime,timezone
+from datetime import datetime, timezone
 from classes.article.Review import Review
 from .db_drivers.DB_Driver import DB_Driver
 from ..utils.consts import TIME_TO_EXPIRE
 from ..article.Article import Article, ArticleStatus
 
+
 class DBQ_Articles(DB_Queries):
-    def __init__(self, db_conn_fun: Callable[[],DB_Driver]):
+    def __init__(self, db_conn_fun: Callable[[], DB_Driver]):
         try:
-            self.__db=db_conn_fun()
+            self.__db = db_conn_fun()
         except Exception as e:
-            self.__db=None
+            self.__db = None
 
     def get_user(self, nick: str) -> tuple[str, str, str, bool]:
         try:
-            ret=self.__db.query('SELECT nick, email, passwd, approved FROM usr WHERE nick=%(nick)s', {'nick':nick})[0]
+            ret = self.__db.query('SELECT nick, email, passwd, approved FROM usr WHERE nick=%(nick)s', {'nick': nick})[
+                0]
         except Exception as err:
             self.__log_activity(
                 inspect.currentframe().f_code.co_name,
@@ -29,7 +31,7 @@ class DBQ_Articles(DB_Queries):
             )
             raise err.with_traceback(err.__traceback__)
         return ret
-    
+
     def get_articles_as_editor(self, editor_id: int) -> list[Article]:
         try:
             results = self.__db.query(
@@ -127,7 +129,7 @@ class DBQ_Articles(DB_Queries):
             )
             return False
         return True
-    
+
     def update_article_status(self, article_id: int, status: int) -> bool:
         try:
             self.__db.query('UPDATE articles SET status_id = %(status)s WHERE id = %(article_id)s;', {
@@ -155,7 +157,7 @@ class DBQ_Articles(DB_Queries):
             )
             return False
         return True
-    
+
     def get_last_round_number(self, article_id: int) -> int:
         try:
             result = self.__db.query(
@@ -191,7 +193,8 @@ class DBQ_Articles(DB_Queries):
             return False
         return True
 
-    def add_reviewer_to_article(self, article_id: int, reviewer_id: int, deadline_confirm: str, deadline_submit: str) -> bool:
+    def add_reviewer_to_article(self, article_id: int, reviewer_id: int, deadline_confirm: str,
+                                deadline_submit: str) -> bool:
         # existing_reviews = [r for r in tmp_assigned_reviewers if r["article_id"] == article_id]
         # round_number = max([r["round"] for r in existing_reviews], default=1)
         # tmp_assigned_reviewers.append({
@@ -213,7 +216,7 @@ class DBQ_Articles(DB_Queries):
                 VALUES (%(round_id)s, %(reviewer_id)s, 'Pending confirmation', %(deadline_confirm)s, %(deadline_submit)s)
                 """
                 self.__db.query(review_query, {
-                    'round_id': round_id, 
+                    'round_id': round_id,
                     'reviewer_id': reviewer_id,
                     'deadline_confirm': deadline_confirm,
                     'deadline_submit': deadline_submit
@@ -222,7 +225,7 @@ class DBQ_Articles(DB_Queries):
                 print("round_result is None")
                 # TODO
                 return False
-        
+
         except Exception as err:
             print("assignemnt err: " + str(err))
             self.__log_activity(
@@ -250,7 +253,7 @@ class DBQ_Articles(DB_Queries):
             self.__log_activity(inspect.currentframe().f_code.co_name, False,
                                 {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
             return []
-        
+
     def get_assigned_reviewers(self, article_id) -> list[dict[int, str]]:
         try:
             result = self.__db.query(
@@ -293,7 +296,7 @@ class DBQ_Articles(DB_Queries):
                         content=row[4],
                         status=row[5]
                     ),
-                row[5]
+                    row[5]
                 )
                 for row in result
             ]
@@ -364,7 +367,7 @@ class DBQ_Articles(DB_Queries):
                 VALUES (%(review_text)s, %(round_id)s, %(reviewer_id)s, %(status)s)
                 RETURNING id;
                 '''
-            
+
             params = {
                 'review_text': review.review_text,
                 'round_id': review.round_id,
@@ -400,17 +403,18 @@ class DBQ_Articles(DB_Queries):
                 INSERT INTO log(ip, is_success, "action", timest, "log") VALUES
                     (%(ip)s, %(is_success)s, %(act)s, %(timest)s, %(log)s)
             ''', {
-                'ip':request.environ['REMOTE_ADDR'],
-                'is_success':is_success,
-                'act':action,
-                'timest':self.__get_timestamp(),
-                'log':json.dumps(log),
+                'ip': request.environ['REMOTE_ADDR'],
+                'is_success': is_success,
+                'act': action,
+                'timest': self.__get_timestamp(),
+                'log': json.dumps(log),
             }, False)
         except Exception as e:
             print('<h1>Operation failed, please inform an administrator.</h1>', action, log, self.__get_timestamp())
 
     def __get_timestamp(self) -> datetime:
         return datetime.today().astimezone(tz=timezone.utc)
+
 
 # Dane pomocnicze do wyboru recenzentów (przykładowe)
 tmp_reviewers = [

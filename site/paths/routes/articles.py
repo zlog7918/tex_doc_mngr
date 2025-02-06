@@ -1,8 +1,14 @@
 from classes.article import Article
 from classes.db.DBQ_Articles import DBQ_Articles
 from classes.db.DB_Factory import DB_Factory, DB_QueriesOpt
-from flask import request, redirect, url_for, Blueprint, jsonify, render_template
+from flask import request, redirect, url_for, Blueprint, jsonify, render_template, send_from_directory, current_app, send_file
 from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
+import os
+import subprocess
+import tempfile
+import shutil
+
 articles_bp = Blueprint("articles", __name__, template_folder="templates")
 
 '''
@@ -15,19 +21,22 @@ Needs Corrections - wymaga poprawek, czeka na poprawki autora
 Final - artykół jest zakończony, nie wymaga poprawek, wersja końcowa
 '''
 
+
 @articles_bp.route('/')
 @login_required
 def show_articles():
-    db: DBQ_Articles=DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
+    db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
         articles = db.get_articles_as_editor(current_user.get__id())
     except Exception as err:
         return str(err), 500
     return render_template("articles.html", articles=articles)
 
+
+
 @articles_bp.route('/<int:article_id>')
 def article_details(article_id):
-    db: DBQ_Articles=DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
+    db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
         article = db.get_article(article_id)
     except Exception as err:
@@ -42,7 +51,8 @@ def article_details(article_id):
     if article.status == "Accepted":
         reviewers = db.get_available_reviewers(article_id)
         assigned_reviewers = db.get_assigned_reviewers(article_id)
-        tab_content = render_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers)
+        tab_content = render_template("round_tabs/accepted.html", article=article, reviewers=reviewers,
+                                      assigned_reviewers=assigned_reviewers)
     elif article.status == "In review":
         reviews_remaining = 3
         if article.rounds:
@@ -55,6 +65,7 @@ def article_details(article_id):
 
     return render_template("article_reviewed.html", article=article, tab_content=tab_content)
 
+
 @articles_bp.route('/<int:article_id>/accept', methods=['POST'])
 def accept_article(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
@@ -62,7 +73,7 @@ def accept_article(article_id):
         article = db.get_article(article_id)
         if not article:
             return "Article not found", 404
-        
+
         # Zmiana statusu na 'Accepted'
         result = db.update_article_status(article_id, 2)
         if not result:
@@ -87,6 +98,7 @@ def accept_article(article_id):
     except Exception as err:
         return {"error": str(err)}, 500
 
+
 @articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
 def add_round(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
@@ -104,23 +116,25 @@ def add_round(article_id):
     article.rounds.append(new_round)
     return jsonify({"success": True})
 
+
 @articles_bp.route('/assign_reviewers/<int:article_id>', methods=['POST'])
 def assign_reviewers(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
-    
+
     # Pobieranie wybranych recenzentów z formularza
     selected_reviewer = request.form.get('reviewer')
     deadline_confirm = request.form.get('deadline_confirm')
     deadline_submit = request.form.get('deadline_submit')
-    
+
     if not selected_reviewer:
         return "No reviewer selected", 400
-    
+
     try:
         db.add_reviewer_to_article(article_id, int(selected_reviewer), deadline_confirm, deadline_submit)
         return redirect(url_for('articles.article_details', article_id=article_id))
     except Exception as err:
         return str(err), 500
+
 
 @articles_bp.route('/<int:article_id>/reject', methods=['POST'])
 def reject_article(article_id):
@@ -132,6 +146,7 @@ def reject_article(article_id):
     # Oznaczanie artykułu jako odrzucony
     result = db.update_article_status(article_id, 5)
     return jsonify({"success": True})
+
 
 @articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
 def update_article_status(article_id):
@@ -180,3 +195,128 @@ def update_article_status(article_id):
 
     except Exception as err:
         return {"error": str(err)}, 500
+
+
+ALLOWED_EXTENSIONS = {'pdf', 'tex'}
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+def get_upload_folder():
+    return os.getenv('DOC_FILES_DIR', '/var/www/uploads')
+
+def get_temp_folder():
+    return os.getenv('TEMP_FOLDER', '/tmp')
+
+
+os.makedirs(get_upload_folder(), exist_ok=True)
+os.makedirs(get_temp_folder(), exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf', 'tex'}
+
+@articles_bp.route('/upload-form')
+def upload_form():
+    return render_template('uploading_article.html')
+
+@articles_bp.route('/upload', methods=['POST'])
+def upload_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "Nie przesłano pliku"}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "Brak wybranego pliku"}), 400
+
+        upload_folder = get_upload_folder()
+        os.makedirs(upload_folder, exist_ok=True)
+
+        filename = secure_filename(file.filename)
+        tex_path = os.path.join(upload_folder, filename)
+        pdf_path = tex_path.replace('.tex', '.pdf')
+        file.save(tex_path)
+
+        # Konwersja LaTeX do PDF
+        if filename.endswith('.tex'):
+            try:
+                subprocess.run(
+                    ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
+                     "-output-directory", get_upload_folder(), tex_path],
+                    check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                )
+                subprocess.run(
+                    ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
+                     "-output-directory", get_upload_folder(), tex_path],
+                    check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+                )
+
+                if os.path.exists(pdf_path):
+                    return jsonify({"message": f"Plik {pdf_path} zapisany", "pdf_url": f"/articles/uploads/{filename.replace('.tex', '.pdf')}"}), 200
+                else:
+                    return jsonify({"error": "Plik PDF nie został wygenerowany"}), 500
+
+            except subprocess.CalledProcessError as e:
+                return jsonify({"error": "Błąd podczas konwersji LaTeX na PDF"}), 500
+
+        return jsonify({"message": f"Plik {filename} został zapisany"}), 200
+
+    except Exception as e:
+        return jsonify({"error": f"Błąd serwera: {str(e)}"}), 500
+
+@articles_bp.route('/uploads/<filename>')
+def uploaded_file(filename):
+    upload_folder = get_upload_folder()
+    file_path = os.path.join(upload_folder, filename)
+    if os.path.exists(file_path):
+        return send_from_directory(upload_folder, filename)
+    else:
+        return jsonify({"error": "Plik nie istnieje"}), 404
+
+@articles_bp.route('/generate-preview', methods=['POST'])
+def generate_preview():
+    if 'file' not in request.files:
+        return jsonify({"error": "Nie przesłano pliku"}), 400
+
+    file = request.files['file']
+    if not file.filename.endswith('.tex'):
+        return jsonify({"error": "Nieprawidłowy format pliku"}), 400
+
+    temp_folder = get_temp_folder()
+    os.makedirs(temp_folder, exist_ok=True)
+
+    filename = secure_filename(file.filename)
+    tex_path = os.path.join(temp_folder, filename)
+    pdf_path = tex_path.replace('.tex', '.pdf')
+    file.save(tex_path)
+
+    try:
+        subprocess.run(
+            ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
+             "-output-directory", get_temp_folder(), tex_path],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        subprocess.run(
+            ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
+             "-output-directory", get_temp_folder(), tex_path],
+            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+
+        if os.path.exists(pdf_path):
+            return jsonify({"pdf_url": f"/articles/temp-preview/{filename.replace('.tex', '.pdf')}"}), 200
+        else:
+            return jsonify({"error": "Błąd generowania PDF"}), 500
+
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": "Błąd podczas generowania podglądu"}), 500
+
+@articles_bp.route('/temp-preview/<filename>')
+def temp_preview(filename):
+    temp_folder = get_temp_folder()
+    file_path = os.path.join(temp_folder, filename)
+    if os.path.exists(file_path):
+        return send_file(file_path)
+    else:
+        return jsonify({"error": "Podgląd nie istnieje"}), 404

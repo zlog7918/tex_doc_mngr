@@ -5,9 +5,11 @@ services:
       dockerfile: Dockerfile
       args:
         - APP_MAIN_DIR=${APP_MAIN_DIR}
+        - DOC_FILES_DIR=${DOC_FILES_DIR}
+        - TEMP_FOLDER=${TEMP_FOLDER}
     volumes:
       - ./site:${APP_MAIN_DIR}/app:ro
-      - doc_files:${DOC_FILES_DIR}:rw
+      - ${DOC_FILES_DIR}:/var/doc_files:rw
     env_file:
       - ./.env
       - ./.psql.env
