@@ -34,7 +34,7 @@ def signup():
     rep_passwd=request.form.get('rep_passwd')
     if passwd!=rep_passwd:
         return jsonify({'error': True, 'message': 'Podane nowe hasła nie pasują do siebie'})
-    user=User(nick, email)
+    user=User(0, nick, email)
     passwd=user.ch_pass(passwd)
     ret={'error': True, 'message': 'Konto nie zostało utworzone'}
     if passwd is False:
@@ -57,6 +57,7 @@ def signup():
             db.del_user(nick)
             return jsonify(ret)
     
+    user=user_loader(user.get_nick())
     login_user(user)
     return jsonify({'error': False, 'data': {'message':f'Proszę potwierdzić konto za pomocą kodu z mail\'a w: {code_exp/60}min'}})
 
