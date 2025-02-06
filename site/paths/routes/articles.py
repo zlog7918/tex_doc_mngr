@@ -26,6 +26,7 @@ def show_articles():
     return render_template("articles.html", articles=articles)
 
 @articles_bp.route('/<int:article_id>')
+@login_required
 def article_details(article_id):
     db: DBQ_Articles=DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
@@ -42,7 +43,8 @@ def article_details(article_id):
     if article.status == "Accepted":
         reviewers = db.get_available_reviewers(article_id)
         assigned_reviewers = db.get_assigned_reviewers(article_id)
-        tab_content = render_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers)
+        assigned_reviews = db.get_assigned_reviews(article_id)
+        tab_content = render_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers, reviews=assigned_reviews)
     elif article.status == "In review":
         reviews_remaining = 3
         if article.rounds:
@@ -56,6 +58,7 @@ def article_details(article_id):
     return render_template("article_reviewed.html", article=article, tab_content=tab_content)
 
 @articles_bp.route('/<int:article_id>/accept', methods=['POST'])
+@login_required
 def accept_article(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
@@ -88,6 +91,7 @@ def accept_article(article_id):
         return {"error": str(err)}, 500
 
 @articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
+@login_required
 def add_round(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     article = db.get_article(article_id)
@@ -105,6 +109,7 @@ def add_round(article_id):
     return jsonify({"success": True})
 
 @articles_bp.route('/assign_reviewers/<int:article_id>', methods=['POST'])
+@login_required
 def assign_reviewers(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     
@@ -123,6 +128,7 @@ def assign_reviewers(article_id):
         return str(err), 500
 
 @articles_bp.route('/<int:article_id>/reject', methods=['POST'])
+@login_required
 def reject_article(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     article = db.get_article(article_id)
@@ -134,6 +140,7 @@ def reject_article(article_id):
     return jsonify({"success": True})
 
 @articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
+@login_required
 def update_article_status(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:

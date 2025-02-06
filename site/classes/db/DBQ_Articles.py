@@ -258,6 +258,39 @@ class DBQ_Articles(DB_Queries):
             self.__log_activity(inspect.currentframe().f_code.co_name, False,
                                 {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
             return []
+        
+    def get_assigned_reviews(self, article_id) -> list[Review]:
+        try:
+            result = self.__db.query(
+                '''
+                SELECT id, reviewer_id, round_id, review_text, status, deadline_confirm, deadline_submit
+                FROM reviews 
+                WHERE round_id IN 
+                    (SELECT id FROM rounds WHERE article_id = %(article_id)s ORDER BY rounds.round_number DESC LIMIT 1)
+                ''',
+                {'article_id': article_id}
+            )
+            if result:
+                reviews = [
+                    Review(
+                        id = row[0],
+                        reviewer_id = row[1],
+                        round_id = row[2],
+                        review_text = row[3],
+                        status = row[4],
+                        deadline_confirm = row[5],
+                        deadline_submit = row[6]
+                    )
+                    for row in result
+                ]
+                return reviews
+            else:
+                return []
+        except Exception as err:
+            print("error: " + str(err))
+            self.__log_activity(inspect.currentframe().f_code.co_name, False,
+                                {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+            return []
 
     def get_articles_as_reviewer(self, reviewer_id: int) -> list[Article, int]:
         try:

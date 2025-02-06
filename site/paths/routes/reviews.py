@@ -3,11 +3,12 @@ from classes.db.DB_Factory import DB_Factory, DB_QueriesOpt
 from classes.article.Review import Review
 from classes.db.DBQ_Articles import DBQ_Articles
 from classes.db import DB_Queries
-from flask_login import current_user
+from flask_login import login_required, current_user
 
 review_bp = Blueprint("review", __name__)
 
 @review_bp.route("/")
+@login_required
 def list_reviewer_reviews():
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
@@ -17,6 +18,7 @@ def list_reviewer_reviews():
     return render_template("reviews.html", articles=articles)
 
 @review_bp.route("/<int:article_id>", methods=["GET"])
+@login_required
 def article_details(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
@@ -44,10 +46,11 @@ def article_details(article_id):
         return str(err), 500
 
 @review_bp.route("/<int:review_id>/accept", methods=["POST"])
+@login_required
 def accept_article(review_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
-        result = db.update_review_status(review_id, "Accepted")
+        result = db.update_review_status(review_id, "Accepted by reviewer")
         if result:
             return {"message": "Accepted reviewing the article"}, 200
         else:
