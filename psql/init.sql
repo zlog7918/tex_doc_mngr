@@ -105,7 +105,7 @@ INSERT INTO articles (title, author_id, content, status_id, editor_id) VALUES
 ('Understanding REST APIs', 2, 'Explores RESTful APIs and their best practices.', 1, 1),
 ('Advanced Flask Techniques', 3, 'Delves into advanced techniques in Flask.', 1, 1),
 ('Advanced Flask Techniques2', 3, 'Further techniques in Flask for experienced users.', 1, 1),
-('Common Pitfalls', 4, 'Discusses common pitfalls to avoid in Flask.', 1, 1);
+('Common Pitfalls', 2, 'Discusses common pitfalls to avoid in Flask.', 1, 1);
 
 INSERT INTO questions (question, is_abc) VALUES
     ('Comments', FALSE),
