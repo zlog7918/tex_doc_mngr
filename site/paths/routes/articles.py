@@ -201,10 +201,12 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf', 'tex'}
 
 @articles_bp.route('/upload-form')
+@login_required
 def upload_form():
     return render_template('uploading_article.html')
 
 @articles_bp.route('/upload', methods=['POST'])
+@login_required
 def upload_file():
     try:
         if 'file' not in request.files:
@@ -252,6 +254,7 @@ def upload_file():
         return jsonify({"error": f"Błąd serwera: {str(e)}"}), 500
 
 @articles_bp.route('/uploads/<filename>')
+@login_required
 def uploaded_file(filename):
     upload_folder = get_upload_folder()
     file_path = os.path.join(upload_folder, filename)
@@ -261,6 +264,7 @@ def uploaded_file(filename):
         return jsonify({"error": "Plik nie istnieje"}), 404
 
 @articles_bp.route('/generate-preview', methods=['POST'])
+@login_required
 def generate_preview():
     if 'file' not in request.files:
         return jsonify({"error": "Nie przesłano pliku"}), 400
@@ -300,6 +304,7 @@ def generate_preview():
         return jsonify({"error": "Błąd podczas generowania podglądu"}), 500
 
 @articles_bp.route('/temp-preview/<filename>')
+@login_required
 def temp_preview(filename):
     temp_folder = get_temp_folder()
     file_path = os.path.join(temp_folder, filename)
