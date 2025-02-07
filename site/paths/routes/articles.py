@@ -1,3 +1,4 @@
+from classes.usr.User import User, user_loader
 from classes.article import Article
 from classes.db.DBQ_Articles import DBQ_Articles
 from classes.db.DB_Factory import DB_Factory, DB_QueriesOpt
@@ -45,6 +46,9 @@ def article_details(article_id):
         return str(err), 500
     if not article:
         return "Article not found", 404
+
+    if article.content.startswith('/'):
+        article.content=f'<br><embed src="{article.content}" width="800" height="500" type="application/pdf">'
 
     if article.status == "Submitted":
         return render_template("article_submitted.html", article=article)
@@ -212,6 +216,8 @@ def upload_file():
     try:
         if 'file' not in request.files:
             return jsonify({"error": "Nie przesłano pliku"}), 400
+        title = request.form.get('title')
+        editor = request.form.get('editor')
 
         file = request.files['file']
         if file.filename == '':
@@ -242,13 +248,27 @@ def upload_file():
                 )
 
                 if os.path.exists(pdf_path):
-                    return jsonify({"message": f"Plik {pdf_path} zapisany", "pdf_url": f"/articles/uploads/{filename.replace('.tex', '.pdf')}"}), 200
+                    db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
+                    url=f"/articles/uploads/{filename.replace('.tex', '.pdf')}"
+                    user: User=current_user
+                    editor=user_loader(editor)
+                    if editor is None:
+                        return jsonify({"error": "Nie znany edytor"}), 500
+                    db.upload_article(user.get__id(), title, url, editor.get__id())
+                    return jsonify({"message": f"Plik {pdf_path} zapisany", "pdf_url": url}), 200
                 else:
                     return jsonify({"error": "Plik PDF nie został wygenerowany"}), 500
 
             except subprocess.CalledProcessError as e:
                 return jsonify({"error": "Błąd podczas konwersji LaTeX na PDF"}), 500
 
+        db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
+        url=f"/articles/uploads/{filename}"
+        user: User=current_user
+        editor=user_loader(editor)
+        if editor is None:
+            return jsonify({"error": "Nie znany edytor"}), 500
+        db.upload_article(user.get__id(), title, url, editor.get__id())
         return jsonify({"message": f"Plik {filename} został zapisany"}), 200
 
     except Exception as e:

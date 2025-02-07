@@ -510,7 +510,7 @@ class DBQ_Articles(DB_Queries):
             print(f"Error get questions: {err}")
             self.__log_activity(inspect.currentframe().f_code.co_name, False,
                                 {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
-            return None 
+            return None
 
     def get_question_answers(self, question_id: int):
         query = """
@@ -564,6 +564,18 @@ class DBQ_Articles(DB_Queries):
             
             return grouped_answers
         return []
+
+    def upload_article(self, author_id: int, title: str, content: str, editor_id: int, status: int=1) -> None:
+        self.__db.query('''
+            INSERT INTO articles (title, author_id, content, status_id, editor_id) VALUES
+                (%(title)s, %(author_id)s, %(content)s, %(status_id)s, %(editor_id)s)
+        ''', {
+            'title':title,
+            'author_id':author_id,
+            'content':content,
+            'status_id':status,
+            'editor_id':editor_id
+        }, False)
 
     def is_connection(self) -> bool:
         return self.__db is not None
