@@ -179,19 +179,18 @@ class DBQ_Articles(DB_Queries):
                                 {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
             return None
 
-    def create_round(self, article_id: int, round_number: int) -> bool:
+    def create_round(self, article_id: int, round_number: int, deadline_confirm: str, deadline_submit: str) -> bool:
         try:
-            self.__db.query('INSERT INTO rounds (article_id, round_number, q_set_id) VALUES (%(article_id)s, %(round_number)s, %(q_set_id)s);',
-                            {'article_id': article_id, 'round_number': round_number, 'q_set_id': 1}, False)
+            self.__db.query('INSERT INTO rounds (article_id, round_number, q_set_id, deadline_confirm, deadline_submit) VALUES (%(article_id)s, %(round_number)s, %(q_set_id)s, %(deadline_confirm)s, %(deadline_submit)s);',
+                            {'article_id': article_id, 'round_number': round_number, 'q_set_id': 1, 'deadline_confirm': deadline_confirm, 'deadline_submit': deadline_submit}, False)
         except Exception as err:
             print("create: " + str(err))
-            print("err:" + str(err))
             self.__log_activity(inspect.currentframe().f_code.co_name, False,
                                 {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
             return False
         return True
 
-    def add_reviewer_to_article(self, article_id: int, reviewer_id: int, deadline_confirm: str, deadline_submit: str) -> bool:
+    def add_reviewer_to_article(self, article_id: int, reviewer_id: int) -> bool:
         try:
             round_query = "SELECT id FROM rounds WHERE article_id = %(article_id)s ORDER BY round_number DESC LIMIT 1"
             round_result = self.__db.query(round_query, {'article_id': article_id})
@@ -199,14 +198,12 @@ class DBQ_Articles(DB_Queries):
             if round_result:
                 round_id = round_result[0][0]
                 review_query = """
-                INSERT INTO reviews (round_id, reviewer_id, status, deadline_confirm, deadline_submit)
-                VALUES (%(round_id)s, %(reviewer_id)s, 'Pending confirmation', %(deadline_confirm)s, %(deadline_submit)s)
+                INSERT INTO reviews (round_id, reviewer_id, status)
+                VALUES (%(round_id)s, %(reviewer_id)s, 'Pending confirmation')
                 """
                 self.__db.query(review_query, {
                     'round_id': round_id, 
-                    'reviewer_id': reviewer_id,
-                    'deadline_confirm': deadline_confirm,
-                    'deadline_submit': deadline_submit
+                    'reviewer_id': reviewer_id
                 }, False)
             else:
                 print("round_result is None")
@@ -263,7 +260,7 @@ class DBQ_Articles(DB_Queries):
         try:
             result = self.__db.query(
                 '''
-                SELECT id, reviewer_id, round_id, review_text, status, deadline_confirm, deadline_submit
+                SELECT id, reviewer_id, round_id, review_text, status
                 FROM reviews 
                 WHERE round_id IN 
                     (SELECT id FROM rounds WHERE article_id = %(article_id)s ORDER BY rounds.round_number DESC LIMIT 1)
@@ -277,9 +274,7 @@ class DBQ_Articles(DB_Queries):
                         reviewer_id = row[1],
                         round_id = row[2],
                         review_text = row[3],
-                        status = row[4],
-                        deadline_confirm = row[5],
-                        deadline_submit = row[6]
+                        status = row[4]
                     )
                     for row in result
                 ]
@@ -328,7 +323,7 @@ class DBQ_Articles(DB_Queries):
         try:
             result = self.__db.query(
                 '''
-                SELECT r.id, r.round_id, r.review_text, r.status, r.deadline_confirm, r.deadline_submit, ro.article_id
+                SELECT r.id, r.round_id, r.review_text, r.status, ro.article_id
                 FROM reviews r
                 INNER JOIN rounds ro ON r.round_id = ro.id
                 WHERE r.reviewer_id = %(reviewer_id)s
@@ -343,8 +338,6 @@ class DBQ_Articles(DB_Queries):
                         round_id=row[1],
                         review_text=row[2],
                         status=row[3],
-                        deadline_confirm=row[4],
-                        deadline_submit=row[5],
                         reviewer_id=reviewer_id,
                     ),
                     row[6]
@@ -359,7 +352,7 @@ class DBQ_Articles(DB_Queries):
         try:
             result = self.__db.query(
                 '''
-                SELECT r.id, r.round_id, r.review_text, r.status, r.deadline_confirm, r.deadline_submit
+                SELECT r.id, r.round_id, r.review_text, r.status
                 FROM reviews r
                 JOIN rounds ro ON r.round_id = ro.id
                 WHERE ro.article_id = %(article_id)s
@@ -372,8 +365,6 @@ class DBQ_Articles(DB_Queries):
                 round_id=result[1],
                 review_text=result[2],
                 status=result[3],
-                deadline_confirm=result[4],
-                deadline_submit=result[5],
                 reviewer_id=reviewer_id,
             )
         except Exception as err:

@@ -71,21 +71,7 @@ def accept_article(article_id):
         if not result:
             return {"warning": "Article status not updated"}, 500
 
-        # Pobranie numeru ostatniej rundy dla artykułu
-        last_round_number = db.get_last_round_number(article_id)
-
-        if last_round_number is not None:
-            new_round_number = last_round_number + 1
-            result = db.create_round(article_id, new_round_number)
-            print("result")
-            if not result:
-                print("not result")
-                return {"warning": "New round not created"}, 500
-        else:
-            print("else")
-            return {"warning": "New round not created"}, 500
-
-        return {"message": f"Article status updated to Accepted. New round {new_round_number} created."}, 200
+        return {"message": f"Article status updated to Accepted."}, 200
 
     except Exception as err:
         return {"error": str(err)}, 500
@@ -108,21 +94,32 @@ def add_round(article_id):
     article.rounds.append(new_round)
     return jsonify({"success": True})
 
-@articles_bp.route('/assign_reviewers/<int:article_id>', methods=['POST'])
+@articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
 @login_required
 def assign_reviewers(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     
     # Pobieranie wybranych recenzentów z formularza
-    selected_reviewer = request.form.get('reviewer')
+    assigned_reviewers = request.form.get('assigned_reviewers[]')
     deadline_confirm = request.form.get('deadline_confirm')
     deadline_submit = request.form.get('deadline_submit')
     
-    if not selected_reviewer:
-        return "No reviewer selected", 400
+    if not assigned_reviewers:
+        return "No reviewers assigned.", 400
     
     try:
-        db.add_reviewer_to_article(article_id, int(selected_reviewer), deadline_confirm, deadline_submit)
+        assigned_reviewers_ids = [int(rid.strip()) for rid in assigned_reviewers.split(',')]
+        last_round_number = db.get_last_round_number(article_id)
+        new_round_number = last_round_number + 1 if last_round_number else 1
+        db.create_round(article_id, new_round_number, deadline_confirm, deadline_submit)
+
+        for reviewer_id in assigned_reviewers_ids:
+            db.add_reviewer_to_article(article_id, reviewer_id)
+
+        update_status_result = db.update_article_status(article_id, 3)
+        if not update_status_result:
+            return {"error": "Failed to update article status to 3."}, 500
+                    
         return redirect(url_for('articles.article_details', article_id=article_id))
     except Exception as err:
         return str(err), 500

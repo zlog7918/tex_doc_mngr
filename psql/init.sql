@@ -47,6 +47,8 @@ CREATE TABLE rounds (
     article_id INT NOT NULL,
     round_number INT NOT NULL,
     q_set_id INT NOT NULL,
+    deadline_confirm DATE NOT NULL,
+    deadline_submit DATE NOT NULL,
     FOREIGN KEY (article_id) REFERENCES articles(id)
 );
 
@@ -56,8 +58,6 @@ CREATE TABLE reviews (
     reviewer_id INT NOT NULL,
     review_text TEXT,
     status VARCHAR(50) NOT NULL,
-    deadline_confirm DATE NOT NULL,
-    deadline_submit DATE NOT NULL,
     FOREIGN KEY (round_id) REFERENCES rounds(id),
     FOREIGN KEY (reviewer_id) REFERENCES usr(id)
 );
