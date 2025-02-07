@@ -90,7 +90,8 @@ CREATE TABLE answers (
     id INTEGER NOT NULL PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     review_id INTEGER NOT NULL REFERENCES reviews(id),
     question_id INTEGER NOT NULL REFERENCES questions(id),
-    answer TEXT NOT NULL
+    answer TEXT NOT NULL,
+    UNIQUE(review_id, question_id)
 );
 
 -- pass: aaaa

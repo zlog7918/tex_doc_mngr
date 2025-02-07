@@ -38,9 +38,7 @@ def article_details(article_id):
 
     if article.status == "Submitted":
         return render_template("article_submitted.html", article=article)
-
-    # Renderowanie odpowiedniego szablonu dla treści zakładki
-    if article.status == "Accepted":
+    elif article.status == "Accepted":
         reviewers = db.get_available_reviewers(article_id)
         assigned_reviewers = db.get_assigned_reviewers(article_id)
         assigned_reviews = db.get_assigned_reviews(article_id)
@@ -57,7 +55,7 @@ def article_details(article_id):
     else:
         tab_content = "<p>No content available for this status.</p>"
 
-    return render_template("article_reviewed.html", article=article, tab_content=tab_content)
+    return render_template("article_round_base.html", article=article, tab_content=tab_content)
 
 @articles_bp.route('/<int:article_id>/accept', methods=['POST'])
 @login_required

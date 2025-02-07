@@ -39,7 +39,7 @@ def article_details(article_id):
                     answers = db.get_question_answers(question['id'])
                     question['answers'] = answers if answers else [{"id": 0, "answer": "No answers available"}]
 
-            return render_template("review_form.html", questions=questions)
+            return render_template("review_tabs/review_form.html", review_id=review.id, questions=questions)
         else:
             return "Not implemented", 501
     except Exception as err:
@@ -70,3 +70,24 @@ def reject_article(review_id):
             return {"error": "Failed to reject the review"}, 500
     except Exception as err:
         return {"error": str(err)}, 500
+    
+@review_bp.route('/<int:review_id>/submit_review', methods=['POST'])
+@login_required
+def submit_review(review_id):
+    db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
+    answers = {}
+
+    if request.method != 'POST':
+        flash("Invalid request method.", "error")
+        return redirect(url_for("review.list_reviewer_reviews"))
+    
+    for question_id, answer in request.form.items():
+        if question_id.startswith("question_"):
+            question_id_int = int(question_id.split("_")[1])
+            answers[question_id_int] = answer
+    
+    if db.save_review_answers(review_id, answers):
+        return redirect(url_for("review.list_reviewer_reviews"))
+    else:
+        flash(f"Error submitting review", "error")
+        return "Error submitting review.", 500

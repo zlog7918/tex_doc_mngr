@@ -5,7 +5,7 @@
 </head>
 <body>
     <h1>Answer Questions</h1>
-    <form method="POST">
+    <form method="POST" action="/reviews/{{ review_id }}/submit_review">
         {% for question in questions %}
             <label>{{ question["text"] }}</label><br>
             {% if question["is_abc"] %}
