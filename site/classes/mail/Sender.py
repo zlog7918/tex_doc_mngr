@@ -4,7 +4,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 class SenderLoginOpt(StrEnum):
-    TSL='tsl'
+    TLS='tls'
     SSL='ssl'
     PLAIN='plain'
     NONE='none'
@@ -51,7 +51,7 @@ class Sender:
             case SenderLoginOpt.SSL:
                 # Not tested yet
                 mail=smtplib.SMTP_SSL(self.__host, self.__port)
-            case SenderLoginOpt.TSL:
+            case SenderLoginOpt.TLS:
                 mail.ehlo()
                 mail.starttls()
             case SenderLoginOpt.NONE:

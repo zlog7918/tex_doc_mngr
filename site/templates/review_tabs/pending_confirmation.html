@@ -41,7 +41,29 @@
             });
         }
         function rejectArticle() {
-            alert('Article Rejected!');
+            fetch(`/reviews/{{ review_id }}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Unknown error occurred');
+                    });
+                }
+            })
+            .then(data => {
+                alert(data.message);
+                window.location.reload();
+
+            })
+            .catch(error => {
+                alert('Failed to update status: ' + error.message);
+            });
         }
     </script>
 </body>

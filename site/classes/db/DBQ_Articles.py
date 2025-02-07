@@ -181,30 +181,18 @@ class DBQ_Articles(DB_Queries):
                                 {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
             return None
 
-    def create_round(self, article_id: int, round_number: int) -> bool:
+    def create_round(self, article_id: int, round_number: int, deadline_confirm: str, deadline_submit: str) -> bool:
         try:
-            self.__db.query('INSERT INTO rounds (article_id, round_number) VALUES (%(article_id)s, %(round_number)s);',
-                            {'article_id': article_id, 'round_number': round_number}, False)
+            self.__db.query('INSERT INTO rounds (article_id, round_number, q_set_id, deadline_confirm, deadline_submit) VALUES (%(article_id)s, %(round_number)s, %(q_set_id)s, %(deadline_confirm)s, %(deadline_submit)s);',
+                            {'article_id': article_id, 'round_number': round_number, 'q_set_id': 1, 'deadline_confirm': deadline_confirm, 'deadline_submit': deadline_submit}, False)
         except Exception as err:
             print("create: " + str(err))
-            print("err:" + str(err))
             self.__log_activity(inspect.currentframe().f_code.co_name, False,
                                 {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
             return False
         return True
 
-    def add_reviewer_to_article(self, article_id: int, reviewer_id: int, deadline_confirm: str,
-                                deadline_submit: str) -> bool:
-        # existing_reviews = [r for r in tmp_assigned_reviewers if r["article_id"] == article_id]
-        # round_number = max([r["round"] for r in existing_reviews], default=1)
-        # tmp_assigned_reviewers.append({
-        #     "article_id": article_id,
-        #     "round": round_number,
-        #     "reviewer_id": reviewer_id,
-        #     "deadline_confirm": deadline_confirm,
-        #     "deadline_submit": deadline_submit
-        # })
-
+    def add_reviewer_to_article(self, article_id: int, reviewer_id: int) -> bool:
         try:
             round_query = "SELECT id FROM rounds WHERE article_id = %(article_id)s ORDER BY round_number DESC LIMIT 1"
             round_result = self.__db.query(round_query, {'article_id': article_id})
@@ -212,14 +200,12 @@ class DBQ_Articles(DB_Queries):
             if round_result:
                 round_id = round_result[0][0]
                 review_query = """
-                INSERT INTO reviews (round_id, reviewer_id, status, deadline_confirm, deadline_submit)
-                VALUES (%(round_id)s, %(reviewer_id)s, 'Pending confirmation', %(deadline_confirm)s, %(deadline_submit)s)
+                INSERT INTO reviews (round_id, reviewer_id, status)
+                VALUES (%(round_id)s, %(reviewer_id)s, 'Pending confirmation')
                 """
                 self.__db.query(review_query, {
-                    'round_id': round_id,
-                    'reviewer_id': reviewer_id,
-                    'deadline_confirm': deadline_confirm,
-                    'deadline_submit': deadline_submit
+                    'round_id': round_id, 
+                    'reviewer_id': reviewer_id
                 }, False)
             else:
                 print("round_result is None")
@@ -271,6 +257,37 @@ class DBQ_Articles(DB_Queries):
             self.__log_activity(inspect.currentframe().f_code.co_name, False,
                                 {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
             return []
+        
+    def get_assigned_reviews(self, article_id) -> list[Review]:
+        try:
+            result = self.__db.query(
+                '''
+                SELECT id, reviewer_id, round_id, review_text, status
+                FROM reviews 
+                WHERE round_id IN 
+                    (SELECT id FROM rounds WHERE article_id = %(article_id)s ORDER BY rounds.round_number DESC LIMIT 1)
+                ''',
+                {'article_id': article_id}
+            )
+            if result:
+                reviews = [
+                    Review(
+                        id = row[0],
+                        reviewer_id = row[1],
+                        round_id = row[2],
+                        review_text = row[3],
+                        status = row[4]
+                    )
+                    for row in result
+                ]
+                return reviews
+            else:
+                return []
+        except Exception as err:
+            print("error: " + str(err))
+            self.__log_activity(inspect.currentframe().f_code.co_name, False,
+                                {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+            return []
 
     def get_articles_as_reviewer(self, reviewer_id: int) -> list[Article, int]:
         try:
@@ -308,7 +325,7 @@ class DBQ_Articles(DB_Queries):
         try:
             result = self.__db.query(
                 '''
-                SELECT r.id, r.round_id, r.review_text, r.status, r.deadline_confirm, r.deadline_submit, ro.article_id
+                SELECT r.id, r.round_id, r.review_text, r.status, ro.article_id
                 FROM reviews r
                 INNER JOIN rounds ro ON r.round_id = ro.id
                 WHERE r.reviewer_id = %(reviewer_id)s
@@ -323,8 +340,6 @@ class DBQ_Articles(DB_Queries):
                         round_id=row[1],
                         review_text=row[2],
                         status=row[3],
-                        deadline_confirm=row[4],
-                        deadline_submit=row[5],
                         reviewer_id=reviewer_id,
                     ),
                     row[6]
@@ -339,7 +354,7 @@ class DBQ_Articles(DB_Queries):
         try:
             result = self.__db.query(
                 '''
-                SELECT r.id, r.round_id, r.review_text, r.status, r.deadline_confirm, r.deadline_submit
+                SELECT r.id, r.round_id, r.review_text, r.status
                 FROM reviews r
                 JOIN rounds ro ON r.round_id = ro.id
                 WHERE ro.article_id = %(article_id)s
@@ -352,8 +367,6 @@ class DBQ_Articles(DB_Queries):
                 round_id=result[1],
                 review_text=result[2],
                 status=result[3],
-                deadline_confirm=result[4],
-                deadline_submit=result[5],
                 reviewer_id=reviewer_id,
             )
         except Exception as err:
@@ -394,6 +407,123 @@ class DBQ_Articles(DB_Queries):
             return False
         return True
 
+    def get_questions_with_answers(self, q_set_id: int) -> list[dict]:
+        try:
+            query_questions = """
+                SELECT q.id, q.question, q.is_abc 
+                FROM questions q
+                JOIN question_set_questions qs ON qs.question_id = q.id
+                WHERE qs.question_set_id = %(q_set_id)s
+            """
+            questions = self.__db.query(query_questions, {'q_set_id': q_set_id})
+
+            result = []
+            for question in questions:
+                question_data = {
+                    "id": question[0],
+                    "text": question[1],
+                    "is_abc": question[2],
+                    "answers": []
+                }
+                if question[2]:  # Jeśli is_abc = True, pobierz odpowiedzi
+                    query_answers = """
+                        SELECT id, answer 
+                        FROM question_a 
+                        WHERE question_id = %(question_id)s
+                    """
+                    answers = self.__db.query(query_answers, {'question_id': question[0]})
+                    question_data["answers"] = [{"id": ans[0], "answer": ans[1]} for ans in answers]
+
+                result.append(question_data)
+            return result
+        except Exception as err:
+            print(f"Error fetching questions: {err}")
+            self.__log_activity(inspect.currentframe().f_code.co_name, False,
+                                {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+            return []
+
+    # def save_review_answers(self, review_id: int, answers: dict[int, str]) -> bool:
+    #     try:
+    #         for question_id, answer in answers.items():
+    #             query_insert = """
+    #                 INSERT INTO answers (review_id, question_id, answer)
+    #                 VALUES (%(review_id)s, %(question_id)s, %(answer)s)
+    #             """
+    #             self.__db.query(query_insert, {
+    #                 'review_id': review_id,
+    #                 'question_id': question_id,
+    #                 'answer': answer
+    #             }, commit=False)
+    #         self.__db.commit()
+    #         return True
+    #     except Exception as err:
+    #         print(f"Error saving answers: {err}")
+    #         self.__log_activity(inspect.currentframe().f_code.co_name, False,
+    #                             {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+    #         return False
+
+    def save_review_answers(self, review_id: int, answers: dict[int, str]) -> bool:
+        try:
+            for question_id, answer in answers.items():
+                query_insert = """
+                    INSERT INTO answers (review_id, question_id, answer)
+                    VALUES (%(review_id)s, %(question_id)s, %(answer)s)
+                """
+                self.__db.query(query_insert, {
+                    'review_id': review_id,
+                    'question_id': question_id,
+                    'answer': answer
+                }, False)
+            
+            # Update the review status to 'Reviewed'
+            query_update_status = """
+                UPDATE reviews
+                SET status = 'Reviewed'
+                WHERE id = %(review_id)s
+            """
+            self.__db.query(query_update_status, {'review_id': review_id}, False)
+            
+            return True
+        except Exception as err:
+            print(f"Error saving answers: {err}")
+            self.__log_activity(inspect.currentframe().f_code.co_name, False,
+                                {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+            return False
+
+    def get_questions_by_article(self, article_id: int):
+        try:
+            # TODO: check if this is the right round
+            query = """
+                SELECT q.id, q.question, q.is_abc
+                FROM questions q
+                JOIN question_set_questions qsq ON q.id = qsq.question_id
+                JOIN question_set qs ON qsq.question_set_id = qs.id
+            """
+            result = self.__db.query(query, {'article_id': article_id})
+            if result:
+                questions = [{"id": row[0], "text": row[1], "is_abc": row[2]} for row in result]
+                return questions
+            else:
+                return []
+        except Exception as err:
+            print(f"Error get questions: {err}")
+            self.__log_activity(inspect.currentframe().f_code.co_name, False,
+                                {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+            return None 
+
+    def get_question_answers(self, question_id: int):
+        query = """
+            SELECT id, answer
+            FROM question_a
+            WHERE question_id = %(question_id)s
+        """
+        result = self.__db.query(query, {'question_id': question_id})
+        if result:
+            answers = [{"id": row[0], "answer": row[1]} for row in result]
+            return answers
+        else:
+            return []
+
     def is_connection(self) -> bool:
         return self.__db is not None
 
@@ -414,14 +544,3 @@ class DBQ_Articles(DB_Queries):
 
     def __get_timestamp(self) -> datetime:
         return datetime.today().astimezone(tz=timezone.utc)
-
-
-# Dane pomocnicze do wyboru recenzentów (przykładowe)
-tmp_reviewers = [
-    {"id": 1, "name": "Reviewer A"},
-    {"id": 2, "name": "Reviewer B"},
-    {"id": 3, "name": "Reviewer C"},
-    {"id": 4, "name": "Reviewer D"},
-]
-
-tmp_assigned_reviewers = []

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Review Questions</title>
+</head>
+<body>
+    <h1>Answer Questions</h1>
+    <form method="POST" action="/reviews/{{ review_id }}/submit_review">
+        {% for question in questions %}
+            <label>{{ question["text"] }}</label><br>
+            {% if question["is_abc"] %}
+                {% for option in question["answers"] %}
+                    <input type="radio" id="option{{ option["id"] }}" name="question_{{ question['id'] }}" value="{{ option['answer'] }}" required>
+                    <label for="option{{ option["id"] }}">{{ option["answer"] }}</label><br>
+                {% endfor %}
+            {% else %}
+                <input type="text" name="question_{{ question['id'] }}" required><br>
+            {% endif %}
+        {% endfor %}
+        <button type="submit">Submit</button>
+    </form>
+</body>
+</html>

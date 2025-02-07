@@ -36,6 +36,7 @@ def show_articles():
 
 
 @articles_bp.route('/<int:article_id>')
+@login_required
 def article_details(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
@@ -47,13 +48,11 @@ def article_details(article_id):
 
     if article.status == "Submitted":
         return render_template("article_submitted.html", article=article)
-
-    # Renderowanie odpowiedniego szablonu dla treści zakładki
-    if article.status == "Accepted":
+    elif article.status == "Accepted":
         reviewers = db.get_available_reviewers(article_id)
         assigned_reviewers = db.get_assigned_reviewers(article_id)
-        tab_content = render_template("round_tabs/accepted.html", article=article, reviewers=reviewers,
-                                      assigned_reviewers=assigned_reviewers)
+        assigned_reviews = db.get_assigned_reviews(article_id)
+        tab_content = render_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers, reviews=assigned_reviews)
     elif article.status == "In review":
         reviews_remaining = 3
         if article.rounds:
@@ -61,13 +60,16 @@ def article_details(article_id):
         tab_content = render_template("round_tabs/in_review.html", article=article, reviews_remaining=reviews_remaining)
     elif article.status == "Reviewed":
         tab_content = render_template("round_tabs/reviewed.html", article=article)
+    elif article.status == "Rejected":
+        return render_template("round_tabs/rejected.html")
     else:
         tab_content = "<p>No content available for this status.</p>"
 
-    return render_template("article_reviewed.html", article=article, tab_content=tab_content)
+    return render_template("article_round_base.html", article=article, tab_content=tab_content)
 
 
 @articles_bp.route('/<int:article_id>/accept', methods=['POST'])
+@login_required
 def accept_article(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:
@@ -80,27 +82,14 @@ def accept_article(article_id):
         if not result:
             return {"warning": "Article status not updated"}, 500
 
-        # Pobranie numeru ostatniej rundy dla artykułu
-        last_round_number = db.get_last_round_number(article_id)
-
-        if last_round_number is not None:
-            new_round_number = last_round_number + 1
-            result = db.create_round(article_id, new_round_number)
-            print("result")
-            if not result:
-                print("not result")
-                return {"warning": "New round not created"}, 500
-        else:
-            print("else")
-            return {"warning": "New round not created"}, 500
-
-        return {"message": f"Article status updated to Accepted. New round {new_round_number} created."}, 200
+        return {"message": f"Article status updated to Accepted."}, 200
 
     except Exception as err:
         return {"error": str(err)}, 500
 
 
 @articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
+@login_required
 def add_round(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     article = db.get_article(article_id)
@@ -117,39 +106,49 @@ def add_round(article_id):
     article.rounds.append(new_round)
     return jsonify({"success": True})
 
-
-@articles_bp.route('/assign_reviewers/<int:article_id>', methods=['POST'])
+@articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
+@login_required
 def assign_reviewers(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
 
     # Pobieranie wybranych recenzentów z formularza
-    selected_reviewer = request.form.get('reviewer')
+    assigned_reviewers = request.form.get('assigned_reviewers[]')
     deadline_confirm = request.form.get('deadline_confirm')
     deadline_submit = request.form.get('deadline_submit')
-
-    if not selected_reviewer:
-        return "No reviewer selected", 400
-
+    
+    if not assigned_reviewers:
+        return "No reviewers assigned.", 400
+    
     try:
-        db.add_reviewer_to_article(article_id, int(selected_reviewer), deadline_confirm, deadline_submit)
+        assigned_reviewers_ids = [int(rid.strip()) for rid in assigned_reviewers.split(',')]
+        last_round_number = db.get_last_round_number(article_id)
+        new_round_number = last_round_number + 1 if last_round_number else 1
+        db.create_round(article_id, new_round_number, deadline_confirm, deadline_submit)
+
+        for reviewer_id in assigned_reviewers_ids:
+            db.add_reviewer_to_article(article_id, reviewer_id)
+
+        update_status_result = db.update_article_status(article_id, 3)
+        if not update_status_result:
+            return {"error": "Failed to update article status to 3."}, 500
+                    
         return redirect(url_for('articles.article_details', article_id=article_id))
     except Exception as err:
         return str(err), 500
 
 
 @articles_bp.route('/<int:article_id>/reject', methods=['POST'])
+@login_required
 def reject_article(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
-    article = db.get_article(article_id)
-    if not article:
-        return jsonify({"success": False}), 404
-
-    # Oznaczanie artykułu jako odrzucony
     result = db.update_article_status(article_id, 5)
+    if not result:
+            return {"warning": "Article status not updated"}, 500
     return jsonify({"success": True})
 
 
 @articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
+@login_required
 def update_article_status(article_id):
     db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
     try:

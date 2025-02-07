@@ -1,12 +1,18 @@
 <div>
     <h2>Assign Reviewers</h2>
-    <form action="/articles/assign_reviewers/{{ article.id }}" method="post">
+    <form action="/articles/{{ article.id }}/assign_reviewers" method="post">
         <label for="reviewer">Select a reviewer:</label>
         <select id="reviewer" name="reviewer" required>
             {% for reviewer in reviewers %}
                 <option value="{{ reviewer.id }}">{{ reviewer.nick }}</option>
             {% endfor %}
         </select>
+        <button type="button" id="addReviewer">Add Reviewer</button>
+
+        <h3>Assigned Reviewers:</h3>
+        <ul id="assignedReviewers"></ul>
+
+        <input type="hidden" id="assignedReviewersInput" name="assigned_reviewers[]">
 
         <label for="deadline_confirm">Confirmation Deadline:</label>
         <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required>
@@ -14,13 +20,63 @@
         <label for="deadline_submit">Submission Deadline:</label>
         <input type="datetime-local" id="deadline_submit" name="deadline_submit" required>
 
-        <button type="submit">Add reviewer</button>
+        <button type="submit">Save</button>
     </form>
 
-    <h3>Assigned Reviewers:</h3>
-    <ul>
-        {% for reviewer in assigned_reviewers %}
-            <li>{{ reviewer.nick }}</li>
-        {% endfor %}
-    </ul>
+    <!-- <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+    <table>
+        <thead>
+            <tr>
+                <th>Reviewer</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for review in reviews %}
+                <tr>
+                    <td>{{review.reviewer_id}}</td>
+                    <td>{{review.status}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table> -->
 </div>
+<script>
+    document.getElementById('addReviewer').addEventListener('click', function () {
+        const reviewerSelect = document.getElementById('reviewer');
+        const selectedReviewerId = reviewerSelect.value;
+        const selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
+
+        if (!selectedReviewerId) {
+            alert('Please select a reviewer.');
+            return;
+        }
+
+        const assignedReviewersList = document.getElementById('assignedReviewers');
+        const newReviewerItem = document.createElement('li');
+        newReviewerItem.textContent = selectedReviewerName;
+        newReviewerItem.setAttribute('data-id', selectedReviewerId);
+        assignedReviewersList.appendChild(newReviewerItem);
+
+        // Aktualizacja ukrytego pola z listą recenzentów
+        const hiddenInput = document.getElementById('assignedReviewersInput');
+        const currentReviewers = hiddenInput.value ? hiddenInput.value.split(',') : [];
+        if (!currentReviewers.includes(selectedReviewerId)) {
+            currentReviewers.push(selectedReviewerId);
+        }
+        hiddenInput.value = currentReviewers.join(',');
+    });
+</script>
