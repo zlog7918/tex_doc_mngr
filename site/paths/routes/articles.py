@@ -229,11 +229,13 @@ def upload_file():
                 subprocess.run(
                     ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
                      "-output-directory", get_upload_folder(), tex_path],
+                    cwd=get_upload_folder(),
                     check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
                 subprocess.run(
                     ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
                      "-output-directory", get_upload_folder(), tex_path],
+                    cwd=get_upload_folder(),
                     check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
 
@@ -280,11 +282,13 @@ def generate_preview():
         subprocess.run(
             ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
              "-output-directory", get_temp_folder(), tex_path],
+            cwd=get_temp_folder(),
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
         subprocess.run(
             ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
              "-output-directory", get_temp_folder(), tex_path],
+            cwd=get_temp_folder(),
             check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         )
 
