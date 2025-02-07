@@ -1,12 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="pl">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{% block title %} TDM {% endblock %}</title>
-        <script src="{{url_last_edit('/static/js/funcs.js')}}"></script>
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+        <script src="{{ url_for('static', filename='js/funcs.js') }}"></script>
+        <style>
+            html, body {
+                font-family: 'Poppins', sans-serif;
+                margin: 0;
+                padding: 0;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                background: #f9f9f9;
+            }
+
+            .navbar {
+                background: #5a3d90;
+                color: white;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 15px 20px;
+                font-size: 18px;
+                font-weight: 600;
+                flex-shrink: 0;
+            }
+
+            .navbar .logo {
+                text-decoration: none;
+                color: white;
+                font-size: 22px;
+            }
+
+            .navbar .settings {
+                cursor: pointer;
+                font-size: 20px;
+                position: relative;
+            }
+
+            .dropdown {
+                display: none;
+                position: absolute;
+                right: 0;
+                top: 40px;
+                background: white;
+                border-radius: 5px;
+                box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+                width: 150px;
+                padding: 10px;
+                z-index: 10;
+            }
+
+            .dropdown a {
+                display: block;
+                padding: 8px;
+                text-decoration: none;
+                color: #333;
+                font-size: 16px;
+            }
+
+            .dropdown a:hover {
+                background: #f3f1f9;
+            }
+
+            .settings:hover .dropdown {
+                display: block;
+            }
+
+            .container {
+                flex-grow: 1;
+                padding: 20px;
+                overflow: auto; 
+            }
+        </style>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const settings = document.querySelector('.settings');
+                const dropdown = document.querySelector('.dropdown');
+
+                settings.addEventListener('click', function(event) {
+                    event.stopPropagation();
+                    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+                });
+
+                document.addEventListener('click', function() {
+                    dropdown.style.display = 'none';
+                });
+            });
+        </script>
     </head>
     <body>
-        {% block body %} {% endblock %}
+        <div class="navbar">
+            <a href="/" class="logo">(La)TeX Document Manager</a>
+            <div class="settings">
+                PL | EN 
+                <div class="dropdown">
+                    <a href="?lang=pl">Polski</a>
+                    <a href="?lang=en">English</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            {% block body %} {% endblock %}
+        </div>
+
     </body>
 </html>

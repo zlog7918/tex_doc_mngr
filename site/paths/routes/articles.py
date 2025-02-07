@@ -1,9 +1,10 @@
 from classes.article import Article
 from classes.db.DBQ_Articles import DBQ_Articles
 from classes.db.DB_Factory import DB_Factory, DB_QueriesOpt
-from flask import request, redirect, url_for, Blueprint, jsonify, render_template
+from classes.utils.utils import render_base_template
+from flask import request, redirect, url_for, Blueprint, jsonify
 from flask_login import login_required, current_user
-articles_bp = Blueprint("articles", __name__, template_folder="templates")
+articles_bp = Blueprint("articles", __name__)
 
 '''
 Submitted - artykół przesłany przez autora - nowy lub poprawiony
@@ -23,7 +24,7 @@ def show_articles():
         articles = db.get_articles_as_editor(current_user.get__id())
     except Exception as err:
         return str(err), 500
-    return render_template("articles.html", articles=articles)
+    return render_base_template("articles.html", articles=articles)
 
 @articles_bp.route('/<int:article_id>')
 def article_details(article_id):
@@ -36,24 +37,24 @@ def article_details(article_id):
         return "Article not found", 404
 
     if article.status == "Submitted":
-        return render_template("article_submitted.html", article=article)
+        return render_base_template("article_submitted.html", article=article)
 
     # Renderowanie odpowiedniego szablonu dla treści zakładki
     if article.status == "Accepted":
         reviewers = db.get_available_reviewers(article_id)
         assigned_reviewers = db.get_assigned_reviewers(article_id)
-        tab_content = render_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers)
+        tab_content = render_base_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers)
     elif article.status == "In review":
         reviews_remaining = 3
         if article.rounds:
             reviews_remaining = 3 - len(article["rounds"][-1]["reviews"]) if article["rounds"] else 3
-        tab_content = render_template("round_tabs/in_review.html", article=article, reviews_remaining=reviews_remaining)
+        tab_content = render_base_template("round_tabs/in_review.html", article=article, reviews_remaining=reviews_remaining)
     elif article.status == "Reviewed":
-        tab_content = render_template("round_tabs/reviewed.html", article=article)
+        tab_content = render_base_template("round_tabs/reviewed.html", article=article)
     else:
         tab_content = "<p>No content available for this status.</p>"
 
-    return render_template("article_reviewed.html", article=article, tab_content=tab_content)
+    return render_base_template("article_reviewed.html", article=article, tab_content=tab_content)
 
 @articles_bp.route('/<int:article_id>/accept', methods=['POST'])
 def accept_article(article_id):
