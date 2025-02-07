@@ -1,45 +1,95 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Articles List</title>
+{% extends "base.html" %}
+
+{% block title %} Lista Artykułów {% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
     <style>
-        table {
+        .main-content {
+            padding: 20px;
             width: 100%;
-            border-collapse: collapse;
+            box-sizing: border-box;
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+
+        h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: black;
+            margin-bottom: 20px;
+        }
+
+        .above-table-text {
             text-align: left;
+            font-size: 18px;
+            color: #2d1053;
+            margin-bottom: 10px;
         }
+
+        table {
+            width: 100%; 
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
         th {
-            background-color: #f4f4f4;
+            background: #5a3d90;
+            color: white;
+            font-weight: 600;
         }
+
+        tr:hover {
+            background: #f3f1f9;
+        }
+
+        .details-btn {
+            background: #5a3d90;
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .details-btn:hover {
+            background: #4a1e87;
+        }
+
     </style>
-</head>
-<body>
-    <h1>List of Articles</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Title</th>
-                <th>Author</th>
-                <th>Status</th>
-                <th>Details</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for article in articles %}
+
+    <div class="main-content">
+        <h1>Lista Artykułów</h1>
+
+        <table>
+            <thead>
                 <tr>
-                    <td>{{ article.title }}</td>
-                    <td>{{ article.author_id }}</td>
-                    <td>{{ article.status }}</td>
-                    <td><a href="{{ url_for('articles.article_details', article_id=article.id) }}">View Details</a></td>
+                    <th>Tytuł</th>
+                    <th>Autor</th>
+                    <th>Status</th>
+                    <th>Szczegóły</th>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</body>
-</html>
+            </thead>
+            <tbody>
+                {% for article in articles %}
+                    <tr>
+                        <td>{{ article.title }}</td>
+                        <td>{{ article.author_id }}</td>
+                        <td>{{ article.status }}</td>
+                        <td><a href="{{ url_for('articles.article_details', article_id=article.id) }}" class="details-btn">Zobacz</a></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+{% endblock %}

@@ -1,65 +1,148 @@
 {% extends "base.html" %}
 
 {% block body %}
-    <h1>Cześć, zalogowałeś się, proszę potwierdzić swoje konto kodem z mail'a:</h1>
-    <form method="GET">
-        <button type="button">Wyloguj</button>
-    </form>
-    <script>
-        (function() {
-            let form;
-            let setup;
+<div class="container">
+    <div class="confirmation-box">
+        <h2>Potwierdzenie konta</h2>
+        <p>Cześć, dziękujemy za założenie konta! Proszę potwierdzić swoje konto kodem wysłanym na Twój e-mail.</p>
 
-            setup=()=>{
-                form=document.querySelector('body>h1+form');
-                let btn=form.querySelector('button');
-                btn.addEventListener('click', ()=>{
-                    ajax_json_call('/user/logout').then(data=>{
-                        if('error' in data)
-                            if(data['error'])
-                                alert(`Err: ${data['message']}`);
-                            else
-                                reload_page();
-                        else
-                            alert(`Err: ${JSON.stringify(data)}`);
-                    }, err=>{
-                        alert(`Err: ${JSON.stringify(err)}`);
-                    });
-                }, false);
-            };
+        <form id="approve-form">
+            <label>Kod potwierdzający:</label>
+            <input type="text" name="code" required>
+            <button type="button" id="approve-btn" class="primary-btn">Potwierdź</button>
+        </form>
+        
+        <hr>
 
-            setup();
-        })();
-    </script><br><br><br>
-    <form method="GET">
-        Kod: <input type="text" name="code"><br>
-        <br>
-        <button type="button">Potwierdź</button>
-    </form>
-    <script>
-        (function() {
-            let form;
-            let setup;
+        <form id="logout-form">
+            <button type="button" id="logout-btn" class="secondary-btn">Wyloguj</button>
+        </form>
+    </div>
+</div>
 
-            setup=()=>{
-                form=document.querySelector('body>br+form');
-                let btn=form.querySelector('button');
-                btn.addEventListener('click', ()=>{
-                    ajax_json_call('/user/approve', null, form).then(data=>{
-                        if('error' in data)
-                            if(data['error'])
-                                alert(`Err: ${data['message']}`);
-                            else
-                                reload_page();
-                        else
-                            alert(`Err: ${JSON.stringify(data)}`);
-                    }, err=>{
-                        alert(`Err: ${JSON.stringify(err)}`);
-                    });
-                }, false);
-            };
+<style>
+    /* Globalne ustawienia */
+body {
+    font-family: 'Poppins', sans-serif;
+    background: #f9f9f9;
+    margin: 0;
+    padding: 0;
+}
 
-            setup();
-        })();
-    </script>
+/* Układ kontenera */
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    padding: 20px;
+}
+
+/* Box potwierdzenia konta */
+.confirmation-box {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+    width: 400px;
+    text-align: center;
+}
+
+/* Nagłówek */
+.confirmation-box h2 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #2d1053;
+    margin-bottom: 15px;
+}
+
+/* Tekst */
+.confirmation-box p {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+/* Formularze */
+input {
+    width: 90%;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    padding: 12px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+/* Przyciski */
+button {
+    width: 90%;
+    padding: 12px;
+    border-radius: 5px;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Główne przyciski akcji */
+.primary-btn {
+    background: #5a3d90;
+    color: white;
+    transition: 0.3s;
+}
+
+.primary-btn:hover {
+    background: #4a1e87;
+}
+
+/* Drugorzędne przyciski */
+.secondary-btn {
+    background: #2d1053;
+    color: white;
+    transition: 0.3s;
+}
+
+.secondary-btn:hover {
+    background: #1f083c;
+}
+
+/* Linia oddzielająca */
+hr {
+    margin: 20px 0;
+    border: none;
+    height: 1px;
+    background: #ddd;
+}
+</style>
+
+<script>
+    document.getElementById("logout-btn").addEventListener("click", function () {
+        ajax_json_call('/user/logout').then(data => {
+            if ('error' in data) {
+                if (data['error'])
+                    alert(`Err: ${data['message']}`);
+                else
+                    window.location.reload();
+            } else {
+                alert(`Err: ${JSON.stringify(data)}`);
+            }
+        }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
+    });
+
+    document.getElementById("approve-btn").addEventListener("click", function () {
+        let form = document.getElementById("approve-form");
+        ajax_json_call('/user/approve', null, form).then(data => {
+            if ('error' in data) {
+                if (data['error'])
+                    alert(`Err: ${data['message']}`);
+                else
+                    window.location.reload();
+            } else {
+                alert(`Err: ${JSON.stringify(data)}`);
+            }
+        }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
+    });
+</script>
 {% endblock %}

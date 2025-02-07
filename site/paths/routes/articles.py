@@ -7,11 +7,8 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 import os
 import subprocess
-import tempfile
-import shutil
-from classes.utils.utils import get_temp_folder, get_upload_folder
-
-articles_bp = Blueprint("articles", __name__, template_folder="templates")
+from classes.utils.utils import get_temp_folder, get_upload_folder, render_base_template
+articles_bp = Blueprint("articles", __name__)
 
 '''
 Submitted - artykół przesłany przez autora - nowy lub poprawiony
@@ -32,7 +29,7 @@ def show_articles():
         articles = db.get_articles_as_editor(current_user.get__id())
     except Exception as err:
         return str(err), 500
-    return render_template("articles.html", articles=articles)
+    return render_base_template("articles.html", articles=articles)
 
 
 
@@ -51,17 +48,17 @@ def article_details(article_id):
         article.content=f'<br><embed src="{article.content}" width="800" height="500" type="application/pdf">'
 
     if article.status == "Submitted":
-        return render_template("article_submitted.html", article=article)
+        return render_base_template("article_submitted.html", article=article)
     elif article.status == "Accepted":
         reviewers = db.get_available_reviewers(article_id)
         assigned_reviewers = db.get_assigned_reviewers(article_id)
         assigned_reviews = db.get_assigned_reviews(article_id)
-        tab_content = render_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers, reviews=assigned_reviews)
+        tab_content = render_base_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers, reviews=assigned_reviews)
     elif article.status == "In review":
         reviews_remaining = 3
         if article.rounds:
             reviews_remaining = 3 - len(article["rounds"][-1]["reviews"]) if article["rounds"] else 3
-        tab_content = render_template("round_tabs/in_review.html", article=article, reviews_remaining=reviews_remaining)
+        tab_content = render_base_template("round_tabs/in_review.html", article=article, reviews_remaining=reviews_remaining)
     elif article.status == "Reviewed":
         grouped_answers = db.get_answers_as_editor(article_id)
         tab_content = render_template("round_tabs/reviewed.html", grouped_answers=grouped_answers)
