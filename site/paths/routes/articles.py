@@ -58,7 +58,8 @@ def article_details(article_id):
         reviews_remaining = 3
         if article.rounds:
             reviews_remaining = 3 - len(article["rounds"][-1]["reviews"]) if article["rounds"] else 3
-        tab_content = render_base_template("round_tabs/in_review.html", article=article, reviews_remaining=reviews_remaining)
+        reviews = db.get_assigned_reviews(article_id)
+        tab_content = render_base_template("round_tabs/in_review.html", article=article, reviews_remaining=reviews_remaining, reviews=reviews)
     elif article.status == "Reviewed":
         grouped_answers = db.get_answers_as_editor(article_id)
         tab_content = render_template("round_tabs/reviewed.html", grouped_answers=grouped_answers)

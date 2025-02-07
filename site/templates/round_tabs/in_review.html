@@ -1,5 +1,32 @@
 <div>
-    <h2>Review Status</h2>
-    <p>Reviews are {{ 'ongoing' if reviews_remaining > 0 else 'complete' }}.</p>
-    <p>Remaining reviews: {{ reviews_remaining }}</p>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+    </style>
+    <table>
+        <thead>
+            <tr>
+                <th>Reviewer</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for review in reviews %}
+                <tr>
+                    <td>{{review.reviewer_id}}</td>
+                    <td>{{review.status}}</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
