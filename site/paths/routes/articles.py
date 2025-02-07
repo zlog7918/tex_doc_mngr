@@ -59,7 +59,8 @@ def article_details(article_id):
             reviews_remaining = 3 - len(article["rounds"][-1]["reviews"]) if article["rounds"] else 3
         tab_content = render_template("round_tabs/in_review.html", article=article, reviews_remaining=reviews_remaining)
     elif article.status == "Reviewed":
-        tab_content = render_template("round_tabs/reviewed.html", article=article)
+        grouped_answers = db.get_answers_as_editor(article_id)
+        tab_content = render_template("round_tabs/reviewed.html", grouped_answers=grouped_answers)
     elif article.status == "Rejected":
         return render_template("round_tabs/rejected.html")
     else:
@@ -131,7 +132,7 @@ def assign_reviewers(article_id):
         update_status_result = db.update_article_status(article_id, 3)
         if not update_status_result:
             return {"error": "Failed to update article status to 3."}, 500
-                    
+
         return redirect(url_for('articles.article_details', article_id=article_id))
     except Exception as err:
         return str(err), 500

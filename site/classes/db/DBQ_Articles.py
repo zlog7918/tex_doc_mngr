@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 import random
 import inspect
@@ -523,6 +524,46 @@ class DBQ_Articles(DB_Queries):
             return answers
         else:
             return []
+        
+    def check_reviews_and_update_article_status(self, review_id: int):
+        query = '''
+            SELECT status
+            FROM reviews
+            WHERE round_id = (SELECT round_id FROM reviews WHERE id = %(review_id)s)
+        '''
+        result = self.__db.query(query, {'review_id': review_id})
+        if result:
+            all_reviewed = all(str(status) == 'Reviewed' for status in result[0])
+            print("all_reviewed is " + str(all_reviewed))
+            if all_reviewed:
+                query = '''
+                    SELECT article_id
+                    FROM rounds
+                    WHERE id = (SELECT round_id FROM reviews WHERE id = %(review_id)s)
+                '''
+                result = self.__db.query(query, {'review_id': review_id})
+                self.update_article_status(int(result[0][0]), 4)
+
+    def get_answers_as_editor(self, article_id) -> dict[str, list[dict]]:
+        query = '''
+            SELECT u.nick, q.question, a.answer
+            FROM answers a
+            JOIN questions q ON q.id = a.question_id
+            JOIN reviews r ON r.id = a.review_id
+            JOIN usr u ON u.id = r.reviewer_id
+            WHERE a.review_id IN
+                (SELECT id FROM reviews WHERE round_id = 
+                    (SELECT id FROM rounds WHERE article_id = %(article_id)s ORDER BY rounds.round_number DESC LIMIT 1))
+            '''
+        result = self.__db.query(query, {'article_id': article_id})
+        if result:
+            grouped_answers = defaultdict(list)
+            if result:
+                for row in result:
+                    grouped_answers[row[0]].append({ "question": row[1], "answer": row[2] })
+            
+            return grouped_answers
+        return []
 
     def is_connection(self) -> bool:
         return self.__db is not None

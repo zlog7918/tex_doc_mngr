@@ -90,6 +90,9 @@ def submit_review(review_id):
             answers[question_id_int] = answer
     
     if db.save_review_answers(review_id, answers):
+        # TODO: replace with observer
+        db.check_reviews_and_update_article_status(review_id)
+
         return redirect(url_for("review.list_reviewer_reviews"))
     else:
         flash(f"Error submitting review", "error")

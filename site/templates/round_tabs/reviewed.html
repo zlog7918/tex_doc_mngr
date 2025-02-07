@@ -1,8 +1,15 @@
 <div>
     <h2>Reviews Summary</h2>
     <ul>
-        {% for review in article.rounds[-1].reviews %}
-            <li>{{ review }}</li>
+        {% for nick, answers in grouped_answers.items() %}
+            <li>
+                <strong>Reviewer: {{ nick }}</strong>
+                <ul>
+                    {% for answer in answers %}
+                        <li> <strong>{{ answer.question }}</strong><br>{{ answer.answer }}</li>
+                    {% endfor %}
+                </ul>
+            </li>
         {% endfor %}
     </ul>
 </div>
