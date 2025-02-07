@@ -8,7 +8,7 @@
 <body>
     <h1>{{ article.title }}</h1>
     <p><strong>Author:</strong> {{ article.author }}</p>
-    <p><strong>Content:</strong> {{ article.content }}</p>
+    <p><strong>Content:</strong> {{ article.content|safe }}</p>
     
     <div style="margin-top: 20px;">
         <button onclick="acceptArticle()">Accept</button>
