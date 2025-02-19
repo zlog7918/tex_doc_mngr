@@ -1,6 +1,6 @@
 <div>
     <h2>Assign Reviewers</h2>
-    <form action="/articles/{{ article.id }}/assign_reviewers" method="post">
+    <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post">
         <label for="reviewer">Select a reviewer:</label>
         <select id="reviewer" name="reviewer" required>
             {% for reviewer in reviewers %}

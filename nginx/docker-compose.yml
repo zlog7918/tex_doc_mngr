@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/templates/default.conf.template:ro
-      - ./site/static:${APP_MAIN_DIR}/static:ro
+      - ./src/static:${APP_MAIN_DIR}/static:ro
       - nginx_ssl:${CERT_DIR}:rw
     ports:
       - ${NGINX_OUTER_PORT}:80

@@ -66,7 +66,7 @@
         }
 
         function addRound() {
-            fetch(`/articles/{{ article.id }}/add_round`, { method: "POST" })
+            fetch(`/editor/articles/{{ article.id }}/add_round`, { method: "POST" })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -78,7 +78,7 @@
         }
 
         function rejectArticle() {
-            fetch(`/articles/{{ article.id }}/reject`, { method: "POST" })
+            fetch(`/editor/articles/{{ article.id }}/reject`, { method: "POST" })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {

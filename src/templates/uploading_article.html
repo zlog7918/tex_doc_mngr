@@ -48,7 +48,7 @@
                 let formData = new FormData();
                 formData.append("file", fileInput.files[0]);
 
-                let response = await fetch("/articles/generate-preview", {
+                let response = await fetch("/editor/articles/generate-preview", {
                     method: "POST",
                     body: formData
                 });
@@ -70,7 +70,7 @@
                 formData.append("title", title.value);
                 formData.append("editor", editor.value);
 
-                let response = await fetch("/articles/upload", {
+                let response = await fetch("/editor/articles/upload", {
                     method: "POST",
                     body: formData
                 });

@@ -7,7 +7,7 @@ from flask import request
 from typing import Callable
 from .DB_Queries import DB_Queries
 from datetime import datetime, timezone
-from classes.article.Review import Review
+from models.article.Review import Review
 from .db_drivers.DB_Driver import DB_Driver
 from ..utils.consts import TIME_TO_EXPIRE
 from ..article.Article import Article, ArticleStatus

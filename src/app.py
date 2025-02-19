@@ -1,10 +1,11 @@
 import os
-from paths.users.users import user_bp
-from flask import Flask, render_template
-from paths.routes.reviews import review_bp
-from classes.utils.utils import url_last_edit, render_base_template
-from paths.routes.articles import articles_bp
-from classes.usr.User import User, user_loader
+from routes.users.users import user_bp
+from flask import Flask
+from routes.reviewer.reviews import review_bp
+from models.utils.utils import render_base_template
+from routes.author.articles import articles_bp
+from routes.editor.articles import editor_articles_bp
+from models.usr.User import User, user_loader
 from flask_login import LoginManager, current_user
 
 app=Flask(__name__)
@@ -14,6 +15,7 @@ login_manager.init_app(app)
 
 app.secret_key=os.environ.get('FLASK_KEY', 'FLASK_KEY')
 
+app.register_blueprint(editor_articles_bp, url_prefix="/editor/articles")
 app.register_blueprint(articles_bp, url_prefix="/articles")
 app.register_blueprint(review_bp, url_prefix="/reviews")
 app.register_blueprint(user_bp, url_prefix="/user")

@@ -6,7 +6,7 @@ services:
       args:
         - APP_MAIN_DIR=${APP_MAIN_DIR}
     volumes:
-      - ./site:${APP_MAIN_DIR}/app:ro
+      - ./src:${APP_MAIN_DIR}/app:ro
       - doc_files:${DOC_FILES_DIR}:rw
     env_file:
       - ./.env

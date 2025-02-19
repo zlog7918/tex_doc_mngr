@@ -1,9 +1,9 @@
 from flask import Blueprint
-from classes.db.DBQ_Users import DBQ_Users
-from classes.mail.SendMail import SendMail
+from models.db.DBQ_Users import DBQ_Users
+from models.mail.SendMail import SendMail
 from flask import Blueprint, request, jsonify
-from classes.usr.User import User, user_loader
-from classes.db.DB_Factory import DB_Factory, DB_QueriesOpt
+from models.usr.User import User, user_loader
+from models.db.DB_Factory import DB_Factory, DB_QueriesOpt
 from flask_login import login_user, logout_user, login_required, current_user
 
 user_bp = Blueprint('user', __name__)

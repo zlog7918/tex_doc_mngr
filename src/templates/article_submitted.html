@@ -16,7 +16,7 @@
     </div>
     <script>
         function acceptArticle() {
-            fetch(`/articles/{{ article.id }}/accept`, {
+            fetch(`/editor/articles/{{ article.id }}/accept`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -41,7 +41,7 @@
             });
         }
         function rejectArticle() {
-            fetch(`/articles/{{ article.id }}/reject`, {
+            fetch(`/editor/articles/{{ article.id }}/reject`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'

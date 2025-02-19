@@ -85,7 +85,7 @@
                         <td>{{ article.title }}</td>
                         <td>{{ article.author_id }}</td>
                         <td>{{ article.status }}</td>
-                        <td><a href="{{ url_for('articles.article_details', article_id=article.id) }}" class="details-btn">Zobacz</a></td>
+                        <td><a href="{{ url_for('editor_articles.article_details', article_id=article.id) }}" class="details-btn">Zobacz</a></td>
                     </tr>
                 {% endfor %}
             </tbody>

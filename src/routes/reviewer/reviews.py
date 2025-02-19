@@ -1,8 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from classes.db.DB_Factory import DB_Factory, DB_QueriesOpt
-from classes.article.Review import Review
-from classes.db.DBQ_Articles import DBQ_Articles
-from classes.db import DB_Queries
+from models.db.DB_Factory import DB_Factory, DB_QueriesOpt
+from models.article.Review import Review
+from models.db.DBQ_Articles import DBQ_Articles
+from models.db import DB_Queries
 from flask_login import login_required, current_user
 
 review_bp = Blueprint("review", __name__)
