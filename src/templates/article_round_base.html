@@ -27,7 +27,7 @@
 </head>
 <body>
     <h1>{{ article.title }}</h1>
-    <p><strong>Author:</strong> {{ article.author }}</p>
+    <p><strong>Author:</strong> {{ article.author.nick }}</p>
     <div id="tabs">
         {% for round in article.rounds %}
             <div class="tab {% if loop.last %}active{% endif %}" data-index="{{ loop.index }}" onclick="showTab(this.getAttribute('data-index'))">
@@ -49,20 +49,10 @@
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelector(`.tab:nth-child(${index})`).classList.add('active');
 
-            // Pobieranie danych dla odpowiedniej rundy
-            const rounds = {{ article.rounds|tojson }};
-            const selectedRound = rounds[index - 1];
-            document.getElementById('tab-content').innerHTML = `
-                <p>Reviews for Round ${selectedRound.id}:</p>
-                <ul>${selectedRound.reviews.map(r => `<li>${r}</li>`).join('')}</ul>
-            `;
-
             const addRoundButton = document.getElementById('add-round');
-            if (index === rounds.length) {
-                addRoundButton.style.display = 'inline-block';
-            } else {
-                addRoundButton.style.display = 'none';
-            }
+            addRoundButton.style.display = 'none';
+            
+
         }
 
         function addRound() {

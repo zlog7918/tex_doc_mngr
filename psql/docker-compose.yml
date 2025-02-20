@@ -4,7 +4,7 @@ services:
       context: ./psql
       dockerfile: Dockerfile
     volumes:
-      - ./psql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      # - ./psql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - psql_data:/var/lib/postgresql/data/db-files:rw
     env_file:
       - ./.psql.env

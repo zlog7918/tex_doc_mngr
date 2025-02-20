@@ -443,25 +443,6 @@ class DBQ_Articles(DB_Queries):
                                 {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
             return []
 
-    # def save_review_answers(self, review_id: int, answers: dict[int, str]) -> bool:
-    #     try:
-    #         for question_id, answer in answers.items():
-    #             query_insert = """
-    #                 INSERT INTO answers (review_id, question_id, answer)
-    #                 VALUES (%(review_id)s, %(question_id)s, %(answer)s)
-    #             """
-    #             self.__db.query(query_insert, {
-    #                 'review_id': review_id,
-    #                 'question_id': question_id,
-    #                 'answer': answer
-    #             }, commit=False)
-    #         self.__db.commit()
-    #         return True
-    #     except Exception as err:
-    #         print(f"Error saving answers: {err}")
-    #         self.__log_activity(inspect.currentframe().f_code.co_name, False,
-    #                             {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
-    #         return False
 
     def save_review_answers(self, review_id: int, answers: dict[int, str]) -> bool:
         try:

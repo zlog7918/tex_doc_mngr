@@ -4,3 +4,6 @@ passlib
 psycopg2
 # psycopg2-binary
 Flask-Login
+sqlalchemy
+Flask-SQLAlchemy
+Flask-Migrate

@@ -7,8 +7,19 @@ from routes.author.articles import articles_bp
 from routes.editor.articles import editor_articles_bp
 from models.usr.User import User, user_loader
 from flask_login import LoginManager, current_user
+from models.seed_db import seed_data
 
-app=Flask(__name__)
+app = Flask(__name__)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@psql/{os.getenv('POSTGRES_DB')}"
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+from models.models import db
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+    seed_data(db)
 
 login_manager=LoginManager()
 login_manager.init_app(app)
