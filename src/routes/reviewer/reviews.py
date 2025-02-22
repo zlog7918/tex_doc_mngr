@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from models.db.DB_Factory import DB_Factory, DB_QueriesOpt
-from models.db.DBQ_Articles import DBQ_Articles
+from models.db.db_base import db
+from models.db.article.Round import Round
+from models.db.article.Review import Review
+from models.db.article.Article import Article
 from flask_login import login_required, current_user
-from models.models import QuestionSet, db
-from models.models import Answer, Article, Question, QuestionA, QuestionSetQuestions, Review, Round
+from flask import Blueprint, render_template, request, redirect, url_for, flash
+from models.db.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 review_bp = Blueprint("review", __name__)
 

@@ -1,10 +1,12 @@
-from models.db.DBQ_Articles import DBQ_Articles
-from models.db.DB_Factory import DB_Factory, DB_QueriesOpt
-from flask import request, redirect, url_for, Blueprint, jsonify, render_template
-from flask_login import login_required, current_user
-from models.models import Answer, Article, Question, Review, Round, User
+from models.db.db_base import db
+from models.db.usr.User import User
+from models.db.article.Round import Round
+from models.db.article.Review import Review
+from models.db.article.Article import Article
 from models.utils.utils import render_base_template
-from models.models import db
+from flask_login import login_required, current_user
+from models.db.article.Questions import Answer, Question
+from flask import request, redirect, url_for, Blueprint, jsonify, render_template
 editor_articles_bp = Blueprint("editor_articles", __name__)
 
 '''

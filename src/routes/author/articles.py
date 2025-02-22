@@ -1,12 +1,12 @@
-from models.usr.User import User, user_loader
-from models.db.DBQ_Articles import DBQ_Articles
-from models.db.DB_Factory import DB_Factory, DB_QueriesOpt
-from flask import request, Blueprint, jsonify, render_template, send_from_directory, send_file
-from flask_login import login_required, current_user
-from werkzeug.utils import secure_filename
 import os
 import subprocess
+from models.db.db_base import db
+from werkzeug.utils import secure_filename
+from models.db.article.Article import Article
+from models.db.usr.User import User, user_loader
+from flask_login import login_required, current_user
 from models.utils.utils import get_temp_folder, get_upload_folder
+from flask import request, Blueprint, jsonify, render_template, send_from_directory, send_file
 articles_bp = Blueprint("articles", __name__)
 
 def allowed_file(filename):
@@ -57,13 +57,13 @@ def upload_file():
                 )
 
                 if os.path.exists(pdf_path):
-                    db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
-                    url=f"/articles/uploads/{filename.replace('.tex', '.pdf')}"
                     user: User=current_user
+                    url=f"/articles/uploads/{filename.replace('.tex', '.pdf')}"
                     editor=user_loader(editor)
                     if editor is None:
                         return jsonify({"error": "Nie znany edytor"}), 500
-                    db.upload_article(user.get__id(), title, url, editor.get__id())
+                    db.session.add(Article(title=title, author_id=user.get__id(), content=url, status_id=1, editor_id=editor.get__id())) # TODO: change status_id
+                    db.session.commit()
                     return jsonify({"message": f"Plik {pdf_path} zapisany", "pdf_url": url}), 200
                 else:
                     return jsonify({"error": "Plik PDF nie został wygenerowany"}), 500
@@ -71,13 +71,13 @@ def upload_file():
             except subprocess.CalledProcessError as e:
                 return jsonify({"error": "Błąd podczas konwersji LaTeX na PDF"}), 500
 
-        db: DBQ_Articles = DB_Factory.get_db(DB_QueriesOpt.DB_Queries, DBQ_Articles)
         url=f"/articles/uploads/{filename}"
         user: User=current_user
         editor=user_loader(editor)
         if editor is None:
             return jsonify({"error": "Nie znany edytor"}), 500
-        db.upload_article(user.get__id(), title, url, editor.get__id())
+        db.session.add(Article(title=title, author_id=user.get__id(), content=url, status_id=1, editor_id=editor.get__id())) # TODO: change status_id
+        db.session.commit()
         return jsonify({"message": f"Plik {filename} został zapisany"}), 200
 
     except Exception as e:

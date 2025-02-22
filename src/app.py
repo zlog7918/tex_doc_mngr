@@ -1,20 +1,19 @@
 import os
-from routes.users.users import user_bp
 from flask import Flask
+from models.db.db_base import db
+from routes.users.users import user_bp
+from models.db.seed_db import seed_data
 from routes.reviewer.reviews import review_bp
-from models.utils.utils import render_base_template
 from routes.author.articles import articles_bp
-from routes.editor.articles import editor_articles_bp
-from models.usr.User import User, user_loader
+from models.db.usr.User import User, user_loader
 from flask_login import LoginManager, current_user
-from models.seed_db import seed_data
+from models.utils.utils import render_base_template
+from routes.editor.articles import editor_articles_bp
 
 app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@psql/{os.getenv('POSTGRES_DB')}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-from models.models import db
 db.init_app(app)
 
 with app.app_context():

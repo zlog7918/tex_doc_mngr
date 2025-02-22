@@ -1,6 +1,8 @@
-from models.models import User, Article, ArticleStatus, Question, QuestionA, QuestionSet, QuestionSetQuestions
+from .usr.User import User
+from flask_sqlalchemy import SQLAlchemy
+from .db_base import Article, ArticleStatus, Question, QuestionA, QuestionSet, QuestionSetQuestions
 
-def seed_data(db):
+def seed_data(db: SQLAlchemy) -> None:
     if not User.query.first():
         users = [
             User(nick='aaaa', email='a@a.a', passwd='$5$rounds=535000$00jq09uCU64jjV2X$TCH6GvPFp5XLIRI1OhwKGU1FgJdSXnlhkMm4qqqooW9', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
