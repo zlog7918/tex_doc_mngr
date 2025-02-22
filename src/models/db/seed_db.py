@@ -1,6 +1,7 @@
 from .usr.User import User
 from flask_sqlalchemy import SQLAlchemy
-from .db_base import Article, ArticleStatus, Question, QuestionA, QuestionSet, QuestionSetQuestions
+from .article.Article import Article, ArticleStatus
+from .article.Questions import Question, QuestionA, QuestionSet, QuestionSetQuestions
 
 def seed_data(db: SQLAlchemy) -> None:
     if not User.query.first():
