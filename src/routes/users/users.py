@@ -1,11 +1,11 @@
 import datetime
 from sqlalchemy import or_
 from flask import Blueprint
-from models.db.db_base import db
+from db.db_base import db
 from models.mail.SendMail import SendMail
 from models.utils.utils import generate_code
 from flask import Blueprint, request, jsonify
-from models.db.usr.User import User, user_loader
+from models.usr.User import User, user_loader
 from flask_login import login_user, logout_user, login_required, current_user
 
 user_bp = Blueprint('user', __name__)

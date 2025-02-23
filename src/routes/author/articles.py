@@ -1,12 +1,14 @@
 import os
 import subprocess
-from models.db.db_base import db
+from db.db_base import db
 from werkzeug.utils import secure_filename
-from models.db.article.Article import Article
-from models.db.usr.User import User, user_loader
+from models.article.Article import Article
+from models.usr.User import User, user_loader
 from flask_login import login_required, current_user
 from models.utils.utils import get_temp_folder, get_upload_folder
 from flask import request, Blueprint, jsonify, render_template, send_from_directory, send_file
+import db.queries.article as aq
+
 articles_bp = Blueprint("articles", __name__)
 
 def allowed_file(filename):
@@ -62,7 +64,7 @@ def upload_file():
                     editor=user_loader(editor)
                     if editor is None:
                         return jsonify({"error": "Nie znany edytor"}), 500
-                    db.session.add(Article(title=title, author_id=user.get__id(), content=url, status_id=1, editor_id=editor.get__id())) # TODO: change status_id
+                    db.session.add(Article(title=title, author_id=user.id, content=url, status_id=1, editor_id=editor.id)) # TODO: change status_id
                     db.session.commit()
                     return jsonify({"message": f"Plik {pdf_path} zapisany", "pdf_url": url}), 200
                 else:
@@ -76,7 +78,7 @@ def upload_file():
         editor=user_loader(editor)
         if editor is None:
             return jsonify({"error": "Nie znany edytor"}), 500
-        db.session.add(Article(title=title, author_id=user.get__id(), content=url, status_id=1, editor_id=editor.get__id())) # TODO: change status_id
+        db.session.add(Article(title=title, author_id=user.id, content=url, status_id=1, editor_id=editor.id)) # TODO: change status_id
         db.session.commit()
         return jsonify({"message": f"Plik {filename} został zapisany"}), 200
 

@@ -1,11 +1,11 @@
 import os
 from flask import Flask
-from models.db.db_base import db
+from db.db_base import db
 from routes.users.users import user_bp
-from models.db.seed_db import seed_data
+from db.seed_db import seed_data
 from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
-from models.db.usr.User import User, user_loader
+from models.usr.User import User, user_loader
 from flask_login import LoginManager, current_user
 from models.utils.utils import render_base_template
 from routes.editor.articles import editor_articles_bp
