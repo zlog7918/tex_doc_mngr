@@ -2,6 +2,7 @@ from models.article.Article import Article
 from models.utils.utils import render_base_template
 from flask_login import login_required, current_user
 from flask import request, redirect, url_for, Blueprint, jsonify, render_template
+from models.usr.User import User
 import db.queries.article as aq
 
 editor_articles_bp = Blueprint("editor_articles", __name__)
@@ -21,7 +22,8 @@ Final - artykół jest zakończony, nie wymaga poprawek, wersja końcowa
 @login_required
 def show_articles():
     try:
-        articles = Article.query.filter_by(editor_id=current_user.id).all()
+        user: User=current_user
+        articles = Article.query.filter_by(editor_id=int(user.get_id())).all()
     except Exception as err:
         return str(err), 500
     return render_base_template("articles.html", articles=articles)

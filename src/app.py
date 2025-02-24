@@ -5,7 +5,7 @@ from routes.users.users import user_bp
 from db.seed_db import seed_data
 from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
-from models.usr.User import User, user_loader
+from models.usr.User import User, user_loader, user_loader_by_nick
 from flask_login import LoginManager, current_user
 from models.utils.utils import render_base_template
 from routes.editor.articles import editor_articles_bp
@@ -31,13 +31,13 @@ app.register_blueprint(review_bp, url_prefix="/reviews")
 app.register_blueprint(user_bp, url_prefix="/user")
 
 @login_manager.user_loader
-def ul(nick: str|None) -> User|None:
-    return user_loader(nick)
+def ul(id: str|None) -> User|None:
+    return user_loader(id)
 
 @login_manager.request_loader
 def request_loader(request):
     nick=request.form.get('nick')
-    user=user_loader(nick)
+    user=user_loader_by_nick(nick)
     return user
 
 @app.route('/')

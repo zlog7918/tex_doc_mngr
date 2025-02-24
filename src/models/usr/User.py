@@ -15,7 +15,7 @@ class User(db.Model, UserMixin):
     code: Mapped[str] = mapped_column(Text, nullable=False)
     code_exp: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     def get_id(self) -> str:
-        return self.nick
+        return f"{self.id}"
     def get_nick(self) -> str:
         return self.nick
     def get_email(self) -> str:
@@ -45,6 +45,16 @@ class User(db.Model, UserMixin):
 
 
 def user_loader(nick: str|None) -> User|None:
+    if nick is None:
+        return None
+    id=int(nick)
+    q=User.query.where(User.id==id)
+    ret=db.session.execute(q).first()
+    if ret is None:
+        return None
+    return ret[0]
+
+def user_loader_by_nick(nick: str|None) -> User|None:
     if nick is None:
         return None
 

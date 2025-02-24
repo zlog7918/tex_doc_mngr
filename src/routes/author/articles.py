@@ -3,7 +3,7 @@ import subprocess
 from db.db_base import db
 from werkzeug.utils import secure_filename
 from models.article.Article import Article
-from models.usr.User import User, user_loader
+from models.usr.User import User, user_loader_by_nick
 from flask_login import login_required, current_user
 from models.utils.utils import get_temp_folder, get_upload_folder
 from flask import request, Blueprint, jsonify, render_template, send_from_directory, send_file
@@ -61,10 +61,10 @@ def upload_file():
                 if os.path.exists(pdf_path):
                     user: User=current_user
                     url=f"/articles/uploads/{filename.replace('.tex', '.pdf')}"
-                    editor=user_loader(editor)
+                    editor=user_loader_by_nick(editor)
                     if editor is None:
                         return jsonify({"error": "Nie znany edytor"}), 500
-                    db.session.add(Article(title=title, author_id=user.id, content=url, status_id=1, editor_id=editor.id)) # TODO: change status_id
+                    db.session.add(Article(title=title, author_id=int(user.get_id()), content=url, status_id=1, editor_id=int(editor.get_id()))) # TODO: change status_id
                     db.session.commit()
                     return jsonify({"message": f"Plik {pdf_path} zapisany", "pdf_url": url}), 200
                 else:
@@ -75,10 +75,10 @@ def upload_file():
 
         url=f"/articles/uploads/{filename}"
         user: User=current_user
-        editor=user_loader(editor)
+        editor=user_loader_by_nick(editor)
         if editor is None:
             return jsonify({"error": "Nie znany edytor"}), 500
-        db.session.add(Article(title=title, author_id=user.id, content=url, status_id=1, editor_id=editor.id)) # TODO: change status_id
+        db.session.add(Article(title=title, author_id=int(user.get_id()), content=url, status_id=1, editor_id=int(editor.get_id()))) # TODO: change status_id
         db.session.commit()
         return jsonify({"message": f"Plik {filename} został zapisany"}), 200
 

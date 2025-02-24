@@ -1,4 +1,5 @@
 from db.db_base import db
+from models.usr.User import User
 from models.article.Round import Round
 from models.article.Review import Review
 from models.article.Article import Article
@@ -15,7 +16,8 @@ review_bp = Blueprint("review", __name__)
 @login_required
 def list_reviewer_reviews():
     try:
-        articles = get_articles_as_reviewer(current_user.id)
+        user: User=current_user
+        articles = rq.get_articles_as_reviewer(int(user.get_id()))
     except Exception as err:
         return str(err), 500
     return render_template("reviews.html", articles=articles)
@@ -25,8 +27,9 @@ def list_reviewer_reviews():
 @login_required
 def article_details(article_id):
     try:
+        user: User=current_user
         article = aq.get_article(article_id)
-        review = rq.get_review(article_id, current_user.id)
+        review = rq.get_review(article_id, int(user.get_id()))
         if not review:
             return str("review not found"), 500
 

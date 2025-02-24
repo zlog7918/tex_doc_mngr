@@ -5,7 +5,7 @@ from db.db_base import db
 from models.mail.SendMail import SendMail
 from models.utils.utils import generate_code
 from flask import Blueprint, request, jsonify
-from models.usr.User import User, user_loader
+from models.usr.User import User, user_loader_by_nick
 from flask_login import login_user, logout_user, login_required, current_user
 
 user_bp = Blueprint('user', __name__)
@@ -15,7 +15,7 @@ user_bp = Blueprint('user', __name__)
 def login():
     nick = request.form.get('nick')
     passwd = request.form.get('passwd')
-    user = user_loader(nick)
+    user = user_loader_by_nick(nick)
     if user is None:
         return jsonify({'error': True, 'message': 'Nieprawidłowy login lub hasło'})
     if user.verify_pass(passwd):
@@ -63,7 +63,7 @@ def signup():
     
     db.session.add(User(nick=nick, email=email, passwd=passwd, approved=False, code=code, code_exp=datetime.datetime.now()+datetime.timedelta(seconds=code_exp)))
     db.session.commit()
-    user=user_loader(nick)
+    user=user_loader_by_nick(nick)
     login_user(user)
     return jsonify({'error': False,
                     'data': {'message': f'Proszę potwierdzić konto za pomocą kodu z mail\'a w: {code_exp/60}min'}})
