@@ -2,7 +2,7 @@ import os
 import subprocess
 from db.db_base import db
 from werkzeug.utils import secure_filename
-from models.article.Article import Article
+from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 from models.usr.User import User, user_loader_by_nick
 from flask_login import login_required, current_user
 from models.utils.utils import get_temp_folder, get_upload_folder
@@ -64,7 +64,8 @@ def upload_file():
                     editor=user_loader_by_nick(editor)
                     if editor is None:
                         return jsonify({"error": "Nie znany edytor"}), 500
-                    db.session.add(Article(title=title, author_id=int(user.get_id()), content=url, status_id=1, editor_id=int(editor.get_id()))) # TODO: change status_id
+                    status=ArticleStatus.query.where(ArticleStatus.stat==ArticleStatusEnum.Submitted).first()
+                    db.session.add(Article(title=title, author_id=int(user.get_id()), content=url, status_id=status.id, editor_id=int(editor.get_id())))
                     db.session.commit()
                     return jsonify({"message": f"Plik {pdf_path} zapisany", "pdf_url": url}), 200
                 else:
@@ -78,7 +79,8 @@ def upload_file():
         editor=user_loader_by_nick(editor)
         if editor is None:
             return jsonify({"error": "Nie znany edytor"}), 500
-        db.session.add(Article(title=title, author_id=int(user.get_id()), content=url, status_id=1, editor_id=int(editor.get_id()))) # TODO: change status_id
+        status=ArticleStatus.query.where(ArticleStatus.stat==ArticleStatusEnum.Submitted).first()
+        db.session.add(Article(title=title, author_id=int(user.get_id()), content=url, status_id=status.id, editor_id=int(editor.get_id())))
         db.session.commit()
         return jsonify({"message": f"Plik {filename} został zapisany"}), 200
 

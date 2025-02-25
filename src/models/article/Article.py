@@ -1,12 +1,22 @@
 from db.db_base import db
-from sqlalchemy import ForeignKey, String, Integer, Text
+from sqlalchemy import ForeignKey, String, Integer, Text, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from enum import Enum as PyEnum
+
+class ArticleStatusEnum(PyEnum):
+    Submitted='Submitted'
+    Accepted='Accepted'
+    InReview='In review'
+    Reviewed='Reviewed'
+    Rejected='Rejected'
+    NeedsCorrections='Needs Corrections'
+    Final='Final'
 
 class ArticleStatus(db.Model):
     __tablename__ = 'article_status'
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    stat: Mapped[str] = mapped_column(String(50), nullable=False)
+    stat: Mapped[ArticleStatusEnum] = mapped_column(Enum(ArticleStatusEnum), nullable=False, unique=True)
 
 class Article(db.Model):
     __tablename__ = 'articles'
