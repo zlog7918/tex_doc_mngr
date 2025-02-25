@@ -1,4 +1,4 @@
-from models.article.Article import Article
+from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 from models.utils.utils import render_base_template
 from flask_login import login_required, current_user
 from flask import request, redirect, url_for, Blueprint, jsonify, render_template
@@ -42,20 +42,20 @@ def article_details(article_id):
     if article.content.startswith('/'):
         article.content=f'<br><embed src="{article.content}" width="800" height="500" type="application/pdf">'
 
-    if article.status.stat == "Submitted":
+    if article.status.stat == ArticleStatusEnum.Submitted:
         return render_base_template("article_submitted.html", article=article)
-    elif article.status.stat == "Accepted":
+    elif article.status.stat == ArticleStatusEnum.Accepted:
         reviewers = aq.get_available_reviewers(article_id)
         assigned_reviewers = aq.get_assigned_reviewers(article_id)
         assigned_reviews = aq.get_assigned_reviews(article_id)
         tab_content = render_base_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers, reviews=assigned_reviews)
-    elif article.status.stat == "In review":
+    elif article.status.stat == ArticleStatusEnum.InReview:
         reviews = aq.get_assigned_reviews(article_id)
         tab_content = render_base_template("round_tabs/in_review.html", reviews=reviews)
-    elif article.status.stat == "Reviewed":
+    elif article.status.stat == ArticleStatusEnum.Reviewed:
         grouped_answers = aq.get_answers_as_editor(article_id)
         tab_content = render_template("round_tabs/reviewed.html", grouped_answers=grouped_answers)
-    elif article.status.stat == "Rejected":
+    elif article.status.stat == ArticleStatusEnum.Rejected:
         return render_template("round_tabs/rejected.html")
     else:
         tab_content = "<p>No content available for this status.</p>"
@@ -72,7 +72,8 @@ def accept_article(article_id):
             return "Article not found", 404
 
         # Zmiana statusu na 'Accepted'
-        result = aq.update_article_status(article_id, 2)
+        status_id=ArticleStatus.query.where(ArticleStatus.stat==ArticleStatusEnum.Accepted).first().id
+        result = aq.update_article_status(article_id, status_id)
         if not result:
             return {"warning": "Article status not updated"}, 500
 
@@ -82,7 +83,7 @@ def accept_article(article_id):
         return {"error": str(err)}, 500
 
 
-@editor_articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
+@editor_articles_bp.route('/<int:article_id>/add_round')
 @login_required
 def add_round(article_id):
     article = aq.get_article(article_id)
@@ -90,7 +91,7 @@ def add_round(article_id):
         return jsonify({"success": False}), 404
 
     # Sprawdzanie, czy artykuł spełnia wymagane statusy
-    if article.status not in ["Accepted", "In review", "Reviewed"]:
+    if article.status.stat not in {ArticleStatusEnum.Accepted, ArticleStatusEnum.InReview, ArticleStatusEnum.Reviewed}:
         return jsonify({"success": False}), 400
 
     # Dodawanie nowej rundy
@@ -146,10 +147,10 @@ def update_article_status(article_id):
         if not article:
             return {"error": "Article not found"}, 404
 
-        current_status = article["status"]
+        current_status = article["status"].stat
 
         # Sprawdzenie obecnego statusu i zmiana
-        if current_status == "Accepted":
+        if current_status == ArticleStatusEnum.Accepted:
             # Ustawienie statusu na "In review"
             result = aq.update_article_status(article_id, 3)
             if not result:
@@ -163,7 +164,7 @@ def update_article_status(article_id):
 
             return {"message": "Status updated to 'In review' and new review round created"}, 200
 
-        elif current_status == "In review":
+        elif current_status == ArticleStatusEnum.InReview:
             # Sprawdzenie liczby przesłanych recenzji
             latest_round = article["rounds"][-1] if article["rounds"] else None
             if not latest_round:

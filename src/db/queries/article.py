@@ -5,7 +5,7 @@ from models.article.Article import Article
 from models.article.Questions import Answer, Question
 from models.usr.User import User
 
-def get_article(article_id: int):
+def get_article(article_id: int) -> Article:
     return Article.query.get_or_404(article_id)
 
 
