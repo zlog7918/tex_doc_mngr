@@ -166,15 +166,11 @@ button {
 
     document.getElementById("login-btn").addEventListener("click", function () {
         let form = document.getElementById("login-form");
-        ajax_json_call('/user/login', null, form).then(data => {
-            if ('error' in data) {
-                if (data['error'])
-                    alert(`Błąd: ${data['message']}`);
-                else
-                    window.location.reload(); 
-            } else {
-                alert(`Błąd: ${JSON.stringify(data)}`);
-            }
+        ajax_json_call('/user/login', null, form).then(response => {
+            if (response.success)
+                window.location.reload();
+            else
+                alert(`Błąd: ${response.message}`);
         }).catch(err => alert(`Błąd: ${JSON.stringify(err)}`));
     });
 

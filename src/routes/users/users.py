@@ -1,12 +1,9 @@
-import datetime
-from sqlalchemy import or_
 from flask import Blueprint
 from db.db_base import db
-from models.mail.SendMail import SendMail
-from models.utils.utils import generate_code
 from flask import Blueprint, request, jsonify
-from models.usr.User import User, user_loader_by_nick
-from flask_login import login_user, logout_user, login_required, current_user
+from models.usr.User import User
+from flask_login import login_required, current_user
+import controllers.user_controller as uc
 
 user_bp = Blueprint('user', __name__)
 
@@ -15,20 +12,12 @@ user_bp = Blueprint('user', __name__)
 def login():
     nick = request.form.get('nick')
     passwd = request.form.get('passwd')
-    user = user_loader_by_nick(nick)
-    if user is None:
-        return jsonify({'error': True, 'message': 'Nieprawidłowy login lub hasło'})
-    if user.verify_pass(passwd):
-        login_user(user)
-        return jsonify({'error': False, 'data': True})
-    else:
-        return jsonify({'error': True, 'message': 'Nieprawidłowy login lub hasło'})
+    return uc.login(nick, passwd)
 
 
 @user_bp.route('/logout', methods=['GET', 'POST'])
 def logout():
-    logout_user()
-    return jsonify({'error': False, 'data': True})
+    return uc.logout()
 
 
 @user_bp.route('/signup', methods=['POST'])
@@ -37,52 +26,14 @@ def signup():
     email = request.form.get('email')
     passwd = request.form.get('passwd')
     rep_passwd = request.form.get('rep_passwd')
-    if passwd != rep_passwd:
-        return jsonify({'error': True, 'message': 'Podane nowe hasła nie pasują do siebie'})
-    user=User()
-    passwd=user.ch_pass(passwd)
-    ret={'error': True, 'message': 'Konto nie zostało utworzone'}
-    if passwd is False:
-        return jsonify(ret)
-    q=User.query.where(or_(User.nick==nick, User.email==email))
-    ret=db.session.execute(q).first()
-    if ret is not None:
-        return jsonify(ret)
-    
-    code, code_exp=generate_code()
-    try:
-        flag=False
-        s=SendMail()
-        if not s.sendCode([email], code):
-            flag=True
-    except Exception as e:
-        flag=True
-    finally:
-        if flag:
-            return jsonify(ret)
-    
-    db.session.add(User(nick=nick, email=email, passwd=passwd, approved=False, code=code, code_exp=datetime.datetime.now()+datetime.timedelta(seconds=code_exp)))
-    db.session.commit()
-    user=user_loader_by_nick(nick)
-    login_user(user)
-    return jsonify({'error': False,
-                    'data': {'message': f'Proszę potwierdzić konto za pomocą kodu z mail\'a w: {code_exp/60}min'}})
 
+    return uc.signup_user(nick, email, passwd, rep_passwd)
 
 @user_bp.route('/approve', methods=['POST'])
 @login_required
 def approve():
-    user: User=current_user
-    if user.is_approved():
-        # return jsonify({'error': False, 'data': True})
-        return jsonify({'error': True, 'message': 'Konto nie wymaga potwierdzenia'})
     code=request.form.get('code')
-    flag=user.approve(code)
-    db.session.commit()
-    if flag:
-        db.session.commit()
-        return jsonify({'error': False, 'data': True})
-    return jsonify({'error': True, 'message': 'Konto nie zostało potwierdzone'})
+    uc.approve(code)
 
 
 @user_bp.route('/ch_pass', methods=['POST'])

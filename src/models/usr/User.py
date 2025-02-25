@@ -32,6 +32,7 @@ class User(db.Model, UserMixin):
             return False
         self.approved=True
         self.code=''
+        db.session.commit()
         return True
     def verify_pass(self, passwd: str) -> bool:
         if self.passwd is None:

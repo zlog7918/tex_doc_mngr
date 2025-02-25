@@ -104,15 +104,11 @@
 
     <script>
         document.getElementById("logout-btn").addEventListener("click", function () {
-            ajax_json_call('/user/logout').then(data => {
-                if ('error' in data) {
-                    if (data['error'])
-                        alert(`Err: ${data['message']}`);
-                    else
-                        window.location.reload();
-                } else {
-                    alert(`Err: ${JSON.stringify(data)}`);
-                }
+            ajax_json_call('/user/logout').then(response => {
+                if (response.success)
+                    window.location.reload();
+                else
+                    alert(`Err: ${response.message}`);
             }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
         });
 
