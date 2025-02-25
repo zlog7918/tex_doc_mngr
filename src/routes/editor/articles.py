@@ -83,7 +83,7 @@ def accept_article(article_id):
         return {"error": str(err)}, 500
 
 
-@editor_articles_bp.route('/<int:article_id>/add_round')
+@editor_articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
 @login_required
 def add_round(article_id):
     article = aq.get_article(article_id)
