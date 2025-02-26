@@ -1,9 +1,7 @@
-from typing import Generic, TypeVar, Optional, Dict
+from typing import Optional, Dict, Self
 
-T = TypeVar("T")
-
-class Response(Generic[T]):
-    def __init__(self, success: bool, message: str = "", data: Optional[T] = None):
+class Response:
+    def __init__(self, success: bool, message: str = "", data = None):
         self.success = success
         self.message = message
         self.data = data
@@ -17,9 +15,9 @@ class Response(Generic[T]):
         return response
 
     @staticmethod
-    def success_response(data: Optional[T] = None, message: str = "OK") -> "Response[T]":
-        return Response(success=True, message=message, data=data).to_dict()
+    def success_response(data = None, message: str = "OK") -> Self:
+        return Response(success=True, message=message, data=data)
 
     @staticmethod
-    def error_response(message: str, data: Optional[T] = None) -> "Response[T]":
-        return Response(success=False, message=message, data=data).to_dict()
+    def error_response(message: str, data = None) -> Self:
+        return Response(success=False, message=message, data=data)

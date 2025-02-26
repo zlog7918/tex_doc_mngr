@@ -3,7 +3,8 @@ import subprocess
 from db.db_base import db
 from werkzeug.utils import secure_filename
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
-from models.usr.User import User, user_loader_by_nick
+from models.usr.User import User
+from db.queries.user import user_loader_by_nick
 from flask_login import login_required, current_user
 from models.utils.utils import get_temp_folder, get_upload_folder
 from flask import request, Blueprint, jsonify, render_template, send_from_directory, send_file

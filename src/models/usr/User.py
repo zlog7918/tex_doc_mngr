@@ -1,8 +1,9 @@
 from db.db_base import db
 from flask_login import UserMixin
 from passlib.hash import sha256_crypt
+from models.utils.Response import Response
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import Integer, Boolean, Text, DateTime
+from sqlalchemy import Integer, Boolean, Text, DateTime, or_
 
 class User(db.Model, UserMixin):
     __tablename__ = 'usr'
@@ -38,29 +39,9 @@ class User(db.Model, UserMixin):
         if self.passwd is None:
             return False
         return sha256_crypt.verify(passwd, self.passwd)
-    def ch_pass(self, passwd: str) -> str|bool:
-        if self.verify_pass(passwd):
+    def ch_pass(self, old_passwd, new_passwd: str) -> bool:
+        if self.verify_pass(old_passwd):
             return False
-        self.passwd=sha256_crypt.hash(passwd)
-        return self.passwd
-
-
-def user_loader(nick: str|None) -> User|None:
-    if nick is None:
-        return None
-    id=int(nick)
-    q=User.query.where(User.id==id)
-    ret=db.session.execute(q).first()
-    if ret is None:
-        return None
-    return ret[0]
-
-def user_loader_by_nick(nick: str|None) -> User|None:
-    if nick is None:
-        return None
-
-    q=User.query.where(User.nick==nick)
-    ret=db.session.execute(q).first()
-    if ret is None:
-        return None
-    return ret[0]
+        self.passwd=sha256_crypt.hash(new_passwd)
+        db.session.commit()
+        return True
