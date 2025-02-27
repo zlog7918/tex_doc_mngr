@@ -2,20 +2,21 @@ import os
 import subprocess
 from db.db_base import db
 from werkzeug.utils import secure_filename
-from models.article.Article import ArticleStatusEnum
+from models.article.Article import Article, ArticleStatusEnum
 from models.usr.User import User
 from models.utils.Response import Response
 from models.utils.utils import get_temp_folder, get_upload_folder, render_base_template
 from flask_login import current_user
 from flask import request, send_from_directory, send_file
+from flask.wrappers import Response as flResponse
 import db.queries.article as aq
 
-def get_all_articles_by_editor():
+def get_all_articles_by_editor() -> list[Article]:
     user: User=current_user
     return aq.get_all_articles_by_editor_id(int(user.get_id()))
 
 
-def show_articles():
+def show_articles() -> Response|str:
     try:
         user: User=current_user
         articles = aq.get_all_articles_by_editor_id(int(user.get_id()))
@@ -24,7 +25,7 @@ def show_articles():
     return render_base_template("articles.html", articles=articles)
 
 
-def get_article_data(article_id) -> Response:
+def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
     if not article:
         return Response.error_response()
@@ -62,7 +63,7 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     except Exception as err:
         return Response.error_response(str(err))
     
-def add_round(article_id) -> Response:
+def add_round(article_id: int) -> Response:
     article = aq.get_article(article_id)
     if not article:
         return Response.error_response(message = "Article not found")
@@ -100,60 +101,29 @@ def assign_reviewers(article_id, assigned_reviewers, deadline_confirm, deadline_
     except Exception as err:
         return Response.error_response(str(err))
 
-def upload_file(title: str, editor: str) -> Response:
+def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
+    try:
+        for _ in range(2):
+            subprocess.run(
+                ["pdflatex", "--shell-escape", "-interaction=nonstopmode", "-output-directory", output_dir, tex_path],
+                cwd=output_dir,
+                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            )
+        return os.path.exists(tex_path.replace('.tex', '.pdf'))
+    except subprocess.CalledProcessError as e:
+        # TODO: log
+        return False
+
+def upload_file(title: str, editor: str, tex_path: str) -> Response:
     # TODO: check if the function handles all possibilities
     try:
-        if 'file' not in request.files:
-            return Response.error_response(message='Nie przesłano pliku')
-
-        file = request.files['file']
-        if not file.filename:
-            return Response.error_response(message="No file selected")
-
-        upload_folder = get_upload_folder()
-        os.makedirs(upload_folder, exist_ok=True)
-
-        filename = secure_filename(file.filename)
-        tex_path = os.path.join(upload_folder, filename)
-        # pdf_path = tex_path.replace('.tex', '.pdf')
-        file.save(tex_path)
-
+        upload_folder=os.path.dirname(tex_path)
+        filename=os.path.basename(tex_path)
         # Konwersja LaTeX do PDF
         if filename.endswith('.tex'):
             conversion_success = convert_tex_to_pdf(tex_path, upload_folder)
             if not conversion_success:
                 return Response.error_response(message="Error converting LaTeX to PDF")
-
-            # try:
-            #     subprocess.run(
-            #         ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
-            #          "-output-directory", get_upload_folder(), tex_path],
-            #         cwd=get_upload_folder(),
-            #         check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            #     )
-            #     subprocess.run(
-            #         ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
-            #          "-output-directory", get_upload_folder(), tex_path],
-            #         cwd=get_upload_folder(),
-            #         check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            #     )
-
-            #     if os.path.exists(pdf_path):
-            #         user: User=current_user
-            #         url=f"/articles/uploads/{filename.replace('.tex', '.pdf')}"
-            #         editor=user_loader_by_nick(editor)
-            #         if editor is None:
-            #             return jsonify({"error": "Nie znany edytor"}), 500
-            #         status=ArticleStatus.query.where(ArticleStatus.stat==ArticleStatusEnum.Submitted).first()
-            #         db.session.add(Article(title=title, author_id=int(user.get_id()), content=url, status_id=status.id, editor_id=int(editor.get_id())))
-            #         db.session.commit()
-            #         return jsonify({"message": f"Plik {pdf_path} zapisany", "pdf_url": url}), 200
-            #     else:
-            #         return jsonify({"error": "Plik PDF nie został wygenerowany"}), 500
-
-            # except subprocess.CalledProcessError as e:
-            #     return jsonify({"error": "Błąd podczas konwersji LaTeX na PDF"}), 500
-
 
         # file_url=f"/articles/uploads/{filename}"
         file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf') if filename.endswith('.tex') else filename}"
@@ -165,70 +135,37 @@ def upload_file(title: str, editor: str) -> Response:
             )
         else:
             print('Else')
+            db.session.rollback()
             return Response.error_response(message='Article not created')
 
     except Exception as e:
+        # TODO: log
         print('Exception')
         db.session.rollback()
         return Response.error_response(message=f"Server error: {str(e)}")
 
-def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
-    try:
-        for _ in range(2):
-            subprocess.run(
-                ["pdflatex", "--shell-escape", "-interaction=nonstopmode", "-output-directory", output_dir, tex_path],
-                cwd=output_dir,
-                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-        return os.path.exists(tex_path.replace('.tex', '.pdf'))
-    except subprocess.CalledProcessError:
-        return False
-    
-def get_file(filename: str):
-    upload_folder = get_upload_folder()
-    file_path = os.path.join(upload_folder, filename)
+def get_file(folder: str, filename: str) -> Response|flResponse:
+    file_path = os.path.join(folder, filename)
     if os.path.exists(file_path):
-        return send_from_directory(upload_folder, filename)
+        return send_from_directory(folder, filename)
     else:
         return Response.error_response(message="Plik nie istnieje")
-    
-def generate_preview() -> Response:
-    if 'file' not in request.files:
-        return Response.error_response(message="Nie przesłano pliku")
 
-    file = request.files['file']
-    if not file.filename.endswith('.tex'):
-        return Response.error_response(message="Nieprawidłowy format pliku")
+def get_uploaded_file(filename: str) -> Response|flResponse:
+    return get_file(get_upload_folder(), filename)
 
-    temp_folder = get_temp_folder()
-    os.makedirs(temp_folder, exist_ok=True)
-
-    filename = secure_filename(file.filename)
-    tex_path = os.path.join(temp_folder, filename)
-    pdf_path = tex_path.replace('.tex', '.pdf')
-    file.save(tex_path)
-
+def generate_preview(tex_path: str) -> Response:
+    temp_folder=os.path.dirname(tex_path)
+    filename=os.path.basename(tex_path)
     try:
-        for _ in range(2):
-            subprocess.run(
-                ["pdflatex", "--shell-escape", "-interaction=nonstopmode",
-                 "-output-directory", temp_folder, tex_path],
-                cwd=temp_folder,
-                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-
-        if os.path.exists(pdf_path):
+        conversion_success = convert_tex_to_pdf(tex_path, temp_folder)
+        if conversion_success:
             return Response.success_response(data={"pdf_url": f"/articles/temp-preview/{filename.replace('.tex', '.pdf')}"})
         else:
             return Response.error_response(message="Błąd generowania PDF")
-
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
+        # TODO: log
         return Response.error_response(message="Błąd podczas generowania podglądu")
 
-def temp_preview(filename):
-    temp_folder = get_temp_folder()
-    file_path = os.path.join(temp_folder, filename)
-    if os.path.exists(file_path):
-        return send_file(file_path)
-    else:
-        return Response.error_response(message="Podgląd nie istnieje.")
+def temp_preview(filename: str) -> Response|flResponse:
+    return get_file(get_temp_folder(), filename)

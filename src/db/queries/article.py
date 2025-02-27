@@ -36,6 +36,7 @@ def create_article(title: str, file_url: str, editor_nick: str) -> bool:
         return True
 
     except Exception as e:
+        # TODO: log
         print(str(e))
         db.session.rollback()
         return False
