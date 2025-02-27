@@ -1,4 +1,8 @@
+import json
+import traceback
+from flask import request
 from flask_sqlalchemy import SQLAlchemy
+from models.utils.utils import get_timestamp
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import MetaData, Integer, Boolean, Text, DateTime
 
@@ -22,3 +26,22 @@ class Log(db.Model):
     action: Mapped[str] = mapped_column(Text, nullable=False)
     timest: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     log: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+
+def log_activity(action: str, is_success: bool, log: dict) -> None:
+    db.session.add(
+        Log(
+            ip=request.environ['REMOTE_ADDR']
+            ,is_success=is_success
+            ,action=action
+            ,timest=get_timestamp()
+            ,log=json.dumps(log)
+        )
+    )
+    db.session.commit()
+
+def log_err(action: str, err: Exception) -> None:
+    log_activity(action, False, {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+
+ 
