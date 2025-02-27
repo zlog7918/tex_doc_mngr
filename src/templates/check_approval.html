@@ -120,28 +120,20 @@ hr {
 <script>
     document.getElementById("logout-btn").addEventListener("click", function () {
         ajax_json_call('/user/logout').then(data => {
-            if ('error' in data) {
-                if (data['error'])
-                    alert(`Err: ${data['message']}`);
-                else
-                    window.location.reload();
-            } else {
-                alert(`Err: ${JSON.stringify(data)}`);
-            }
+            if(data.success)
+                window.location.reload();
+            else
+                alert(`Err: ${data.message}`);
         }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
     });
 
     document.getElementById("approve-btn").addEventListener("click", function () {
         let form = document.getElementById("approve-form");
         ajax_json_call('/user/approve', null, form).then(data => {
-            if ('error' in data) {
-                if (data['error'])
-                    alert(`Err: ${data['message']}`);
-                else
-                    window.location.reload();
-            } else {
-                alert(`Err: ${JSON.stringify(data)}`);
-            }
+            if(data.success)
+                window.location.reload();
+            else
+                alert(`Err: ${data.message}`);
         }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
     });
 </script>
