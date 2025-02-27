@@ -39,9 +39,9 @@ class User(db.Model, UserMixin):
         if self.passwd is None:
             return False
         return sha256_crypt.verify(passwd, self.passwd)
-    def ch_pass(self, old_passwd, new_passwd: str) -> bool:
-        if self.verify_pass(old_passwd):
+    def ch_pass(self, passwd: str) -> bool:
+        if self.verify_pass(passwd):
             return False
-        self.passwd=sha256_crypt.hash(new_passwd)
+        self.passwd=sha256_crypt.hash(passwd)
         db.session.commit()
         return True

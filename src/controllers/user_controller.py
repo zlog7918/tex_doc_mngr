@@ -83,8 +83,10 @@ def change_password(passwd, new_passwd, rep_passwd) -> Response:
   try:
     validate_passwords(new_passwd, rep_passwd)
     user: User=current_user
-    if not user.ch_pass(passwd, new_passwd):
+    if not user.verify_pass(passwd):
       return Response.error_response(message = 'Nieprawidłowe stare hasło')
-    return Response.success_response
+    if not user.ch_pass(new_passwd):
+      return Response.error_response(message = 'Nieprawidłowe stare hasło')
+    return Response.success_response()
   except Exception as e:
     return Response.error_response(message = str(e))
