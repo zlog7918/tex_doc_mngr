@@ -1,8 +1,6 @@
 from flask import Blueprint
-from db.db_base import db
-from flask import Blueprint, request, jsonify
-from models.usr.User import User
-from flask_login import login_required, current_user
+from flask import Blueprint, request
+from flask_login import login_required
 import controllers.user_controller as uc
 
 user_bp = Blueprint('user', __name__)

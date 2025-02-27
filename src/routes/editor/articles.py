@@ -1,8 +1,9 @@
-from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
+from models.article.Article import ArticleStatusEnum
+from models.utils.Response import Response
 from models.utils.utils import render_base_template
-from flask_login import login_required, current_user
-from flask import request, redirect, url_for, Blueprint, jsonify, render_template
-from models.usr.User import User
+from flask_login import login_required
+from flask import request, redirect, url_for, Blueprint, render_template
+import controllers.article_controller as ac
 import db.queries.article as aq
 
 editor_articles_bp = Blueprint("editor_articles", __name__)
@@ -22,112 +23,67 @@ Final - artykół jest zakończony, nie wymaga poprawek, wersja końcowa
 @login_required
 def show_articles():
     try:
-        user: User=current_user
-        articles = Article.query.filter_by(editor_id=int(user.get_id())).all()
+        articles = ac.get_all_articles_by_editor()
     except Exception as err:
-        return str(err), 500
+        return Response.Response.error_response(message=str(err)).to_dict()
     return render_base_template("articles.html", articles=articles)
 
 
 @editor_articles_bp.route('/<int:article_id>')
 @login_required
 def article_details(article_id):
-    try:
-        article = aq.get_article(article_id)
-    except Exception as err:
-        return str(err), 500
-    if not article:
-        return "Article not found", 404
+    response = ac.get_article_data(article_id)
 
-    if article.content.startswith('/'):
-        article.content=f'<br><embed src="{article.content}" width="800" height="500" type="application/pdf">'
+    if not response.success:
+        return response.to_dict()
 
+    article = response.data["article"]
+
+    data = response.to_dict()
+# TODO: change templates
     if article.status.stat == ArticleStatusEnum.Submitted:
         return render_base_template("article_submitted.html", article=article)
     elif article.status.stat == ArticleStatusEnum.Accepted:
-        reviewers = aq.get_available_reviewers(article_id)
-        assigned_reviewers = aq.get_assigned_reviewers(article_id)
-        assigned_reviews = aq.get_assigned_reviews(article_id)
-        tab_content = render_base_template("round_tabs/accepted.html", article=article, reviewers=reviewers, assigned_reviewers=assigned_reviewers, reviews=assigned_reviews)
+        reviewers = response.data["reviewers"]
+        assigned_reviewers = response.data["assigned_reviewers"]
+        reviews = response.data["reviews"]
+        tab_content = render_base_template("round_tabs/accepted.html", article=article, assigned_reviewers=assigned_reviewers, reviewers=reviewers)
     elif article.status.stat == ArticleStatusEnum.InReview:
-        reviews = aq.get_assigned_reviews(article_id)
+        reviews = response.data["reviews"]
         tab_content = render_base_template("round_tabs/in_review.html", reviews=reviews)
     elif article.status.stat == ArticleStatusEnum.Reviewed:
-        grouped_answers = aq.get_answers_as_editor(article_id)
-        tab_content = render_template("round_tabs/reviewed.html", grouped_answers=grouped_answers)
+        grouped_answers = response.data["grouped_answers"]
+        return render_base_template("round_tabs/reviewed.html", grouped_answers=grouped_answers)
     elif article.status.stat == ArticleStatusEnum.Rejected:
-        return render_template("round_tabs/rejected.html")
-    else:
-        tab_content = "<p>No content available for this status.</p>"
+        return render_base_template("round_tabs/rejected.html")
 
-    return render_template("article_round_base.html", article=article, tab_content=tab_content)
+    return render_template("article_round_base.html", tab_content=tab_content, article=article, data=data)
 
 
 @editor_articles_bp.route('/<int:article_id>/accept', methods=['POST'])
 @login_required
 def accept_article(article_id):
-    try:
-        article = aq.get_article(article_id)
-        if not article:
-            return "Article not found", 404
-
-        # Zmiana statusu na 'Accepted'
-        status_id=ArticleStatus.query.where(ArticleStatus.stat==ArticleStatusEnum.Accepted).first().id
-        result = aq.update_article_status(article_id, status_id)
-        if not result:
-            return {"warning": "Article status not updated"}, 500
-
-        return {"message": f"Article status updated to Accepted."}, 200
-
-    except Exception as err:
-        return {"error": str(err)}, 500
+    return ac.set_article_status(article_id, ArticleStatusEnum.Accepted).to_dict()
 
 
 @editor_articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
 @login_required
 def add_round(article_id):
-    article = aq.get_article(article_id)
-    if not article:
-        return jsonify({"success": False}), 404
-
-    # Sprawdzanie, czy artykuł spełnia wymagane statusy
-    if article.status.stat not in {ArticleStatusEnum.Accepted, ArticleStatusEnum.InReview, ArticleStatusEnum.Reviewed}:
-        return jsonify({"success": False}), 400
-
-    # Dodawanie nowej rundy
-    new_round_id = len(article.rounds) + 1
-    new_round = {"id": new_round_id, "reviews": []}
-    article.rounds.append(new_round)
-    return jsonify({"success": True})
+    return ac.add_round(article_id).to_dict()
 
 
 @editor_articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
 @login_required
 def assign_reviewers(article_id):
-    # Pobieranie wybranych recenzentów z formularza
     assigned_reviewers = request.form.get('assigned_reviewers[]')
     deadline_confirm = request.form.get('deadline_confirm')
     deadline_submit = request.form.get('deadline_submit')
     
-    if not assigned_reviewers:
-        return "No reviewers assigned.", 400
-    
-    try:
-        assigned_reviewers_ids = [int(rid.strip()) for rid in assigned_reviewers.split(',')]
-        last_round_number = aq.get_last_round_number(article_id)
-        new_round_number = last_round_number + 1 if last_round_number else 1
-        aq.create_round(article_id, new_round_number, deadline_confirm, deadline_submit)
+    response = ac.assign_reviewers(article_id, assigned_reviewers, deadline_confirm, deadline_submit)
 
-        for reviewer_id in assigned_reviewers_ids:
-            aq.add_reviewer_to_article(article_id, reviewer_id)
-
-        update_status_result = aq.update_article_status(article_id, 3)
-        if not update_status_result:
-            return {"error": "Failed to update article status to 3."}, 500
-
+    if response.success:
         return redirect(url_for('editor_articles.article_details', article_id=article_id))
-    except Exception as err:
-        return str(err), 500
+    return response.to_dict()
 
 
 @editor_articles_bp.route('/<int:article_id>/reject', methods=['POST'])
@@ -135,58 +91,54 @@ def assign_reviewers(article_id):
 def reject_article(article_id):
     result = aq.update_article_status(article_id, 5)
     if not result:
-            return {"warning": "Article status not updated"}, 500
-    return jsonify({"success": True})
+        return Response.error_response("Article status not updated")
+    return Response.success_response()
 
 
-@editor_articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
-@login_required
-def update_article_status(article_id):
-    try:
-        article = aq.get_article(article_id)
-        if not article:
-            return {"error": "Article not found"}, 404
+# @editor_articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
+# @login_required
+# def update_article_status(article_id):
+#     try:
+#         article = aq.get_article(article_id)
+#         if not article:
+#             return Response.error_response("Article not found")
 
-        current_status = article["status"].stat
+#         current_status = article.status.stat.stat
 
-        # Sprawdzenie obecnego statusu i zmiana
-        if current_status == ArticleStatusEnum.Accepted:
-            # Ustawienie statusu na "In review"
-            result = aq.update_article_status(article_id, 3)
-            if not result:
-                return {"error": "Failed to update status to 'In review'"}, 500
+#         # Sprawdzenie obecnego statusu i zmiana
+#         if current_status == ArticleStatusEnum.Accepted:
+#             # Ustawienie statusu na "In review"
+#             result = aq.update_article_status(article_id, 3)
+#             if not result:
+#                 return {"error": "Failed to update status to 'In review'"}, 500
 
-            # Tworzenie nowej rundy recenzji
-            new_round_id = len(article["rounds"]) + 1
-            new_round = {"id": new_round_id, "reviews": []}
-            article["rounds"].append(new_round)
-            # save_article_rounds(article_id, article["rounds"])
+#             # Tworzenie nowej rundy recenzji
+#             new_round_id = len(article["rounds"]) + 1
+#             new_round = {"id": new_round_id, "reviews": []}
+#             article["rounds"].append(new_round)
+#             # save_article_rounds(article_id, article["rounds"])
 
-            return {"message": "Status updated to 'In review' and new review round created"}, 200
+#             return {"message": "Status updated to 'In review' and new review round created"}, 200
 
-        elif current_status == ArticleStatusEnum.InReview:
-            # Sprawdzenie liczby przesłanych recenzji
-            latest_round = article["rounds"][-1] if article["rounds"] else None
-            if not latest_round:
-                return {"error": "No active review round found"}, 400
+#         elif current_status == ArticleStatusEnum.InReview:
+#             # Sprawdzenie liczby przesłanych recenzji
+#             latest_round = article["rounds"][-1] if article["rounds"] else None
+#             if not latest_round:
+#                 return {"error": "No active review round found"}, 400
 
-            total_reviews = len(latest_round["reviews"])
-            if total_reviews >= 3:  # Zakładamy, że wymagane są 3 recenzje
-                result = aq.update_article_status(article_id, 4)
-                if result:
-                    return {"message": "All reviews submitted. Status updated to 'Reviewed'"}, 200
-                else:
-                    return {"error": "Failed to update status to 'Reviewed'"}, 500
-            else:
-                remaining = 3 - total_reviews
-                return {"message": f"Waiting for {remaining} more reviews"}, 200
+#             total_reviews = len(latest_round["reviews"])
+#             if total_reviews >= 3:  # Zakładamy, że wymagane są 3 recenzje
+#                 result = aq.update_article_status(article_id, 4)
+#                 if result:
+#                     return {"message": "All reviews submitted. Status updated to 'Reviewed'"}, 200
+#                 else:
+#                     return {"error": "Failed to update status to 'Reviewed'"}, 500
+#             else:
+#                 remaining = 3 - total_reviews
+#                 return {"message": f"Waiting for {remaining} more reviews"}, 200
 
-        else:
-            return {"error": "Invalid status for update"}, 400
+#         else:
+#             return {"error": "Invalid status for update"}, 400
 
-    except Exception as err:
-        return {"error": str(err)}, 500
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf', 'tex'}
+#     except Exception as err:
+#         return {"error": str(err)}, 500

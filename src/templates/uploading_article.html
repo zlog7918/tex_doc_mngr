@@ -70,7 +70,7 @@
                 formData.append("title", title.value);
                 formData.append("editor", editor.value);
 
-                let response = await fetch("/editor/articles/upload", {
+                let response = await fetch("/articles/upload", {
                     method: "POST",
                     body: formData
                 });

@@ -31,3 +31,16 @@ class Article(db.Model):
     author = relationship('User', foreign_keys=[author_id])
     editor = relationship('User', foreign_keys=[editor_id])
     status = relationship('ArticleStatus', backref='articles')
+
+    def update_status(self, new_status: ArticleStatusEnum) -> bool:
+        try:
+            status = ArticleStatus.query.filter_by(stat=new_status).first()
+            if status:
+                self.status_id = status.id
+                db.session.commit()
+                return True
+            return False
+        except Exception as err:
+            print("exception:", str(err))
+            db.session.rollback()
+            return False

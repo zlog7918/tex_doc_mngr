@@ -1,12 +1,52 @@
 from db.db_base import db
 from models.article.Round import Round
 from models.article.Review import Review
-from models.article.Article import Article
+from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 from models.article.Questions import Answer, Question
 from models.usr.User import User
+from flask_login import current_user
+import db.queries.user as uq
+
+
+def create_article(title: str, file_url: str, editor_nick: str) -> bool:
+    try:
+        user_id = current_user.get_id()
+        editor_id = uq.get_user_id(editor_nick)
+        print('4')
+        if not editor_id:
+            print('1')
+            return False
+
+        status = ArticleStatus.query.filter_by(stat=ArticleStatusEnum.Submitted).first()
+        if not status:
+            print('2')
+            return False
+
+        new_article = Article(
+            title=title,
+            author_id=int(user_id),
+            editor_id=editor_id,
+            content=file_url,
+            status_id=status.id
+        )
+        print('5')
+        db.session.add(new_article)
+        db.session.commit()
+
+        return True
+
+    except Exception as e:
+        print(str(e))
+        db.session.rollback()
+        return False
+
 
 def get_article(article_id: int) -> Article:
     return Article.query.get_or_404(article_id)
+
+
+def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
+    return Article.query.filter_by(editor_id=editor_id).all()
 
 
 def get_available_reviewers(article_id: int) -> list[dict[int, str]]:
@@ -135,6 +175,7 @@ def get_answers_as_editor(article_id: int) -> dict[str, list[dict]]:
         #                     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
         return {}
 
+# TODO: compare with update_status from controller
 def update_article_status(article_id: int, status: int) -> bool:
     try:
         article = db.session.get(Article, article_id)
@@ -171,12 +212,12 @@ def get_last_round_number(article_id: int) -> int:
         return 0
 
 
-def create_round(article_id: int, round_number: int, deadline_confirm: str, deadline_submit: str) -> bool:
+def create_round(article_id: int, round_number: int, deadline_confirm: str = None, deadline_submit: str = None) -> bool:
     try:
         new_round = Round(
             article_id=article_id,
             round_number=round_number,
-            q_set_id=1,
+            q_set_id=1, # TODO: should be set later
             deadline_confirm=deadline_confirm,
             deadline_submit=deadline_submit
         )

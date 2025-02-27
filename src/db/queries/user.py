@@ -22,6 +22,14 @@ def user_loader_by_nick(nick: str|None) -> User|None:
         return None
     return ret[0]
 
+def get_user_id(nick: str) -> int:
+    # TODO: split handling exceptions and handling non-existing user
+    try:
+        return User.query.filter_by(nick=nick).first().id
+    except Exception as e:
+        raise Exception('Nie znaleziono użytkownika: ' + str(e))
+
+
 def is_user_existing(nick, email):
     try:
         q=User.query.where(or_(User.nick==nick, User.email==email))
