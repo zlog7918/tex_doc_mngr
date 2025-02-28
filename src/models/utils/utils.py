@@ -2,8 +2,8 @@ import sys
 import random
 import os.path
 from flask import render_template
-from .consts import TIME_TO_EXPIRE
 from datetime import datetime,timezone
+from .consts import TIME_TO_EXPIRE, ALLOWED_SPECIAL_CHARS_IN_PASSWORDS
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):
@@ -32,5 +32,27 @@ def get_timestamp() -> datetime:
     return datetime.today().astimezone(tz=timezone.utc)
 
 def get_function(back: int=0) -> str:
-    frame = sys._getframe(back+1)
+    frame=sys._getframe(back+1)
     return f'{frame.f_code.co_filename}:{frame.f_lineno} {frame.f_code.co_name}()'
+
+def validate_pass(passwd: str) -> bool:
+    SpecialSym=set(ALLOWED_SPECIAL_CHARS_IN_PASSWORDS)
+    p_n=len(passwd)
+    if p_n<8 or p_n>50:
+        return False
+
+    is_digit=is_upper=is_lower=is_special=0
+    for char in passwd:
+        if char.isdigit():
+            is_digit=1
+        if char.isupper():
+            is_upper=1
+        if char.islower():
+            is_lower=1
+        if char in SpecialSym:
+            is_upper=1
+        if not (char.islower() or char.isdigit() or char.isupper() or (char in SpecialSym)):
+            return False
+    if (is_digit+is_lower+is_special+is_upper)<3:
+        return False
+    return True
