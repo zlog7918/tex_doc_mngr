@@ -37,8 +37,8 @@ def check_password(passwd: str) -> str:
   return user.get_passwd()
 
 def check_user_existence(nick: str, email: str) -> None:
-    if is_user_existing(nick, email):
-      raise Exception('Użytkownik o podanym nicku lub e-mailu już istnieje')
+  if is_user_existing(nick, email):
+    raise Exception('Użytkownik o podanym nicku lub e-mailu już istnieje')
 
 def send_validation_email(email: str, code: str) -> None:
   try:
