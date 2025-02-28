@@ -122,7 +122,7 @@ def change_password(passwd, new_passwd, rep_passwd) -> Response:
       log_activity(get_function(), False, {'err': f'Wprowadzono nie prawidłowe stare hasło dla: {user.get_nick()}'})
       return Response.error_response(message = 'Nieprawidłowe stare hasło')
     if not user.ch_pass(new_passwd):
-      return Response.error_response(message = 'Nieprawidłowe stare hasło')
+      return Response.error_response(message = 'Hasło nie spełnia wymogów lub jest takie samo jak poprzednie')
     log_activity(get_function(), True, {'details': f'Poprawnie zmieniono hasło konta: {user.get_nick()}'})
     return Response.success_response()
   except Exception as e:
