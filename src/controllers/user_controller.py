@@ -19,6 +19,7 @@ def login(nick: str, passwd: str) -> Response:
     return Response.error_response(message = 'Nieprawidłowy login lub hasło')
 
   login_user(user)
+  log_activity(get_function(), True, {'details': f'Poprawnie zalogowano konto: {user.get_nick()}'})
   return Response.success_response()
 
 def logout() -> Response:
