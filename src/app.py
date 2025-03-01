@@ -33,7 +33,9 @@ app.register_blueprint(user_bp, url_prefix="/user")
 
 @login_manager.user_loader
 def ul(id: str|None) -> User|None:
-    return user_loader(id)
+    if id is None:
+        return None
+    return user_loader(int(id))
 
 @login_manager.request_loader
 def request_loader(request):
