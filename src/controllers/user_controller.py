@@ -1,15 +1,30 @@
+import re
 import datetime
-from db.queries.user import user_loader_by_nick, is_user_existing, add_user
+import email_validator as emailV
+from models.usr.User import User
 from models.mail.SendMail import SendMail
 from models.utils.Response import Response
-from models.utils.utils import get_function
 from db.db_base import log_activity, log_err
-from models.utils.utils import generate_code
-from models.usr.User import User
-from models.utils.Response import Response
+from models.utils.utils import get_function, generate_code
 from flask_login import login_user, logout_user, current_user 
+from db.queries.user import user_loader_by_nick, is_user_existing, add_user
+
+def validate_nick(nick: str) -> None:
+  ret_mess='Nick nie spełnia wymagań'
+  try:
+    nick.index('\n')
+    raise Exception(ret_mess)
+  except ValueError:
+    pass
+  if re.match(r'^[a-zA-z][a-zA-Z0-9_-]{1,78}[a-zA-Z0-9]$', nick) is None:
+    raise Exception(ret_mess)
+
 
 def login(nick: str, passwd: str) -> Response:
+  try:
+    validate_nick(nick)
+  except Exception as e:
+    return Response.error_response(message=str(e))
   user = user_loader_by_nick(nick)
   if user is None:
     log_activity(get_function(), False, {'err': 'Nie prawidłowy login'})
@@ -32,8 +47,8 @@ def validate_passwords(passwd: str, rep_passwd: str) -> None:
 
 def check_password(passwd: str) -> str:
   user=User()
-  passwd=user.ch_pass(passwd)
-  if passwd is False:
+  flag=user.ch_pass(passwd)
+  if flag is False:
     raise Exception('Konto nie zostało utworzone')
   return user.get_passwd()
 
@@ -60,10 +75,19 @@ def create_user(nick: str, email: str, passwd: str, code: str, code_exp: int) ->
               code=code, code_exp=datetime.datetime.now() + datetime.timedelta(seconds=code_exp))
   if not add_user(user):
     raise Exception('Konto nie zostało utworzone')
+  
+def validate_email(email: str) -> str:
+  try:
+    v=emailV.validate_email(email)
+    return v['email']
+  except emailV.EmailNotValidError as e:
+    raise Exception('E-mail nie przeszedł weryfikacji')
 
 def signup_user(nick: str, email: str, passwd: str, rep_passwd: str) -> Response:
   try:
+    validate_nick(nick)
     validate_passwords(passwd, rep_passwd)
+    email=validate_email(email)
     passwd=check_password(passwd)
     check_user_existence(nick, email)
     
@@ -99,7 +123,7 @@ def change_password(passwd: str, new_passwd: str, rep_passwd: str) -> Response:
       log_activity(get_function(), False, {'err': f'Wprowadzono nie prawidłowe stare hasło dla: {user.get_nick()}'})
       return Response.error_response(message = 'Nieprawidłowe stare hasło')
     if not user.ch_pass(new_passwd):
-      return Response.error_response(message = 'Nieprawidłowe stare hasło')
+      return Response.error_response(message = 'Hasło nie spełnia wymogów lub jest takie samo jak poprzednie')
     log_activity(get_function(), True, {'details': f'Poprawnie zmieniono hasło konta: {user.get_nick()}'})
     return Response.success_response()
   except Exception as e:

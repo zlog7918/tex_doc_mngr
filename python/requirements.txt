@@ -3,7 +3,8 @@ uwsgi
 passlib
 psycopg2
 # psycopg2-binary
-Flask-Login
 sqlalchemy
-Flask-SQLAlchemy
+Flask-Login
 Flask-Migrate
+email-validator
+Flask-SQLAlchemy

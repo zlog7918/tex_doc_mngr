@@ -1,6 +1,7 @@
 from db.db_base import db
 from flask_login import UserMixin
 from passlib.hash import sha256_crypt
+from ..utils.utils import validate_pass
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, Boolean, Text, DateTime
 
@@ -35,11 +36,11 @@ class User(db.Model, UserMixin):
         db.session.commit()
         return True
     def verify_pass(self, passwd: str) -> bool:
-        if self.passwd is None:
+        if (self.passwd is None):
             return False
         return sha256_crypt.verify(passwd, self.passwd)
     def ch_pass(self, passwd: str) -> bool:
-        if self.verify_pass(passwd):
+        if self.verify_pass(passwd) or (not validate_pass(passwd)):
             return False
         self.passwd=sha256_crypt.hash(passwd)
         db.session.commit()
