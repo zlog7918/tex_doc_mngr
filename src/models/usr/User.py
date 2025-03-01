@@ -36,7 +36,7 @@ class User(db.Model, UserMixin):
         db.session.commit()
         return True
     def verify_pass(self, passwd: str) -> bool:
-        if (self.passwd is None) or (not validate_pass(passwd)):
+        if (self.passwd is None):
             return False
         return sha256_crypt.verify(passwd, self.passwd)
     def ch_pass(self, passwd: str) -> bool:
