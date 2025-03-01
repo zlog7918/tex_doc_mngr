@@ -1,7 +1,9 @@
+import sys
 import random
 import os.path
 from flask import render_template
 from .consts import TIME_TO_EXPIRE
+from datetime import datetime,timezone
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):
@@ -25,3 +27,10 @@ def generate_code() -> tuple[str, int]:
     code=r.randint(0, 999999)
     code=f"{code:06d}"
     return code, TIME_TO_EXPIRE
+
+def get_timestamp() -> datetime:
+    return datetime.today().astimezone(tz=timezone.utc)
+
+def get_function(back: int=0) -> str:
+    frame = sys._getframe(back+1)
+    return f'{frame.f_code.co_filename}:{frame.f_lineno} {frame.f_code.co_name}()'

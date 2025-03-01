@@ -1,4 +1,3 @@
-from flask import Blueprint
 from flask import Blueprint, request
 from flask_login import login_required
 import controllers.user_controller as uc
