@@ -27,7 +27,7 @@ class Sender:
             ,auth_type
         )
 
-    def send_mess(self, subject: str, recievers: list[str], content_html: str, content_text: str|None=None):
+    def send_mess(self, subject: str, recievers: list[str], content_html: str, content_text: str|None=None) -> None:
         if content_text is None:
             msg=MIMEText(content_html, 'html')
         else:

@@ -51,7 +51,7 @@ def get_assigned_reviews(article_id: int) -> list[dict[int, str]]:
         return []
 
 
-def check_reviews_and_update_article_status(review_id: int):
+def check_reviews_and_update_article_status(review_id: int) -> None:
     try:
         round_id = (
             db.session.query(Review.round_id)
@@ -69,7 +69,6 @@ def check_reviews_and_update_article_status(review_id: int):
         )
 
         all_reviewed = all(status[0] == 'Reviewed' for status in statuses)
-        print("all_reviewed is", all_reviewed)
 
         if all_reviewed:
             article_id = (
@@ -190,7 +189,7 @@ def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
         return False
 
 
-def get_questions_by_article(article_id: int):
+def get_questions_by_article(article_id: int) -> list[dict[str, str]]|None:
     # TODO: finish this
     try:
         questions = (
@@ -207,7 +206,7 @@ def get_questions_by_article(article_id: int):
         return None
 
 
-def get_question_answers(question_id: int):
+def get_question_answers(question_id: int) -> list[dict[int, str]]:
     try:
         answers = (
             db.session.query(QuestionA)
