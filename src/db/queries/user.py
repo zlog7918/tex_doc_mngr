@@ -2,10 +2,7 @@ from sqlalchemy import or_
 from db.db_base import db
 from models.usr.User import User
 
-def user_loader(nick: str|None) -> User|None:
-    if nick is None:
-        return None
-    id=int(nick)
+def user_loader(id: int) -> User|None:
     q=User.query.where(User.id==id)
     ret=db.session.execute(q).first()
     if ret is None:
