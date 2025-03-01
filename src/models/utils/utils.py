@@ -1,9 +1,9 @@
 import sys
 import random
 import os.path
+from . import consts as c
 from flask import render_template
 from datetime import datetime,timezone
-from .consts import TIME_TO_EXPIRE, ALLOWED_SPECIAL_CHARS_IN_PASSWORDS
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):
@@ -26,7 +26,7 @@ def generate_code() -> tuple[str, int]:
     r=random.Random()
     code=r.randint(0, 999999)
     code=f"{code:06d}"
-    return code, TIME_TO_EXPIRE
+    return code, c.TIME_TO_EXPIRE
 
 def get_timestamp() -> datetime:
     return datetime.today().astimezone(tz=timezone.utc)
@@ -36,9 +36,9 @@ def get_function(back: int=0) -> str:
     return f'{frame.f_code.co_filename}:{frame.f_lineno} {frame.f_code.co_name}()'
 
 def validate_pass(passwd: str) -> bool:
-    SpecialSym=set(ALLOWED_SPECIAL_CHARS_IN_PASSWORDS)
+    SpecialSym=set(c.ALLOWED_SPECIAL_CHARS_IN_PASSWORDS)
     p_n=len(passwd)
-    if p_n<8 or p_n>50:
+    if p_n<c.MIN_PWD_LEN or p_n>c.MAX_PWD_LEN:
         return False
 
     is_digit=is_upper=is_lower=is_special=0
@@ -53,6 +53,6 @@ def validate_pass(passwd: str) -> bool:
             is_upper=1
         if not (char.islower() or char.isdigit() or char.isupper() or (char in SpecialSym)):
             return False
-    if (is_digit+is_lower+is_special+is_upper)<3:
+    if (is_digit+is_lower+is_special+is_upper)<4:
         return False
     return True

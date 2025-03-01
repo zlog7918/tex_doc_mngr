@@ -1,3 +1,5 @@
+MIN_PWD_LEN=12
+MAX_PWD_LEN=64
 TIME_TO_EXPIRE=900 # s
-ALLOWED_SPECIAL_CHARS_IN_PASSWORDS='!@#$%^&*()-_+=\'";:,.<>/?{}[]|'
 ALLOWED_EXTENSIONS={'pdf', 'tex'}
+ALLOWED_SPECIAL_CHARS_IN_PASSWORDS='!@#$%^&*()-_+=\'";:,.<>/?{}[]|'
