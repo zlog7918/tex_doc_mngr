@@ -27,13 +27,13 @@ def get_user_id(nick: str) -> int:
         raise Exception('Nie znaleziono użytkownika: ' + str(e))
 
 
-def is_user_existing(nick: str, email: str) -> bool|None:
+def is_user_existing(nick: str, email: str) -> bool:
     try:
         q=User.query.where(or_(User.nick==nick, User.email==email))
-        return db.session.execute(q).first()
+        return db.session.execute(q).first() is not None
     except Exception as e:
         # TODO: Add logs
-        return None
+        return False
 
 def add_user(user: User) -> bool:
     try:

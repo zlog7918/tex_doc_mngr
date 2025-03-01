@@ -34,7 +34,7 @@ def check_user_existence(nick: str, email: str) -> None:
     if existing_user:
       raise Exception('Użytkownik o podanym nicku lub e-mailu już istnieje')
 
-def send_validation_email(email: str, code: int) -> None:
+def send_validation_email(email: str, code: str) -> None:
   try:
     flag=False
     s=SendMail()
