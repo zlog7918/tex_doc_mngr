@@ -12,14 +12,11 @@ def create_article(title: str, file_url: str, editor_nick: str) -> bool:
     try:
         user_id = current_user.get_id()
         editor_id = uq.get_user_id(editor_nick)
-        print('4')
         if not editor_id:
-            print('1')
             return False
 
         status = ArticleStatus.query.filter_by(stat=ArticleStatusEnum.Submitted).first()
         if not status:
-            print('2')
             return False
 
         new_article = Article(
@@ -29,7 +26,6 @@ def create_article(title: str, file_url: str, editor_nick: str) -> bool:
             content=file_url,
             status_id=status.id
         )
-        print('5')
         db.session.add(new_article)
         db.session.commit()
 

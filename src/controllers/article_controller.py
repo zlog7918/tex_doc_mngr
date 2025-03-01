@@ -1,28 +1,17 @@
 import os
 import subprocess
 from db.db_base import db
-from werkzeug.utils import secure_filename
 from models.article.Article import Article, ArticleStatusEnum
 from models.usr.User import User
 from models.utils.Response import Response
-from models.utils.utils import get_temp_folder, get_upload_folder, render_base_template
+from models.utils.utils import get_temp_folder, get_upload_folder
 from flask_login import current_user
-from flask import request, send_from_directory, send_file
-from flask.wrappers import Response as flResponse
+from flask import send_from_directory
 import db.queries.article as aq
 
 def get_all_articles_by_editor() -> list[Article]:
     user: User=current_user
     return aq.get_all_articles_by_editor_id(int(user.get_id()))
-
-
-def show_articles() -> Response|str:
-    try:
-        user: User=current_user
-        articles = aq.get_all_articles_by_editor_id(int(user.get_id()))
-    except Exception as err:
-        return Response.error_response(message=str(err)).to_dict()
-    return render_base_template("articles.html", articles=articles)
 
 
 def get_article_data(article_id: int) -> Response:
@@ -80,7 +69,7 @@ def add_round(article_id: int) -> Response:
     else:
         return Response.error_response(message='Round was not created.')
     
-def assign_reviewers(article_id, assigned_reviewers, deadline_confirm, deadline_submit) -> Response:
+def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     if not assigned_reviewers:
         return Response.error_response(message = 'No reviewers assigned')
     
@@ -144,14 +133,14 @@ def upload_file(title: str, editor: str, tex_path: str) -> Response:
         db.session.rollback()
         return Response.error_response(message=f"Server error: {str(e)}")
 
-def get_file(folder: str, filename: str) -> Response|flResponse:
+def get_file(folder: str, filename: str) -> Response:
     file_path = os.path.join(folder, filename)
     if os.path.exists(file_path):
-        return send_from_directory(folder, filename)
+        return Response.success_response(send_from_directory(folder, filename))
     else:
         return Response.error_response(message="Plik nie istnieje")
 
-def get_uploaded_file(filename: str) -> Response|flResponse:
+def get_uploaded_file(filename: str) -> Response:
     return get_file(get_upload_folder(), filename)
 
 def generate_preview(tex_path: str) -> Response:
@@ -167,5 +156,5 @@ def generate_preview(tex_path: str) -> Response:
         # TODO: log
         return Response.error_response(message="Błąd podczas generowania podglądu")
 
-def temp_preview(filename: str) -> Response|flResponse:
-    return get_file(get_temp_folder(), filename)
+def temp_preview(filename: str) -> Response:
+    return Response.success_response(data = get_file(get_temp_folder(), filename))

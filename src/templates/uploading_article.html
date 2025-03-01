@@ -77,7 +77,7 @@
 
                 let data = await response.json();
 
-                if (data.message) {
+                if (data['message']) {
                     alert("File uploaded successfully!");
                 } else {
                     alert("Upload failed: " + (data.error || "Unknown error"));

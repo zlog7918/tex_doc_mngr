@@ -31,7 +31,7 @@ def signup():
 @login_required
 def approve():
     code=request.form.get('code')
-    return uc.approve(code)
+    return uc.approve(code).to_dict()
 
 
 @user_bp.route('/ch_pass', methods=['POST'])

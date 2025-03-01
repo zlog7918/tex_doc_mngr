@@ -46,9 +46,9 @@ def upload_file():
 @login_required
 def uploaded_file(filename):
     ret=ac.get_uploaded_file(filename)
-    if isinstance(ret, Response):
-        return ret.to_dict()
-    return ret
+    if ret.success:
+        return ret.data
+    return ret.to_dict()
 
 
 @articles_bp.route('/generate-preview', methods=['POST'])
@@ -62,7 +62,10 @@ def generate_preview():
         return Response.error_response(message="Nieprawidłowy format pliku").to_dict()
 
     tex_path=handle_file(file, get_temp_folder())
-    return ac.generate_preview(tex_path).to_dict()
+    response = ac.generate_preview(tex_path)
+    if response.success:
+        return response.data
+    return response.to_dict()
 
 
 @articles_bp.route('/temp-preview/<filename>')

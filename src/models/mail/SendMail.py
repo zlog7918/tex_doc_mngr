@@ -28,7 +28,8 @@ class SendMail:
                     </body>
                 </html>
             ''')
-        except:
+        except Exception as e:
+            print(str(e))
             return False
         return True
 

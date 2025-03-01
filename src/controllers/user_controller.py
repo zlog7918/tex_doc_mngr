@@ -19,40 +19,42 @@ def logout() -> Response:
   logout_user()
   return Response.success_response()
 
-def validate_passwords(passwd, rep_passwd):
+def validate_passwords(passwd: str, rep_passwd: str):
   if passwd != rep_passwd:
     raise Exception('Podane nowe hasła nie pasują do siebie')
 
-def check_password(passwd):
+def check_password(passwd: str):
   user=User()
   passwd=user.ch_pass(passwd)
   if passwd is False:
     raise Exception('Konto nie zostało utworzone')
 
-def check_user_existence(nick, email):
+def check_user_existence(nick: str, email: str):
     existing_user = is_user_existing(nick, email)
     if existing_user:
       raise Exception('Użytkownik o podanym nicku lub e-mailu już istnieje')
 
-def send_validation_email(email, code):
+def send_validation_email(email: str, code: int):
   try:
     flag=False
     s=SendMail()
     if not s.sendCode([email], code):
+      print("not")
       flag=True
   except Exception as e:
+    print(str(e))
     flag=True
   finally:
     if flag:
       raise Exception('Nie udało sie wysłać e-maila weryfikującego')
 
-def create_user(nick, email, passwd, code, code_exp):
+def create_user(nick: str, email: str, passwd: str, code: str, code_exp: int):
   user = User(nick=nick, email=email, passwd=passwd, approved=False,
               code=code, code_exp=datetime.datetime.now() + datetime.timedelta(seconds=code_exp))
   if not add_user(user):
     raise Exception('Konto nie zostało utworzone')
 
-def signup_user(nick, email, passwd, rep_passwd) -> Response:
+def signup_user(nick: str, email: str, passwd: str, rep_passwd: str) -> Response:
   try:
     validate_passwords(passwd, rep_passwd)
     check_password(passwd)
@@ -70,7 +72,7 @@ def signup_user(nick, email, passwd, rep_passwd) -> Response:
   except Exception as e:
     return Response.error_response(message=str(e))
 
-def approve(code) -> Response:
+def approve(code: str) -> Response:
   user: User=current_user
   if user.is_approved():
     return Response.error_response(message = 'Konto nie wymaga potwierdzenia')
@@ -79,7 +81,7 @@ def approve(code) -> Response:
     return Response.success_response()
   return Response.error_response(message = 'Konto nie zostało potwierdzone')
 
-def change_password(passwd, new_passwd, rep_passwd) -> Response:
+def change_password(passwd: str, new_passwd: str, rep_passwd: str) -> Response:
   try:
     validate_passwords(new_passwd, rep_passwd)
     user: User=current_user

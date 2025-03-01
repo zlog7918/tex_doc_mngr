@@ -177,14 +177,10 @@ button {
     document.getElementById("signup-btn").addEventListener("click", function () {
         let form = document.getElementById("register-form");
         ajax_json_call('/user/signup', null, form).then(data => {
-            if ('error' in data) {
-                if (data['error'])
-                    alert(`Błąd: ${data['message']}`);
-                else
-                    window.location.reload();  
-            } else {
-                alert(`Błąd: ${JSON.stringify(data)}`);
-            }
+            if (data['success'])
+                window.location.reload(); 
+            else
+                alert(`Błąd: ${data['message']}`);
         }).catch(err => alert(`Błąd: ${JSON.stringify(err)}`));
     });
 </script>
