@@ -19,36 +19,34 @@ def logout() -> Response:
   logout_user()
   return Response.success_response()
 
-def validate_passwords(passwd: str, rep_passwd: str):
+def validate_passwords(passwd: str, rep_passwd: str) -> None:
   if passwd != rep_passwd:
     raise Exception('Podane nowe hasła nie pasują do siebie')
 
-def check_password(passwd: str):
+def check_password(passwd: str) -> None:
   user=User()
   passwd=user.ch_pass(passwd)
   if passwd is False:
     raise Exception('Konto nie zostało utworzone')
 
-def check_user_existence(nick: str, email: str):
+def check_user_existence(nick: str, email: str) -> None:
     existing_user = is_user_existing(nick, email)
     if existing_user:
       raise Exception('Użytkownik o podanym nicku lub e-mailu już istnieje')
 
-def send_validation_email(email: str, code: int):
+def send_validation_email(email: str, code: int) -> None:
   try:
     flag=False
     s=SendMail()
     if not s.sendCode([email], code):
-      print("not")
       flag=True
   except Exception as e:
-    print(str(e))
     flag=True
   finally:
     if flag:
       raise Exception('Nie udało sie wysłać e-maila weryfikującego')
 
-def create_user(nick: str, email: str, passwd: str, code: str, code_exp: int):
+def create_user(nick: str, email: str, passwd: str, code: str, code_exp: int) -> None:
   user = User(nick=nick, email=email, passwd=passwd, approved=False,
               code=code, code_exp=datetime.datetime.now() + datetime.timedelta(seconds=code_exp))
   if not add_user(user):

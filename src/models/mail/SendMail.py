@@ -15,7 +15,6 @@ class SendMail:
 
     def sendCode(self, recievers: list[str], code: str) -> bool:
         try:
-            # print(recievers, f'code: "{code}"')
             self.__sender.send_mess('Kod do autoryzacji', recievers, f'''
                 <html>
                     <head>
@@ -29,7 +28,6 @@ class SendMail:
                 </html>
             ''')
         except Exception as e:
-            print(str(e))
             return False
         return True
 

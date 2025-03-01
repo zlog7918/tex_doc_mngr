@@ -17,7 +17,7 @@ def get_all_articles_by_editor() -> list[Article]:
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
     if not article:
-        return Response.error_response()
+        return Response.error_response(message='Nie znaleziono artykułu.')
 
     if article.content.startswith('/'):
         article.content = f'<br><embed src="{article.content}" width="800" height="500" type="application/pdf">'
