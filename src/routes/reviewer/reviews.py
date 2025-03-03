@@ -1,4 +1,4 @@
-from db.db_base import db
+from db.db_base import db, log_activity
 from models.usr.User import User
 from models.article.Round import Round
 from models.article.Review import Review
@@ -8,6 +8,8 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 import db.queries.article as aq
 import db.queries.review as rq
+from models.utils.Response import Response
+from models.utils.utils import get_function
 
 review_bp = Blueprint("review", __name__)
 
@@ -29,9 +31,14 @@ def article_details(article_id):
     try:
         user: User=current_user
         article = aq.get_article(article_id)
-        review = rq.get_review(article_id, int(user.get_id()))
+        if not article:
+            log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
+            return Response.error_response(message = 'Article not found').to_dict()
+        reviewer_id = int(user.get_id())
+        review = rq.get_review(article_id, reviewer_id)
         if not review:
-            return str("review not found"), 500
+            log_activity(get_function(), False, {'err': f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found'})
+            return Response.error_response(message = 'Review not found').to_dict()
 
         if review.status == "Pending confirmation":
             return render_template("review_tabs/pending_confirmation.html", article=article, review_id=review.id)

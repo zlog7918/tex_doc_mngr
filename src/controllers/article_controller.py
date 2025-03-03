@@ -1,10 +1,10 @@
 import os
 import subprocess
-from db.db_base import db
+from db.db_base import db, log_activity, log_err
 from models.article.Article import Article, ArticleStatusEnum
 from models.usr.User import User
 from models.utils.Response import Response
-from models.utils.utils import get_temp_folder, get_upload_folder
+from models.utils.utils import get_function, get_temp_folder, get_upload_folder
 from flask_login import current_user
 from flask import send_from_directory
 import db.queries.article as aq
@@ -17,6 +17,7 @@ def get_all_articles_by_editor() -> list[Article]:
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
     if not article:
+        log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
         return Response.error_response(message='Nie znaleziono artykułu.')
 
     if article.content.startswith('/'):
@@ -41,24 +42,28 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     try:
         article = aq.get_article(article_id)
         if not article:
+            log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
             return Response.error_response("Article not found")
 
         result = article.update_status(status)
         if not result:
-            return Response.error_response("Article status not updated")
+            return Response.error_response(f"Article status not updated to {status.value}")
 
         return Response.success_response()
 
-    except Exception as err:
-        return Response.error_response(str(err))
+    except Exception as e:
+        log_err(get_function(), e)
+        return Response.error_response(str(e))
     
 def add_round(article_id: int) -> Response:
     article = aq.get_article(article_id)
     if not article:
+        log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
         return Response.error_response(message = "Article not found")
 
     # Sprawdzanie, czy artykuł spełnia wymagane statusy
     if article.status.stat not in {ArticleStatusEnum.Accepted, ArticleStatusEnum.Reviewed}:
+        log_activity(get_function(), False, {'err': f'Cannot add a new round to the article with id: {article_id} and status: {article.status.stat}'})
         return Response.error_response(message = "Round cannot be added")
 
     new_round_number = len(article.rounds) + 1
@@ -71,6 +76,7 @@ def add_round(article_id: int) -> Response:
     
 def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     if not assigned_reviewers:
+        log_activity(get_function(), False, {'err': 'No reviewers assigned'})
         return Response.error_response(message = 'No reviewers assigned')
     
     try:
@@ -84,11 +90,12 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
 
         update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
         if not update_status_result.success:
-            return Response.error_response(message = 'Failed to update article status to 3.')
+            return update_status_result
 
         return Response.success_response()
-    except Exception as err:
-        return Response.error_response(str(err))
+    except Exception as e:
+        log_err(get_function(), e)
+        return Response.error_response(str(e))
 
 def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
     try:
@@ -114,7 +121,6 @@ def upload_file(title: str, editor: str, tex_path: str) -> Response:
             if not conversion_success:
                 return Response.error_response(message="Error converting LaTeX to PDF")
 
-        # file_url=f"/articles/uploads/{filename}"
         file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf') if filename.endswith('.tex') else filename}"
 
         if aq.create_article(title, file_url, editor):
@@ -123,7 +129,6 @@ def upload_file(title: str, editor: str, tex_path: str) -> Response:
                 data={"pdf_url": file_url}
             )
         else:
-            print('Else')
             db.session.rollback()
             return Response.error_response(message='Article not created')
 
