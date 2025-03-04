@@ -39,6 +39,7 @@ class Article(db.Model):
             if status:
                 self.status_id = status.id
                 db.session.commit()
+                log_activity(get_function(), True, {'details': f'Poprawnie zmieniono status artyułu: {id} na: {new_status}'})
                 return True
             log_activity(get_function(), False, {'err': f'Nie zmieniono statusu: {new_status}'})
             return False
