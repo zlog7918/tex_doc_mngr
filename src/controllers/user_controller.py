@@ -7,7 +7,7 @@ from models.utils.Response import Response
 from db.db_base import log_activity, log_err
 from models.utils.utils import get_function, generate_code
 from flask_login import login_user, logout_user, current_user 
-from db.queries.user import user_loader_by_nick, is_user_existing, add_user
+from services.user import user_loader_by_nick, is_user_existing, add_user
 
 def validate_nick(nick: str) -> None:
   ret_mess='Nick nie spełnia wymagań'

@@ -1,15 +1,15 @@
 import os
 from flask import Flask
 from db.db_base import db
-from routes.users.users import user_bp
 from db.seed_db import seed_data
+from models.usr.User import User
+from routes.users.users import user_bp
 from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
-from models.usr.User import User
-from db.queries.user import user_loader, user_loader_by_nick
 from flask_login import LoginManager, current_user
 from models.utils.utils import render_base_template
 from routes.editor.articles import editor_articles_bp
+from services.user import user_loader, user_loader_by_nick
 
 app = Flask(__name__)
 

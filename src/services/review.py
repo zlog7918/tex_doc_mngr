@@ -1,9 +1,9 @@
 from db.db_base import db
+from . import article as aq
 from models.article.Round import Round
 from models.article.Review import Review
 from models.article.Article import Article
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
-import db.queries.article as aq
 
 def get_article(article_id: int):
     return Article.query.get_or_404(article_id)
