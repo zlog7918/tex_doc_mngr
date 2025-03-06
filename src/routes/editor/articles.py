@@ -4,7 +4,6 @@ from models.utils.utils import render_base_template
 from flask_login import login_required
 from flask import request, redirect, url_for, Blueprint, render_template
 import controllers.article_controller as ac
-import db.queries.article as aq
 
 editor_articles_bp = Blueprint("editor_articles", __name__)
 
@@ -32,6 +31,9 @@ def show_articles():
 @editor_articles_bp.route('/<int:article_id>')
 @login_required
 def article_details(article_id):
+    if not ac.is_editor(article_id):
+        return Response.error_response(message = "You are not an editor of this article").to_dict()
+
     response = ac.get_article_data(article_id)
 
     if not response.success:
@@ -63,18 +65,26 @@ def article_details(article_id):
 @editor_articles_bp.route('/<int:article_id>/accept', methods=['POST'])
 @login_required
 def accept_article(article_id):
+    if not ac.is_editor(article_id):
+        return Response.error_response(message = "You are not an editor of this article").to_dict()
+
     return ac.set_article_status(article_id, ArticleStatusEnum.Accepted).to_dict()
 
 
 @editor_articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
 @login_required
 def add_round(article_id):
+    if not ac.is_editor(article_id):
+        return Response.error_response(message = "You are not an editor of this article").to_dict()
     return ac.add_round(article_id).to_dict()
 
 
 @editor_articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
 @login_required
 def assign_reviewers(article_id):
+    if not ac.is_editor(article_id):
+        return Response.error_response(message = "You are not an editor of this article").to_dict()
+
     assigned_reviewers = request.form.get('assigned_reviewers[]')
     deadline_confirm = request.form.get('deadline_confirm')
     deadline_submit = request.form.get('deadline_submit')
@@ -89,7 +99,10 @@ def assign_reviewers(article_id):
 @editor_articles_bp.route('/<int:article_id>/reject', methods=['POST'])
 @login_required
 def reject_article(article_id):
-    result = aq.update_article_status(article_id, 5)
+    if not ac.is_editor(article_id):
+        return Response.error_response(message = "You are not an editor of this article").to_dict()
+
+    result = ac.set_article_status(article_id, ArticleStatusEnum.Rejected)
     if not result:
         return Response.error_response("Article status not updated")
     return Response.success_response()

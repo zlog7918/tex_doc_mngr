@@ -1,18 +1,29 @@
 import os
 import subprocess
-from db.db_base import db
+from db.db_base import db, log_activity, log_err
 from models.article.Article import Article, ArticleStatusEnum
 from models.usr.User import User
 from models.utils.Response import Response
-from models.utils.utils import get_temp_folder, get_upload_folder
+from models.utils.utils import get_function, get_temp_folder, get_upload_folder
 from flask_login import current_user
 from flask import send_from_directory
 import db.queries.article as aq
 
+def is_editor(article_id: int) -> bool:
+    try:
+        user: User=current_user
+        article: Article=aq.get_article(article_id)
+        if not article or article.editor_id:
+            log_activity(get_function(), False, {'err', f'Edytor usiłował uzyskać dostęo do artykułu o id: {article_id}'})
+            return False
+        return int(article.editor_id) == int(user.get_id())
+    except Exception as e:
+        log_err(get_function(), e)
+        return False
+
 def get_all_articles_by_editor() -> list[Article]:
     user: User=current_user
     return aq.get_all_articles_by_editor_id(int(user.get_id()))
-
 
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
