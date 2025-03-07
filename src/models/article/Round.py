@@ -1,6 +1,6 @@
 from db.db_base import db
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Integer, Date
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 class Round(db.Model):
     __tablename__ = 'rounds'

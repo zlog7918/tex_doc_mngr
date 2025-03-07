@@ -1,11 +1,11 @@
+from . import user as uq
 from db.db_base import db
-from models.article.Round import Round
-from models.article.Review import Review
-from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
-from models.article.Questions import Answer, Question
 from models.usr.User import User
 from flask_login import current_user
-import db.queries.user as uq
+from models.article.Round import Round
+from models.article.Review import Review
+from models.article.Questions import Answer, Question
+from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
 
 def create_article(title: str, file_url: str, editor_nick: str) -> bool:

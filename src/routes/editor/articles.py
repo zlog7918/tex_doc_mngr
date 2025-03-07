@@ -1,9 +1,9 @@
-from models.article.Article import ArticleStatusEnum
-from models.utils.Response import Response
-from models.utils.utils import render_base_template
 from flask_login import login_required
-from flask import request, redirect, url_for, Blueprint, render_template
+from models.utils.Response import Response
 import controllers.article_controller as ac
+from models.utils.utils import render_base_template
+from models.article.Article import ArticleStatusEnum
+from flask import request, redirect, url_for, Blueprint, render_template
 
 editor_articles_bp = Blueprint("editor_articles", __name__)
 

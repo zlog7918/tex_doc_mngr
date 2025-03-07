@@ -3,8 +3,8 @@ import traceback
 from flask import request
 from flask_sqlalchemy import SQLAlchemy
 from models.utils.utils import get_timestamp
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import MetaData, Integer, Boolean, Text, DateTime
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
     metadata = MetaData(naming_convention={
