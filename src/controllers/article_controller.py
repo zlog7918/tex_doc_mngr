@@ -1,16 +1,8 @@
 import os
 import subprocess
-<<<<<<< HEAD
 from db.db_base import db, log_activity, log_err
-from models.article.Article import Article, ArticleStatusEnum
-from models.usr.User import User
-from models.utils.Response import Response
-from models.utils.utils import get_function, get_temp_folder, get_upload_folder
-=======
-from db.db_base import db
 import services.article as aq
 from models.usr.User import User
->>>>>>> develop
 from flask_login import current_user
 from flask import send_from_directory
 from models.utils.Response import Response
