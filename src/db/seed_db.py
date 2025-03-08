@@ -1,16 +1,23 @@
 from models.usr.User import User
 from flask_sqlalchemy import SQLAlchemy
+from models.usr.Code import CodePurpose, CodePurposeEnum
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 from models.article.Questions import Question, QuestionA, QuestionSet, QuestionSetQuestions
 
 def seed_data(db: SQLAlchemy) -> None:
     if not User.query.first():
         users = [
-            User(nick='aaaa', email='a@a.a', passwd='$5$rounds=535000$wuEj7JxeY4UcsyOi$gQJ9v/eCcHdbrbLAriGeRQVSJfnzAzQoOMkQeiJvprC', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
-            User(nick='bbbb', email='b@b.b', passwd='$5$rounds=535000$wuEj7JxeY4UcsyOi$gQJ9v/eCcHdbrbLAriGeRQVSJfnzAzQoOMkQeiJvprC', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
-            User(nick='cccc', email='c@c.c', passwd='$5$rounds=535000$wuEj7JxeY4UcsyOi$gQJ9v/eCcHdbrbLAriGeRQVSJfnzAzQoOMkQeiJvprC', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
+            User(nick='aaaa', email='a@wp.pl', passwd='$5$rounds=535000$wuEj7JxeY4UcsyOi$gQJ9v/eCcHdbrbLAriGeRQVSJfnzAzQoOMkQeiJvprC', approved=True),
+            User(nick='bbbb', email='b@wp.pl', passwd='$5$rounds=535000$wuEj7JxeY4UcsyOi$gQJ9v/eCcHdbrbLAriGeRQVSJfnzAzQoOMkQeiJvprC', approved=True),
+            User(nick='cccc', email='c@wp.pl', passwd='$5$rounds=535000$wuEj7JxeY4UcsyOi$gQJ9v/eCcHdbrbLAriGeRQVSJfnzAzQoOMkQeiJvprC', approved=True),
         ]
         db.session.add_all(users)
+    
+    if not CodePurpose.query.first():
+        purposes = [
+            CodePurpose(purpose=p) for p in CodePurposeEnum
+        ]
+        db.session.add_all(purposes)
     
     if not ArticleStatus.query.first():
         statuses = [
