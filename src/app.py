@@ -1,6 +1,5 @@
 import os
 import time
-import psycopg2
 from flask import Flask
 from db.db_base import db
 from routes.users.users import user_bp
@@ -22,15 +21,9 @@ db.init_app(app)
 with app.app_context():
     for _ in range(10):
         try:
-            conn=psycopg2.connect(
-                database=os.getenv('POSTGRES_DB')
-                ,user=os.getenv('POSTGRES_USER')
-                ,password=os.getenv('POSTGRES_PASSWORD')
-                ,host='psql'
-                ,port='5432'
-            )
+            db.engine.connect()
             break
-        except (Exception, psycopg2.Error):
+        except Exception:
             time.sleep(0.2)
     db.create_all()
     seed_data(db)
