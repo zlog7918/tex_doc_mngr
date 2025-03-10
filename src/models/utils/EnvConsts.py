@@ -12,6 +12,9 @@ class EnvConsts(metaclass=Singleton):
         return self.__getenv_or_exception('FLASK_KEY')
     def getAppDir(self) -> str:
         return self.__getenv_or_exception('APP_DIR')
+    
+    def getDBString(self) -> str:
+        return f'postgresql://{self.getDBUser()}:{self.getDBPass()}@{self.getDBHost()}/{self.getDB()}'
     def getDBHost(self) -> str:
         return 'psql'
     def getDB(self) -> str:
@@ -39,7 +42,7 @@ class EnvConsts(metaclass=Singleton):
     def getPepper(self) -> str:
         return self.__PEPPER__
     
-    __mandytory: set[Callable[[], Any]]={getFlaskKey, getAppDir, getDBHost, getDB, getDBUser, getDBPass, getMailData}
+    __mandytory: set[Callable[[], Any]]={getFlaskKey, getAppDir, getDBString, getMailData}
     def __getenv_or_exception(self, name: str) -> str:
         ret=self.__getenv(name)
         if ret is None:

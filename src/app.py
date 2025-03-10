@@ -14,7 +14,7 @@ from services.user import user_loader, user_loader_by_nick
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{ec.getDBUser()}:{ec.getDBPass()}@{ec.getDBHost()}/{ec.getDB()}"
+app.config['SQLALCHEMY_DATABASE_URI'] = ec.getDBString()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
