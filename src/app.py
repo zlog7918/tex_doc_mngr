@@ -7,13 +7,14 @@ from routes.users.users import user_bp
 from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
 from flask_login import LoginManager, current_user
+from models.utils.EnvConsts import envConsts as ec
 from models.utils.utils import render_base_template
 from routes.editor.articles import editor_articles_bp
 from services.user import user_loader, user_loader_by_nick
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@psql/{os.getenv('POSTGRES_DB')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{ec.getDBUser()}:{ec.getDBPass()}@{ec.getDBHost()}/{ec.getDB()}"
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
@@ -24,7 +25,7 @@ with app.app_context():
 login_manager=LoginManager()
 login_manager.init_app(app)
 
-app.secret_key=os.environ.get('FLASK_KEY', 'FLASK_KEY')
+app.secret_key=ec.getFlaskKey()
 
 app.register_blueprint(editor_articles_bp, url_prefix="/editor/articles")
 app.register_blueprint(articles_bp, url_prefix="/articles")
