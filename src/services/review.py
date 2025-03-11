@@ -5,9 +5,8 @@ from models.article.Review import Review
 from models.article.Article import Article
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
-def get_article(article_id: int):
-    return Article.query.get_or_404(article_id)
-
+def get_review_by_id(review_id: int) -> Review|None:
+    return Review.query.get_or_404(review_id)
 
 def get_review(article_id: int, reviewer_id: int) -> Review:
     try:

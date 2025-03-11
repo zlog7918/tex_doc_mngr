@@ -3,6 +3,8 @@ import services.article as aq
 from models.usr.User import User
 from flask_login import login_required, current_user
 from flask import Blueprint, render_template, request, redirect, url_for, flash
+import controllers.article_controller as ac
+from models.utils.Response import Response
 
 review_bp = Blueprint("review", __name__)
 
@@ -22,6 +24,9 @@ def list_reviewer_reviews():
 @login_required
 def article_details(article_id):
     try:
+        if not ac.is_reviewer(article_id):
+            return Response.error_response(message = "You are not a reviewer of this article").to_dict()
+
         user: User=current_user
         article = aq.get_article(article_id)
         review = rq.get_review(article_id, int(user.get_id()))
@@ -52,6 +57,11 @@ def article_details(article_id):
 @login_required
 def accept_article(review_id):
     try:
+        print("start")
+        if not ac.is_reviewer_of_review(review_id):
+            print("return")
+            return Response.error_response(message = "You are not a reviewer of this review").to_dict()
+
         result = rq.update_review_status(review_id, "Accepted by reviewer")
         if result:
             return {"message": "Accepted reviewing the article"}, 200
@@ -64,6 +74,9 @@ def accept_article(review_id):
 @login_required
 def reject_article(review_id):
     try:
+        if not ac.is_reviewer_of_review(review_id):
+            return Response.error_response(message = "You are not a reviewer of this review").to_dict()
+
         result = rq.update_review_status(review_id, "Rejected by reviewer")
         if result:
             return {"message": "Rejected reviewing the article"}, 200
@@ -75,6 +88,9 @@ def reject_article(review_id):
 @review_bp.route('/<int:review_id>/submit_review', methods=['POST'])
 @login_required
 def submit_review(review_id):
+    if not ac.is_reviewer_of_review(review_id):
+        return Response.error_response(message = "You are not a reviewer of this review").to_dict()
+
     answers = {}
 
     if request.method != 'POST':
