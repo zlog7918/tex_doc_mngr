@@ -16,11 +16,13 @@ def is_editor(article_id: int) -> bool:
         user: User=current_user
         article: Article=aq.get_article(article_id)
         if not article or not article.editor_id:
+            print(article == None)
             log_activity(get_function(), False, {'err', f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
             return False
         
         return int(article.editor_id) == int(user.get_id())
     except Exception as e:
+        print(e)
         log_err(get_function(), e)
         return False
 

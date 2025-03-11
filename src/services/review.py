@@ -7,7 +7,7 @@ from models.article.Article import Article
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 def get_review_by_id(review_id: int) -> Review|None:
-    return Review.query.where(id==review_id).first()
+    return Review.query.where(Review.id==review_id).first()
 
 def get_review(article_id: int, reviewer_id: int) -> Review|None:
     try:
