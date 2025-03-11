@@ -96,13 +96,13 @@ def signup_user(nick: str, email: str, passwd: str, rep_passwd: str) -> Response
     if user is None:
       return Response.error_response(message='Konto nie zostało utworzone')
     
-    code=sc.gen_code(user, CodePurposeEnum.ApproveUser)
+    code, code_exp=sc.gen_code(user, CodePurposeEnum.ApproveUser)
     send_code_by_email(SendMail.sendCode, email, code)
     
     login_user(user)
     log_activity(get_function(), True, {'details': f'Poprawnie stworzono konto: {nick}[{email}]'})
     return Response.success_response(
-      message = f'Proszę potwierdzić konto za pomocą kodu z mail\'a w: {code.code_exp/60}min'
+      message = f'Proszę potwierdzić konto za pomocą kodu z mail\'a w: {code_exp/60}min'
     )
   except Exception as e:
     return Response.error_response(message=str(e))
@@ -148,7 +148,7 @@ def request_pass_reset(email: str) -> Response:
       log_activity(get_function(), False, {'err': f'Żądany kod dla konta o nieistniejącym email: {email}'})
       # TODO: add sleep
       return Response.success_response(message=message)
-    code=sc.gen_code(user, CodePurposeEnum.ResetUserPassReq)
+    code, _=sc.gen_code(user, CodePurposeEnum.ResetUserPassReq)
     send_code_by_email(SendMail.sendResetReqest, email, code)
     return Response.success_response(message=message)
   except Exception as e:
@@ -163,7 +163,7 @@ def pass_reset(email: str, code: str) -> Response:
       log_activity(get_function(), False, {'err': f'Próba zmiany hasła konta o nieistniejącym email: {email}'})
       return Response.error_response(message=message)
     if sc.check_code(user, code, CodePurposeEnum.ResetUserPassReq):
-      _code=sc.gen_code(user, CodePurposeEnum.ResetUserPass)
+      _code, _=sc.gen_code(user, CodePurposeEnum.ResetUserPass)
       return Response.success_response(data=_code.code)
     return Response.error_response(message=message)
   except Exception as e:
@@ -182,7 +182,7 @@ def pass_reset_new_pass(email: str, code: str, passwd: str, rep_passwd: str) -> 
       if su.change_user_pass(user, passwd):
         log_activity(get_function(), True, {'details': f'Poprawnie zmieniono hasło konta: {user.get_nick()}'})
         return Response.success_response()
-      _code=sc.gen_code(user, CodePurposeEnum.ResetUserPass)
+      _code, _=sc.gen_code(user, CodePurposeEnum.ResetUserPass)
       return Response.error_response(message='Hasło nie spełnia wymogów', data=_code.code)
     return Response.error_response(message=message)
   except Exception as e:

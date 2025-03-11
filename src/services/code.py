@@ -27,7 +27,7 @@ def __gen_unique_code(user: User, purpose: CodePurpose) -> tuple[str, int]:
                 raise e.with_traceback(e.__traceback__)
     raise RuntimeError(f'Nie można wylosowań unikalnego kodu pomimo {MAX_TRIES} losowań')
 
-def gen_code(user: User, purpose: CodePurposeEnum) -> Code:
+def gen_code(user: User, purpose: CodePurposeEnum) -> tuple[Code, int]:
     try:
         Code.query.where(and_(
             Code.usr_id==user.id
@@ -51,7 +51,7 @@ def gen_code(user: User, purpose: CodePurposeEnum) -> Code:
             )
         ).first()
         if _code is not None:
-            return _code
+            return _code, code_exp
     except Exception as e:
         log_err(util.get_function(), e)
     raise Exception('Nie można wygenerować kodu')
