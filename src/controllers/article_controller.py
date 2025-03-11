@@ -27,10 +27,9 @@ def is_editor(article_id: int) -> bool:
 def is_reviewer(article_id: int) -> bool:
     try:
         user: User=current_user
-        reviews: list[Review] = aq.get_assigned_reviews(article_id)
-        reviewer_ids = [int(review.reviewer_id) for review in reviews]
+        review = rs.get_review(article_id, int(user.get_id()))
 
-        if int(user.get_id()) in reviewer_ids:
+        if review:
             return True
         
         log_activity(get_function(), False, {'err', f'Reviewer {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
@@ -129,6 +128,22 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
             return Response.error_response(message = 'Failed to update article status to 3.')
 
         return Response.success_response()
+    except Exception as err:
+        return Response.error_response(str(err))
+    
+def set_review_status(review_id: int, status: str) -> Response:
+    try:
+        user: User = current_user
+        review = rs.get_review(review_id, int(user.get_id()))
+        if not review:
+            return Response.error_response("Review not found")
+
+        result = rs.update_review_status(review_id, status)
+        if not result:
+            return Response.error_response("Review status not updated")
+
+        return Response.success_response()
+
     except Exception as err:
         return Response.error_response(str(err))
 

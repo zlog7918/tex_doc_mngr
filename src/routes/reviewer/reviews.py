@@ -57,12 +57,10 @@ def article_details(article_id):
 @login_required
 def accept_article(review_id):
     try:
-        print("start")
         if not ac.is_reviewer_of_review(review_id):
-            print("return")
             return Response.error_response(message = "You are not a reviewer of this review").to_dict()
 
-        result = rq.update_review_status(review_id, "Accepted by reviewer")
+        result = ac.set_review_status(review_id, "Accepted by reviewer")
         if result:
             return {"message": "Accepted reviewing the article"}, 200
         else:
@@ -77,7 +75,7 @@ def reject_article(review_id):
         if not ac.is_reviewer_of_review(review_id):
             return Response.error_response(message = "You are not a reviewer of this review").to_dict()
 
-        result = rq.update_review_status(review_id, "Rejected by reviewer")
+        result = ac.set_review_status(review_id, "Rejected by reviewer")
         if result:
             return {"message": "Rejected reviewing the article"}, 200
         else:
