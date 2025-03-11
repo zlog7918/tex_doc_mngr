@@ -1,16 +1,15 @@
 import os
 import subprocess
 from db.db_base import db
+import services.user as au
 import services.article as aq
-from models.usr.User import User
-from flask_login import current_user
 from flask import send_from_directory
 from models.utils.Response import Response
 from models.article.Article import Article, ArticleStatusEnum
 from models.utils.utils import get_temp_folder, get_upload_folder
 
 def get_all_articles_by_editor() -> list[Article]:
-    user: User=current_user
+    user=au.get_curr_user_or_err()
     return aq.get_all_articles_by_editor_id(int(user.get_id()))
 
 

@@ -1,6 +1,7 @@
 from flask import Blueprint, request
 from flask_login import login_required
 import controllers.user_controller as uc
+from models.utils.Response import Response
 from models.utils.utils import render_base_template
 
 user_bp = Blueprint('user', __name__)
@@ -10,6 +11,8 @@ user_bp = Blueprint('user', __name__)
 def login():
     nick = request.form.get('nick')
     passwd = request.form.get('passwd')
+    if (nick is None) or (passwd is None):
+        return Response.error_response(message='Nie pełny formularz').to_dict()
     return uc.login(nick, passwd).to_dict()
 
 
@@ -24,6 +27,8 @@ def signup():
     email = request.form.get('email')
     passwd = request.form.get('passwd')
     rep_passwd = request.form.get('rep_passwd')
+    if (nick is None) or (email is None) or (passwd is None) or (rep_passwd is None):
+        return Response.error_response(message='Nie pełny formularz').to_dict()
     return uc.signup_user(nick, email, passwd, rep_passwd).to_dict()
 
 
@@ -37,16 +42,22 @@ def ch_pass():
     passwd = request.form.get('passwd')
     new_passwd = request.form.get('new_passwd')
     rep_passwd = request.form.get('rep_passwd')
+    if (passwd is None) or (new_passwd is None) or (rep_passwd is None):
+        return Response.error_response(message='Nie pełny formularz').to_dict()
     return uc.change_password(passwd, new_passwd, rep_passwd).to_dict()
 
 @user_bp.route('/pass_reset', methods=['POST'])
 def pass_reset_request():
     email=request.form.get('email')
     code=request.form.get('code')
+    if email is None:
+        return Response.error_response(message='Nie pełny formularz').to_dict()
     if code is None:
         return uc.request_pass_reset(email).to_dict()
     passwd = request.form.get('passwd')
     rep_passwd = request.form.get('rep_passwd')
+    if (passwd is None) or (rep_passwd is None):
+        return Response.error_response(message='Nie pełny formularz').to_dict()
     return uc.pass_reset_new_pass(email, code, passwd, rep_passwd).to_dict()
 
 @user_bp.route('/pass_reset/<email>/<code>', methods=['GET', 'POST'])

@@ -79,7 +79,7 @@ def create_user(nick: str, email: str, passwd: str) -> None:
 def validate_email(email: str) -> str:
   try:
     v=emailV.validate_email(email)
-    return v['email']
+    return v.email
   except emailV.EmailNotValidError as e:
     raise Exception('E-mail nie przeszedł weryfikacji')
 
@@ -93,6 +93,8 @@ def signup_user(nick: str, email: str, passwd: str, rep_passwd: str) -> Response
     
     create_user(nick, email, passwd)
     user=su.user_loader_by_nick(nick)
+    if user is None:
+      return Response.error_response(message='Konto nie zostało utworzone')
     
     code=sc.gen_code(user, CodePurposeEnum.ApproveUser)
     send_code_by_email(SendMail.sendCode, email, code)
@@ -108,7 +110,7 @@ def signup_user(nick: str, email: str, passwd: str, rep_passwd: str) -> Response
 def approve(email: str, code: str) -> Response:
   try:
     email=validate_email(email)
-    user: User=su.user_loader_by_email(email)
+    user=su.user_loader_by_email(email)
     if user is None:
       return Response.error_response(message = 'Konto nie wymaga potwierdzenia')
     if user.is_approved():
@@ -125,7 +127,7 @@ def approve(email: str, code: str) -> Response:
 def change_password(passwd: str, new_passwd: str, rep_passwd: str) -> Response:
   try:
     validate_passwords(new_passwd, rep_passwd)
-    user: User=current_user
+    user=su.get_curr_user_or_err()
     if not user.verify_pass(passwd):
       log_activity(get_function(), False, {'err': f'Wprowadzono nie prawidłowe stare hasło dla: {user.get_nick()}'})
       return Response.error_response(message = 'Nieprawidłowe stare hasło')

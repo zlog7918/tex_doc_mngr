@@ -2,8 +2,8 @@ from db.db_base import db
 from flask_login import UserMixin
 from passlib.hash import sha256_crypt
 from ..utils.utils import validate_pass
-from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, Boolean, Text
+from sqlalchemy.orm import Mapped, mapped_column
 
 class User(db.Model, UserMixin):
     __tablename__ = 'usr'

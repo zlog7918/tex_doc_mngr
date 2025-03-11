@@ -5,6 +5,12 @@ from db.db_base import db, log_err
 from models.utils import utils as util
 from models.usr.Code import Code, CodePurpose, CodePurposeEnum
 
+def __get_purpose_or_err(purpose: CodePurposeEnum) -> CodePurpose:
+    _purpose: CodePurpose|None=CodePurpose.query.where(CodePurpose.purpose==purpose).first()
+    if _purpose is None:
+        raise Exception('Podany powód nie istnieje w bazie danych')
+    return _purpose
+
 def __gen_unique_code(user: User, purpose: CodePurpose) -> tuple[str, int]:
     MAX_TRIES=10
     for _ in range(MAX_TRIES):
@@ -34,7 +40,7 @@ def gen_code(user: User, purpose: CodePurposeEnum) -> Code:
         log_err(util.get_function(), e)
         raise Exception('Nie można wygenerować kodu')
     try:
-        _purpose: CodePurpose=CodePurpose.query.where(CodePurpose.purpose==purpose).first()
+        _purpose=__get_purpose_or_err(purpose)
         code, code_exp=__gen_unique_code(user, _purpose)
         _code=Code.query.where(
             and_(
@@ -50,21 +56,21 @@ def gen_code(user: User, purpose: CodePurposeEnum) -> Code:
         log_err(util.get_function(), e)
     raise Exception('Nie można wygenerować kodu')
 
-def check_code(user: User, code: str, purpose: CodePurposeEnum) -> bool:
+def check_code(user: User, code_str: str, purpose: CodePurposeEnum) -> bool:
     try:
-        _purpose: CodePurpose=CodePurpose.query.where(CodePurpose.purpose==purpose).first()
-        code=Code.query.where(
+        _purpose=__get_purpose_or_err(purpose)
+        _code=Code.query.where(
             and_(
                 Code.usr_id==user.id
                 ,Code.purpose_id==_purpose.id
-                ,Code.code==code
+                ,Code.code==code_str
                 ,Code.is_active==True
                 ,Code.code_exp>util.get_timestamp()
             )
         ).first()
-        if code is None:
+        if _code is None:
             return False
-        code: Code
+        code: Code=_code
         code.deactivate()
         db.session.commit()
         return True
