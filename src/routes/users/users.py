@@ -1,7 +1,7 @@
-from flask import Blueprint, request
 from flask_login import login_required
 import controllers.user_controller as uc
 from models.utils.Response import Response
+from flask import Blueprint, redirect, request
 from models.utils.utils import render_base_template
 
 user_bp = Blueprint('user', __name__)
@@ -34,7 +34,11 @@ def signup():
 
 @user_bp.route('/approve/<email>/<code>', methods=['GET', 'POST'])
 def approve(email: str, code: str):
-    return uc.approve(email, code).to_dict()
+    ret=uc.approve(email, code)
+    if ret.success:
+        return redirect('/')
+    # return render_base_template('error.html', err=ret.to_dict())
+    return ret.to_dict()
 
 @user_bp.route('/ch_pass', methods=['POST'])
 @login_required
@@ -65,7 +69,7 @@ def pass_reset(email: str, code: str):
     ret=uc.pass_reset(email, code)
     if ret.success:
         return render_base_template('pass_reset.html', email=email, code=ret.data)
-    # return render_base_template('error.html')
+    # return render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
 
 @user_bp.route('/pass_reset_form')
