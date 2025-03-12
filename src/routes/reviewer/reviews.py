@@ -61,9 +61,11 @@ def accept_article(review_id):
             return Response.error_response(message = "You are not a reviewer of this review").to_dict()
 
         result = ac.set_review_status(review_id, "Accepted by reviewer")
-        if result:
+        if result.success:
+            print('success')
             return {"message": "Accepted reviewing the article"}, 200
         else:
+            print(result.message)
             return {"error": "Failed to accept the review"}, 500
     except Exception as err:
         return {"error": str(err)}, 500

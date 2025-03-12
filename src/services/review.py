@@ -120,7 +120,7 @@ def post_review(review: Review) -> bool:
 
 def update_review_status(review_id: int, status: str) -> bool:
     try:
-        review = db.session.get(Review, review_id)
+        review = get_review_by_id(review_id)
         if review:
             review.status = status
             db.session.commit()

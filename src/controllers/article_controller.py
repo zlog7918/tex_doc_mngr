@@ -135,8 +135,7 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
     
 def set_review_status(review_id: int, status: str) -> Response:
     try:
-        user: User = current_user
-        review = rs.get_review(review_id, int(user.get_id()))
+        review = rs.get_review_by_id(review_id)
         if not review:
             return Response.error_response("Review not found")
 
