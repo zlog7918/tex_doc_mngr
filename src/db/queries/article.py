@@ -32,7 +32,7 @@ def create_article(title: str, file_url: str, editor_nick: str) -> bool:
         db.session.add(new_article)
         db.session.commit()
 
-        log_activity(get_function(), True, {'msg': f'Utworzono artykuł "{title}" przez użytkownika {user_id}'})
+        log_activity(get_function(), True, {'msg': f'Created article "{title}" with id {new_article.id} by user {user_id}'})
         return True
 
     except Exception as e:

@@ -41,7 +41,7 @@ class Article(db.Model):
                 db.session.commit()
                 log_activity(get_function(), True, {'details': f'Changed article status with id: {self.id} to: {new_status.value}'})
                 return True
-            log_activity(get_function(), False, {'err': f'Nie zmieniono statusu: {new_status}'})
+            log_activity(get_function(), False, {'err': f'Article {self.id} status not changed to: {new_status.value} '})
             return False
         except Exception as e:
             log_err(get_function(), e)

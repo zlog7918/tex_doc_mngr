@@ -76,7 +76,6 @@ def add_round(article_id: int) -> Response:
     
 def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     if not assigned_reviewers:
-        log_activity(get_function(), False, {'err': 'No reviewers assigned'})
         return Response.error_response(message = 'No reviewers assigned')
     
     try:
