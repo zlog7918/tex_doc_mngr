@@ -26,7 +26,7 @@ def login(nick: str, passwd: str) -> Response:
     validate_nick(nick)
   except Exception as e:
     return Response.error_response(message=str(e))
-  user = su.user_loader_by_nick(nick)
+  user=su.user_loader_by_nick(nick)
   if user is None:
     log_activity(get_function(), False, {'err': 'Nie prawidłowy login'})
     return Response.error_response(message = 'Nieprawidłowy login lub hasło')

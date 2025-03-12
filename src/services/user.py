@@ -18,13 +18,21 @@ def get_user_id(nick: str) -> int:
     try:
         user=user_loader_by_nick(nick)
         if user is None:
-            raise Exception()
+            raise Exception(f'{nick}')
         return user.id
     except Exception as e:
         raise Exception(f'Nie znaleziono użytkownika: {str(e)}')
 
 def get_curr_user() -> User|None:
-    return current_user._get_current_object()
+    try:
+        u=current_user._get_current_object()
+    except RuntimeError:
+        return None
+    if u is None:
+        return None
+    if isinstance(u, User):
+        return u
+    return None
 
 def get_curr_user_or_err() -> User:
     u=get_curr_user()
