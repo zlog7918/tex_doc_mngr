@@ -16,12 +16,6 @@ def url_last_edit(path: str) -> str:
 def render_base_template(name: str, **kwargs) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)
 
-def isNone(*args) -> bool:
-    for e in args:
-        if e is None:
-            return True
-    return False
-
 def get_upload_folder() -> str:
     return os.getenv('DOC_FILES_DIR', '/var/www/uploads')
 
