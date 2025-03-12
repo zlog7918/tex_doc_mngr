@@ -1,14 +1,14 @@
-import os
 from db.db_base import db
 from flask_login import UserMixin
 from passlib.hash import sha256_crypt
 from ..utils.utils import validate_pass
+from ..utils.EnvConsts import envConsts as ec
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import Integer, Boolean, Text, DateTime
 
 class User(db.Model, UserMixin):
     __tablename__ = 'usr'
-    __PEPPER__=bytes.fromhex(os.getenv('PEPPER_VAL'))
+    __PEPPER__=bytes.fromhex(ec.getPepper())
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     nick: Mapped[str] = mapped_column(Text, nullable=False, unique=True)

@@ -4,7 +4,7 @@ from typing import Any, Self, Callable
 
 class EnvConsts(metaclass=Singleton):
     def __init__(self):
-        # self.__PEPPER__=self.__getenv_or_exception('PEPPER_VAL')
+        self.__PEPPER__=self.__getenv_or_exception('PEPPER_VAL')
         for m_fun in self.__mandytory:
             m_fun(self)
 
@@ -41,8 +41,8 @@ class EnvConsts(metaclass=Singleton):
             ,self.__getenv_or_exception('MAIL_AUTH_TYPE')
         )
     
-    # def getPepper(self) -> str:
-    #     return self.__PEPPER__
+    def getPepper(self) -> str:
+        return self.__PEPPER__
     
     __mandytory: set[Callable[[Self], Any]]={
         getFlaskKey
