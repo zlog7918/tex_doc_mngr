@@ -11,6 +11,7 @@ from flask_login import LoginManager, current_user
 from models.utils.utils import render_base_template
 from routes.editor.articles import editor_articles_bp
 from services.user import user_loader, user_loader_by_nick
+from scheduled_tasks import create_scheduler
 
 app = Flask(__name__)
 
@@ -54,6 +55,8 @@ def request_loader(request):
 def index():
     user: User=current_user
     return render_base_template(('logged.html' if user.is_approved() else 'check_approval.html') if current_user.is_authenticated else 'login_form.html')
+
+scheduler = create_scheduler()
 
 if __name__=='__main__':
     app.run(debug=True)

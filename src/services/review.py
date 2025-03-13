@@ -1,4 +1,6 @@
-from db.db_base import db
+from datetime import datetime, timedelta
+from db.db_base import db, log_activity, log_err
+from models.utils.utils import get_function
 from . import article as aq
 from models.article.Round import Round
 from models.article.Review import Review
@@ -219,3 +221,28 @@ def get_question_answers(question_id: int) -> list[dict[int, str]]:
     except Exception as err:
         print(f"Error fetching answers: {err}")
         return []
+    
+def set_expired_status_for_reviews() -> bool:
+    try:
+        print("start")
+        now = datetime.now()
+        yesterday_end = datetime(now.year, now.month, now.day) - timedelta(seconds=1)
+        reviews = (
+            db.session.query(Review)
+            .join(Round, Round.id == Review.round_id)
+            .where(Review.status == 'Pending confirmation')
+            .where(Round.deadline_confirm <= yesterday_end)
+            .all()
+        )
+
+        for review in reviews:
+            print(f'Zmieniono status review {review.id} na \'Expired\'')
+            # log_activity(get_function(), True, {'details': f'Zmieniono status review {review.id} na \'Expired\''})
+            review.status = 'Expired'
+
+        db.session.commit()
+        return True
+    except Exception as e:
+        print("exception: " + str(e))
+        # log_err(get_function(), e)
+        return False

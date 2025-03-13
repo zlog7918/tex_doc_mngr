@@ -1,6 +1,15 @@
 from db.db_base import db
+from enum import Enum as PyEnum
 from sqlalchemy import ForeignKey, String, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+class ReviewStatusEnum(PyEnum):
+    Pendingconfirmation='Pending confirmation'
+    RejectedByReviewer='Rejected by reviewer'
+    AcceptedByReviewer='Accepted by reviewer'
+    Reviewed ='Reviewed'
+    NotReviewed ='Not reviewed'
+    Expired ='Expired'
 
 class Review(db.Model):
     __tablename__ = 'reviews'
@@ -17,8 +26,9 @@ class Review(db.Model):
 
 '''
 Pending confirmation - Oczekiwanie na potwierdzenie recenzenta, że podejmie się recenzowania.
-Rejected by reviewer - Odrzucone przez recenzenta (nie będzie recenzować lub nie zdąży zrecenzować).
+Rejected by reviewer - Odrzucone przez recenzenta.
 Accepted by reviewer - Zaakceptowane przez recenzenta, który zobowiązał się przygotować recenzję.
 Reviewed - Recenzja została zakończona (dostarczona przez recenzenta).
-Not reviewed - Brak recenzji, ponieważ recenzent nie zdążył przygotować jej na czas.
+Not reviewed - Brak recenzji, ponieważ recenzent nie zdążył przygotować jej na czas pomimo akceptacji.
+Expired - Nie potwierdził w wyznaczonym terminie czy będize recenzować.
 '''

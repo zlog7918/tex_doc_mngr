@@ -8,3 +8,4 @@ Flask-Login
 Flask-Migrate
 email-validator
 Flask-SQLAlchemy
+apscheduler
