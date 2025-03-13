@@ -46,7 +46,7 @@ def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
     return Article.query.filter_by(editor_id=editor_id).all()
 
 
-def get_available_reviewers(article_id: int) -> list[dict[int, str]]:
+def get_available_reviewers(article_id: int) -> dict[int, str]:
     try:
         # Pobieramy identyfikator najnowszej rundy dla danego artykułu
         latest_round_subquery = (
@@ -72,16 +72,16 @@ def get_available_reviewers(article_id: int) -> list[dict[int, str]]:
         )
 
         # Konwersja wyników na listę słowników
-        return [{"id": row.id, "nick": row.nick} for row in reviewers]
+        return {row.id: row.nick for row in reviewers}
 
     except Exception as err:
         print("error1: " + str(err))
         # self.__log_activity(inspect.currentframe().f_code.co_name, False,
         #                     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
-        return []
+        return {}
     
 
-def get_assigned_reviewers(article_id: int) -> list[dict[int, str]]:
+def get_assigned_reviewers(article_id: int) -> dict[int, str]:
     try:
         # Pobieramy identyfikator najnowszej rundy dla artykułu
         latest_round_subquery = (
@@ -101,13 +101,13 @@ def get_assigned_reviewers(article_id: int) -> list[dict[int, str]]:
         )
 
         # Konwersja do listy słowników
-        return [{"id": row.id, "nick": row.nick} for row in reviewers]
+        return {row.id: row.nick for row in reviewers}
 
     except Exception as err:
         print("error2: " + str(err))
         # self.__log_activity(inspect.currentframe().f_code.co_name, False,
         #                     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
-        return []
+        return {}
 
 
 def get_assigned_reviews(article_id: int) -> list[Review]:
