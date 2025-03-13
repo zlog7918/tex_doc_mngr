@@ -1,5 +1,6 @@
+from models.utils.utils import get_function
 from . import user as uq
-from db.db_base import db
+from db.db_base import db, log_err
 from models.usr.User import User
 from flask_login import current_user
 from models.article.Round import Round
@@ -7,11 +8,15 @@ from models.article.Review import Review
 from models.article.Questions import Answer, Question
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
+def user_exist(user_id: int):
+    user = User.query.where(User.id == user_id)
+    if user:
+        return True
+    return False
 
-def create_article(title: str, file_url: str, editor_nick: str) -> bool:
+def create_article(title: str, file_url: str, editor_id: int) -> bool:
     try:
         user_id = current_user.get_id()
-        editor_id = uq.get_user_id(editor_nick)
         if not editor_id:
             return False
 
@@ -80,6 +85,19 @@ def get_available_reviewers(article_id: int) -> list[dict[int, str]]:
         #                     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
         return []
     
+def get_available_editors() -> dict[int, str]:
+    try:
+        editors = (
+            db.session.query(User.id, User.nick)
+            .filter(User.id != current_user.id)
+            .all()
+        )
+
+        return {row.id: row.nick for row in editors} 
+
+    except Exception as e:
+        log_err(get_function(), e)
+        return {}
 
 def get_assigned_reviewers(article_id: int) -> list[dict[int, str]]:
     try:

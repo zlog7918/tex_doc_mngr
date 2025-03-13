@@ -23,14 +23,18 @@ def handle_file(file: FileStorage, folder: str) -> str:
 @articles_bp.route('/upload-form')
 @login_required
 def upload_form():
-    return render_template('uploading_article.html')
-
+    editors = ac.get_available_editors()
+    return render_template('uploading_article.html', editors = editors)
 
 @articles_bp.route('/upload', methods=['POST'])
 @login_required
 def upload_file():
     title = request.form.get('title')
     editor = request.form.get('editor')
+
+    response = ac.is_valid_editor(editor)
+    if not response.success:
+        return response.to_dict()
     if 'file' not in request.files:
         return Response.error_response(message='Nie przesłano pliku').to_dict()
 

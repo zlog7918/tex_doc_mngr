@@ -9,6 +9,18 @@ from models.utils.Response import Response
 from models.article.Article import Article, ArticleStatusEnum
 from models.utils.utils import get_temp_folder, get_upload_folder
 
+def get_available_editors() -> dict[int, str]:
+    return aq.get_available_editors()
+
+def is_valid_editor(editor_id: int) -> Response:
+    user: User = current_user
+    if editor_id == user.id:
+        return Response.error_response(message="An author cannot assign themselves as an editor.")
+    elif aq.user_exist(editor_id):
+        return Response.error_response(message="Editor does not exist.")
+    else:
+        return Response.success_response()
+
 def get_all_articles_by_editor() -> list[Article]:
     user: User=current_user
     return aq.get_all_articles_by_editor_id(int(user.get_id()))
@@ -103,7 +115,7 @@ def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
         # TODO: log
         return False
 
-def upload_file(title: str, editor: str, tex_path: str) -> Response:
+def upload_file(title: str, editor_id: int, tex_path: str) -> Response:
     # TODO: check if the function handles all possibilities
     try:
         upload_folder=os.path.dirname(tex_path)
@@ -114,10 +126,9 @@ def upload_file(title: str, editor: str, tex_path: str) -> Response:
             if not conversion_success:
                 return Response.error_response(message="Error converting LaTeX to PDF")
 
-        # file_url=f"/articles/uploads/{filename}"
         file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf') if filename.endswith('.tex') else filename}"
 
-        if aq.create_article(title, file_url, editor):
+        if aq.create_article(title, file_url, editor_id):
             return Response.success_response(
                 message=f"File {filename} uploaded successfully",
                 data={"pdf_url": file_url}
