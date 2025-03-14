@@ -32,7 +32,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             let fileInput = document.getElementById('file');
             let title = document.querySelector('#uploadForm input[name="title"]');
-            let editor = document.querySelector('#uploadForm input[name="editor"]');
+            let editor = document.getElementById("editor");
             let previewBtn = document.getElementById('previewBtn');
             let sendBtn = document.getElementById('sendBtn');
             let uploadForm = document.getElementById('uploadForm');
@@ -72,7 +72,7 @@
             uploadForm.addEventListener("submit", async function(event) {
                 event.preventDefault();
 
-                let editorId = editorSelect.value;
+                let editorId = editor.value;
                 if (!editorId) {
                     alert("Please select an editor.");
                     return;
