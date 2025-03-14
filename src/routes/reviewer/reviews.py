@@ -1,7 +1,7 @@
+import services.user as su
 import services.review as rq
 import services.article as aq
-from models.usr.User import User
-from flask_login import login_required, current_user
+from flask_login import login_required
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
 review_bp = Blueprint("review", __name__)
@@ -11,7 +11,7 @@ review_bp = Blueprint("review", __name__)
 @login_required
 def list_reviewer_reviews():
     try:
-        user: User=current_user
+        user=su.get_curr_user_or_err()
         articles = rq.get_articles_as_reviewer(int(user.get_id()))
     except Exception as err:
         return str(err), 500
@@ -22,7 +22,7 @@ def list_reviewer_reviews():
 @login_required
 def article_details(article_id):
     try:
-        user: User=current_user
+        user=su.get_curr_user_or_err()
         article = aq.get_article(article_id)
         review = rq.get_review(article_id, int(user.get_id()))
         if not review:

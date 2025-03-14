@@ -25,7 +25,7 @@ def show_articles():
     try:
         articles = ac.get_all_articles_by_editor()
     except Exception as err:
-        return Response.Response.error_response(message=str(err)).to_dict()
+        return Response.error_response(message=str(err)).to_dict()
     return render_base_template("articles.html", articles=articles)
 
 

@@ -22,14 +22,8 @@ def get_upload_folder() -> str:
 def get_temp_folder() -> str:
     return os.getenv('TEMP_FOLDER', '/tmp')
 
-def generate_code() -> tuple[str, int]:
-    r=random.Random()
-    code=r.randint(0, 999999)
-    code=f"{code:06d}"
-    return code, c.TIME_TO_EXPIRE
-
 def get_timestamp() -> datetime:
-    return datetime.today().astimezone(tz=timezone.utc)
+    return datetime.now(timezone.utc)
 
 def get_function(back: int=0) -> str:
     frame=sys._getframe(back+1)
@@ -50,7 +44,7 @@ def validate_pass(passwd: str) -> bool:
         if char.islower():
             is_lower=1
         if char in SpecialSym:
-            is_upper=1
+            is_special=1
         if not (char.islower() or char.isdigit() or char.isupper() or (char in SpecialSym)):
             return False
     if (is_digit+is_lower+is_special+is_upper)<4:
