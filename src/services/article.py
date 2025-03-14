@@ -1,3 +1,4 @@
+from sqlalchemy import and_
 from models.utils.utils import get_function
 from . import user as uq
 from db.db_base import db, log_err
@@ -42,12 +43,15 @@ def get_article(article_id: int) -> Article:
 
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
-    return Article.query.filter_by(editor_id=editor_id).all()
+    return Article.query.where(Article.editor_id == editor_id).all()
 
 
 def get_available_reviewers(article_id: int) -> list[dict[int, str]]:
     try:
-        # Pobieramy identyfikator najnowszej rundy dla danego artykułu
+        user_id = current_user.get_id()
+        article = Article.query.where(Article.id == article_id).first()
+        author_id = article.author_id if article else None
+
         latest_round_subquery = (
             db.session.query(Round.id)
             .filter(Round.article_id == article_id)
@@ -56,17 +60,19 @@ def get_available_reviewers(article_id: int) -> list[dict[int, str]]:
             .subquery()
         )
 
-        # Pobieramy identyfikatory recenzentów, którzy są już przypisani do tej rundy
         assigned_reviewers_subquery = (
             db.session.query(Review.reviewer_id)
             .filter(Review.round_id.in_(latest_round_subquery))
             .subquery()
         )
 
-        # Pobieramy użytkowników, którzy NIE są przypisani do tej rundy
         reviewers = (
             db.session.query(User.id, User.nick)
-            .filter(~User.id.in_(assigned_reviewers_subquery))
+            .where(and_(
+                ~User.id.in_(assigned_reviewers_subquery),
+                User.id != user_id,
+                User.id != author_id
+            ))
             .all()
         )
 
