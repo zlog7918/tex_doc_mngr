@@ -8,12 +8,6 @@ from models.article.Review import Review
 from models.article.Questions import Answer, Question
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
-def user_exist(user_id: int):
-    user = User.query.where(User.id == user_id)
-    if user:
-        return True
-    return False
-
 def create_article(title: str, file_url: str, editor_id: int) -> bool:
     try:
         user_id = current_user.get_id()

@@ -1,4 +1,5 @@
 import os
+from db.db_base import log_err
 from flask_login import login_required
 from werkzeug.utils import secure_filename
 from models.utils.Response import Response
@@ -6,7 +7,7 @@ import controllers.article_controller as ac
 from werkzeug.datastructures import FileStorage
 from models.utils.consts import ALLOWED_EXTENSIONS
 from flask import request, Blueprint, render_template
-from models.utils.utils import get_temp_folder, get_upload_folder
+from models.utils.utils import get_function, get_temp_folder, get_upload_folder
 
 articles_bp = Blueprint("articles", __name__)
 
@@ -31,6 +32,12 @@ def upload_form():
 def upload_file():
     title = request.form.get('title')
     editor = request.form.get('editor')
+
+    try:
+        editor = int(editor)
+    except (ValueError, TypeError) as e:
+        log_err(get_function(), e)
+        return Response.error_response(message='Invalid editor ID').to_dict()
 
     response = ac.is_valid_editor(editor)
     if not response.success:

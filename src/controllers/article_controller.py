@@ -2,6 +2,7 @@ import os
 import subprocess
 from db.db_base import db
 import services.article as aq
+import services.user as us
 from models.usr.User import User
 from flask_login import current_user
 from flask import send_from_directory
@@ -16,7 +17,7 @@ def is_valid_editor(editor_id: int) -> Response:
     user: User = current_user
     if editor_id == user.id:
         return Response.error_response(message="An author cannot assign themselves as an editor.")
-    elif aq.user_exist(editor_id):
+    elif us.user_loader(editor_id):
         return Response.error_response(message="Editor does not exist.")
     else:
         return Response.success_response()

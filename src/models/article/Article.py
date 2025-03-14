@@ -1,6 +1,6 @@
 from db.db_base import db
 from enum import Enum as PyEnum
-from sqlalchemy import ForeignKey, String, Integer, Text, Enum
+from sqlalchemy import ForeignKey, String, Integer, Text, Enum, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 class ArticleStatusEnum(PyEnum):
@@ -31,6 +31,10 @@ class Article(db.Model):
     author = relationship('User', foreign_keys=[author_id])
     editor = relationship('User', foreign_keys=[editor_id])
     status = relationship('ArticleStatus', backref='articles')
+
+    __table_args__ = (
+        CheckConstraint(author_id != editor_id, name='check_author_not_editor'),
+    )
 
     def update_status(self, new_status: ArticleStatusEnum) -> bool:
         try:
