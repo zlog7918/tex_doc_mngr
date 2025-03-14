@@ -3,7 +3,7 @@ from db.db_base import db
 from models.usr.User import User
 from flask_login import current_user
 from models.article.Round import Round
-from models.article.Review import Review
+from models.article.Review import Review, ReviewStatusEnum
 from models.article.Questions import Answer, Question
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
@@ -244,7 +244,7 @@ def add_reviewer_to_article(article_id: int, reviewer_id: int) -> bool:
             new_review = Review(
                 round_id=round_id,
                 reviewer_id=reviewer_id,
-                status="Pending confirmation"
+                status_id=1
             )
             db.session.add(new_review)
             db.session.commit()

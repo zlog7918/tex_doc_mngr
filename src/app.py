@@ -56,7 +56,7 @@ def index():
     user: User=current_user
     return render_base_template(('logged.html' if user.is_approved() else 'check_approval.html') if current_user.is_authenticated else 'login_form.html')
 
-scheduler = create_scheduler()
+# scheduler = create_scheduler()
 
 if __name__=='__main__':
     app.run(debug=True)

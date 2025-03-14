@@ -1,3 +1,4 @@
+from models.article.Review import ReviewStatusEnum
 import services.review as rq
 import services.article as aq
 from models.usr.User import User
@@ -28,9 +29,9 @@ def article_details(article_id):
         if not review:
             return str("review not found"), 500
 
-        if review.status == "Pending confirmation":
+        if review.status.stat == ReviewStatusEnum.PendingConfirmation:
             return render_template("review_tabs/pending_confirmation.html", article=article, review_id=review.id)
-        elif review.status == "Accepted by reviewer":
+        elif review.status.stat == ReviewStatusEnum.AcceptedByReviewer:
             questions = rq.get_questions_by_article(article_id)
 
             if not questions:
@@ -52,7 +53,7 @@ def article_details(article_id):
 @login_required
 def accept_article(review_id):
     try:
-        result = rq.update_review_status(review_id, "Accepted by reviewer")
+        result = rq.update_review_status(review_id, 3)
         if result:
             return {"message": "Accepted reviewing the article"}, 200
         else:
@@ -64,7 +65,7 @@ def accept_article(review_id):
 @login_required
 def reject_article(review_id):
     try:
-        result = rq.update_review_status(review_id, "Rejected by reviewer")
+        result = rq.update_review_status(review_id, 2)
         if result:
             return {"message": "Rejected reviewing the article"}, 200
         else:

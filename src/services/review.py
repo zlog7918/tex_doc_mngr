@@ -3,7 +3,7 @@ from db.db_base import db, log_activity, log_err
 from models.utils.utils import get_function
 from . import article as aq
 from models.article.Round import Round
-from models.article.Review import Review
+from models.article.Review import Review, ReviewStatus, ReviewStatusEnum
 from models.article.Article import Article
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
@@ -45,6 +45,7 @@ def get_assigned_reviews(article_id: int) -> list[dict[int, str]]:
             .all()
         )
 
+        print(f"Liczba znalezionych recenzji: {len(reviews)}")
         # Konwersja wyników na listę obiektów Review
         return [{"review_id": review.id, "reviewer_id": review.reviewer_id} for review in reviews]
 
@@ -65,12 +66,12 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
             return
 
         statuses = (
-            db.session.query(Review.status)
+            db.session.query(ReviewStatus.status.stat)
             .filter(Review.round_id == round_id)
             .all()
         )
 
-        all_reviewed = all(status[0] == 'Reviewed' for status in statuses)
+        all_reviewed = all(status[0] == ReviewStatusEnum.Reviewed for status in statuses)
 
         if all_reviewed:
             article_id = (
@@ -82,7 +83,7 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
                 aq.update_article_status(article_id, 4)
 
     except Exception as err:
-        print("exception:", str(err))
+        print("exception2:", str(err))
         # self.__log_activity(
         #     inspect.currentframe().f_code.co_name,
         #     False,
@@ -90,17 +91,21 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
         # )
 
 
-def get_articles_as_reviewer(reviewer_id: int) -> list[Article, int]:
+def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, ReviewStatusEnum]]:
     try:
         articles = (
-            db.session.query(Article, Review.status)
+            db.session.query(Article, ReviewStatus.stat)
             .join(Round, Round.article_id == Article.id)
             .join(Review, Review.round_id == Round.id)
-            .filter(Review.reviewer_id == reviewer_id, Review.status.in_(['Pending confirmation', 'Accepted by reviewer']))
+            .join(ReviewStatus, Review.status_id == ReviewStatus.id)
+            .filter(Review.reviewer_id == reviewer_id, ReviewStatus.stat.in_([
+                ReviewStatusEnum.PendingConfirmation,
+                ReviewStatusEnum.AcceptedByReviewer
+                ])
+            )
             .all()
         )
 
-        # Konwersja do listy słowników
         return articles
 
     except Exception as err:
@@ -120,11 +125,11 @@ def post_review(review: Review) -> bool:
         return False
 
 
-def update_review_status(review_id: int, status: str) -> bool:
+def update_review_status(review_id: int, status: int) -> bool:
     try:
         review = db.session.get(Review, review_id)
         if review:
-            review.status = status
+            review.status_id = status
             db.session.commit()
             return True
         return False
@@ -182,7 +187,7 @@ def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
             new_answer = Answer(review_id=review_id, question_id=question_id, answer=answer)
             db.session.add(new_answer)
 
-        update_review_status(review_id=review_id, status='Reviewed')    # TODO: rollback answer submitting when exception here
+        update_review_status(review_id=review_id, status=4)    # TODO: rollback answer submitting when exception here
         db.session.commit()
         return True
     except Exception as err:
@@ -230,15 +235,16 @@ def set_expired_status_for_reviews() -> bool:
         reviews = (
             db.session.query(Review)
             .join(Round, Round.id == Review.round_id)
-            .where(Review.status == 'Pending confirmation')
+            .join(ReviewStatus, ReviewStatus.id == Review.status_id)
+            .where(ReviewStatus.stat == ReviewStatusEnum.PendingConfirmation)
             .where(Round.deadline_confirm <= yesterday_end)
             .all()
         )
 
         for review in reviews:
-            print(f'Zmieniono status review {review.id} na \'Expired\'')
+            print(f'Zmieniono status review {review.id} na \'{ReviewStatusEnum.Expired}\'')
             # log_activity(get_function(), True, {'details': f'Zmieniono status review {review.id} na \'Expired\''})
-            review.status = 'Expired'
+            review.status.stat = ReviewStatusEnum.Expired
 
         db.session.commit()
         return True

@@ -1,15 +1,21 @@
 from db.db_base import db
 from enum import Enum as PyEnum
-from sqlalchemy import ForeignKey, String, Integer, Text
+from sqlalchemy import ForeignKey, String, Integer, Text, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 class ReviewStatusEnum(PyEnum):
-    Pendingconfirmation='Pending confirmation'
+    PendingConfirmation='Pending confirmation'
     RejectedByReviewer='Rejected by reviewer'
     AcceptedByReviewer='Accepted by reviewer'
-    Reviewed ='Reviewed'
-    NotReviewed ='Not reviewed'
-    Expired ='Expired'
+    Reviewed='Reviewed'
+    NotReviewed='Not reviewed'
+    Expired='Expired'
+
+class ReviewStatus(db.Model):
+    __tablename__ = 'review_status'
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    stat: Mapped[ReviewStatusEnum] = mapped_column(Enum(ReviewStatusEnum), nullable=False, unique=True)
 
 class Review(db.Model):
     __tablename__ = 'reviews'
@@ -18,10 +24,11 @@ class Review(db.Model):
     round_id: Mapped[int] = mapped_column(ForeignKey('rounds.id'), nullable=False)
     reviewer_id: Mapped[int] = mapped_column(ForeignKey('usr.id'), nullable=False)
     review_text: Mapped[str] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(String(50), nullable=False)
+    status_id: Mapped[int] = mapped_column(ForeignKey('review_status.id'), nullable=False)
     
     round = relationship('Round', backref='reviews')
     reviewer = relationship('User', backref='reviews')
+    status = relationship('ReviewStatus', backref='reviews')
 
 
 '''
