@@ -2,17 +2,17 @@ import os
 from db.db_base import log_err
 from models.usr.Code import Code
 from .Sender import Sender, SenderLoginOpt
-from models.utils.EnvConsts import envConsts as ec
 from models.utils.utils import get_function
+from models.utils.EnvConsts import envConsts as ec
 
 class SendMail:
     def __init__(self):
         (host, port, addr, usr, passwd, auth_type)=ec.getMailData()
-        self.__sender=Sender(host, int(port), addr, usr, passwd, SenderLoginOpt(auth_type))
+        self.__sender=Sender(host, port, addr, usr, passwd, auth_type)
 
     def sendCode(self, reciever: str, code: Code) -> bool:
-        port=int(os.getenv('NGINX_HTTPS_OUTER_PORT', '443'))
-        link=f'https://{os.getenv('SERVER_NAME', 'SERVER_NAME')}{'' if port==443 else f':{port}'}/user/approve/{reciever}/{code.code}'
+        port=ec.getHttpsPort()
+        link=f'https://{ec.getServerName()}{'' if port==443 else f':{port}'}/user/approve/{reciever}/{code.code}'
         try:
             self.__sender.send_mess('Kod do autoryzacji', [reciever], f'''
                 <html>
@@ -33,8 +33,8 @@ class SendMail:
         return True
 
     def sendResetReqest(self, reciever: str, code: Code) -> bool:
-        port=int(os.getenv('NGINX_HTTPS_OUTER_PORT', '443'))
-        link=f'https://{os.getenv('SERVER_NAME', 'SERVER_NAME')}{'' if port==443 else f':{port}'}/user/pass_reset/{reciever}/{code.code}'
+        port=ec.getHttpsPort()
+        link=f'https://{ec.getServerName()}{'' if port==443 else f':{port}'}/user/pass_reset/{reciever}/{code.code}'
         try:
             self.__sender.send_mess('Reset hasła', [reciever], f'''
                 <html>

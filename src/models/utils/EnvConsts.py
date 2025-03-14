@@ -1,6 +1,7 @@
 import os
 from .Singleton import Singleton
 from typing import Any, Self, Callable
+from models.mail.Sender import SenderLoginOpt
 
 class EnvConsts(metaclass=Singleton):
     def __init__(self):
@@ -12,8 +13,10 @@ class EnvConsts(metaclass=Singleton):
         return self.__getenv_or_exception('FLASK_KEY')
     def getAppDir(self) -> str:
         return self.__getenv_or_exception('APP_DIR')
-    # def getServerName(self) -> str:
-    #     return self.__getenv_or_exception('SERVER_NAME')
+    def getHttpsPort(self) -> int:
+        return int(self.__getenv_or_exception('NGINX_HTTPS_OUTER_PORT'))
+    def getServerName(self) -> str:
+        return self.__getenv_or_exception('SERVER_NAME')
     
     def getDBString(self) -> str:
         return f'postgresql://{self.getDBUser()}:{self.getDBPass()}@{self.getDBHost()}/{self.getDB()}'
@@ -31,14 +34,14 @@ class EnvConsts(metaclass=Singleton):
     def getTempDir(self) -> str:
         ret=self.__getenv('TEMP_FOLDER')
         return '/tmp/uploads' if ret is None else ret
-    def getMailData(self) -> tuple[str, str, str, str, str, str]:
+    def getMailData(self) -> tuple[str, int, str, str, str, SenderLoginOpt]:
         return (
             self.__getenv_or_exception('MAIL_HOST')
-            ,self.__getenv_or_exception('MAIL_PORT')
+            ,int(self.__getenv_or_exception('MAIL_PORT'))
             ,self.__getenv_or_exception('MAIL_ADDRESS')
             ,self.__getenv_or_exception('MAIL_USERNAME')
             ,self.__getenv_or_exception('MAIL_PASSWORD')
-            ,self.__getenv_or_exception('MAIL_AUTH_TYPE')
+            ,SenderLoginOpt(self.__getenv_or_exception('MAIL_AUTH_TYPE'))
         )
     
     def getPepper(self) -> str:
@@ -46,8 +49,9 @@ class EnvConsts(metaclass=Singleton):
     
     __mandytory: set[Callable[[Self], Any]]={
         getFlaskKey
-        # ,getServerName
         ,getAppDir
+        ,getHttpsPort
+        ,getServerName
         ,getDBString
         ,getMailData
     }
