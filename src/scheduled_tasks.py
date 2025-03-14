@@ -1,10 +1,20 @@
-from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
+from typing import Callable
 import services.review as rs
 from datetime import datetime
+from flask.ctx import AppContext
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
+
+ContextFun=Callable[[], AppContext]
 
 def set_reviews_expired():
     rs.set_expired_status_for_reviews()
+
+def set_context(callable: Callable[[], None], callable_context: ContextFun):
+    def _callable():
+        with callable_context():
+            callable()
+    return _callable
 
 
 def job_listener(event):
@@ -13,14 +23,14 @@ def job_listener(event):
     else:
         print(f"Job {event.job_id} completed successfully")
 
-def create_scheduler():
+def create_scheduler(callable_context: ContextFun):
     scheduler = BackgroundScheduler()
 
     # Uruchomienie przy starcie aplikacji
-    scheduler.add_job(set_reviews_expired, 'date', run_date=datetime.now())
+    scheduler.add_job(set_context(set_reviews_expired, callable_context), 'date', run_date=datetime.now())
 
     # Uruchamianie codziennie o północy
-    scheduler.add_job(set_reviews_expired, 'cron', hour=0, minute=0)
+    scheduler.add_job(set_context(set_reviews_expired, callable_context), 'cron', hour=0, minute=0)
 
     scheduler.add_listener(job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 

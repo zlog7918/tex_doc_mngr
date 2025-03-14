@@ -5,13 +5,13 @@ from db.db_base import db
 from db.seed_db import seed_data
 from models.usr.User import User
 from routes.users.users import user_bp
+from scheduled_tasks import create_scheduler
 from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
 from flask_login import LoginManager, current_user
 from models.utils.utils import render_base_template
 from routes.editor.articles import editor_articles_bp
 from services.user import user_loader, user_loader_by_nick
-from scheduled_tasks import create_scheduler
 
 app = Flask(__name__)
 
@@ -56,7 +56,6 @@ def index():
     user: User=current_user
     return render_base_template(('logged.html' if user.is_approved() else 'check_approval.html') if current_user.is_authenticated else 'login_form.html')
 
-# scheduler = create_scheduler()
-
+scheduler = create_scheduler(app.app_context)
 if __name__=='__main__':
     app.run(debug=True)

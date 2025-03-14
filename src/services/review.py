@@ -243,12 +243,12 @@ def set_expired_status_for_reviews() -> bool:
 
         for review in reviews:
             print(f'Zmieniono status review {review.id} na \'{ReviewStatusEnum.Expired}\'')
-            # log_activity(get_function(), True, {'details': f'Zmieniono status review {review.id} na \'Expired\''})
+            log_activity(get_function(), True, {'details': f'Zmieniono status review {review.id} na \'Expired\''})
             review.status.stat = ReviewStatusEnum.Expired
 
         db.session.commit()
         return True
     except Exception as e:
         print("exception: " + str(e))
-        # log_err(get_function(), e)
+        log_err(get_function(), e)
         return False
