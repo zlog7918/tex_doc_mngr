@@ -1,5 +1,5 @@
 import services.article as aq
-from flask_login import login_required
+from decors import approve_required
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from models.utils.utils import render_base_template
@@ -20,7 +20,7 @@ Final - artykół jest zakończony, nie wymaga poprawek, wersja końcowa
 
 
 @editor_articles_bp.route('/')
-@login_required
+@approve_required
 def show_articles():
     try:
         articles = ac.get_all_articles_by_editor()
@@ -30,7 +30,7 @@ def show_articles():
 
 
 @editor_articles_bp.route('/<int:article_id>')
-@login_required
+@approve_required
 def article_details(article_id):
     response = ac.get_article_data(article_id)
 
@@ -61,19 +61,19 @@ def article_details(article_id):
 
 
 @editor_articles_bp.route('/<int:article_id>/accept', methods=['POST'])
-@login_required
+@approve_required
 def accept_article(article_id):
     return ac.set_article_status(article_id, ArticleStatusEnum.Accepted).to_dict()
 
 
 @editor_articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
-@login_required
+@approve_required
 def add_round(article_id):
     return ac.add_round(article_id).to_dict()
 
 
 @editor_articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
-@login_required
+@approve_required
 def assign_reviewers(article_id):
     assigned_reviewers = request.form.get('assigned_reviewers[]')
     deadline_confirm = request.form.get('deadline_confirm')
@@ -87,7 +87,7 @@ def assign_reviewers(article_id):
 
 
 @editor_articles_bp.route('/<int:article_id>/reject', methods=['POST'])
-@login_required
+@approve_required
 def reject_article(article_id):
     result = aq.update_article_status(article_id, 5)
     if not result:
@@ -96,7 +96,7 @@ def reject_article(article_id):
 
 
 # @editor_articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
-# @login_required
+# @approve_required
 # def update_article_status(article_id):
 #     try:
 #         article = aq.get_article(article_id)

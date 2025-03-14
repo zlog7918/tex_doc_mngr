@@ -1,14 +1,14 @@
 import services.user as su
 import services.review as rq
 import services.article as aq
-from flask_login import login_required
+from decors import approve_required
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 
 review_bp = Blueprint("review", __name__)
 
 
 @review_bp.route("/")
-@login_required
+@approve_required
 def list_reviewer_reviews():
     try:
         user=su.get_curr_user_or_err()
@@ -19,7 +19,7 @@ def list_reviewer_reviews():
 
 
 @review_bp.route("/<int:article_id>", methods=["GET"])
-@login_required
+@approve_required
 def article_details(article_id):
     try:
         user=su.get_curr_user_or_err()
@@ -49,7 +49,7 @@ def article_details(article_id):
 
 
 @review_bp.route("/<int:review_id>/accept", methods=["POST"])
-@login_required
+@approve_required
 def accept_article(review_id):
     try:
         result = rq.update_review_status(review_id, "Accepted by reviewer")
@@ -61,7 +61,7 @@ def accept_article(review_id):
         return {"error": str(err)}, 500
     
 @review_bp.route("/<int:review_id>/reject", methods=["POST"])
-@login_required
+@approve_required
 def reject_article(review_id):
     try:
         result = rq.update_review_status(review_id, "Rejected by reviewer")
@@ -73,7 +73,7 @@ def reject_article(review_id):
         return {"error": str(err)}, 500
     
 @review_bp.route('/<int:review_id>/submit_review', methods=['POST'])
-@login_required
+@approve_required
 def submit_review(review_id):
     answers = {}
 
