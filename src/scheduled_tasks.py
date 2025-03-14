@@ -3,27 +3,26 @@ import services.review as rs
 from datetime import datetime
 from flask.ctx import AppContext
 from apscheduler.schedulers.background import BackgroundScheduler
-from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
+from apscheduler.events import JobExecutionEvent, EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 
 ContextFun=Callable[[], AppContext]
 
-def set_reviews_expired():
+def set_reviews_expired() -> None:
     rs.set_expired_status_for_reviews()
 
-def set_context(callable: Callable[[], None], callable_context: ContextFun):
+def set_context(callable: Callable[[], None], callable_context: ContextFun) -> Callable[[], None]:
     def _callable():
         with callable_context():
             callable()
     return _callable
 
-
-def job_listener(event):
+def job_listener(event: JobExecutionEvent) -> None:
     if event.exception:
         print(f"Job {event.job_id} failed")
     else:
         print(f"Job {event.job_id} completed successfully")
 
-def create_scheduler(callable_context: ContextFun):
+def create_scheduler(callable_context: ContextFun) -> BackgroundScheduler:
     scheduler = BackgroundScheduler()
 
     # Uruchomienie przy starcie aplikacji
