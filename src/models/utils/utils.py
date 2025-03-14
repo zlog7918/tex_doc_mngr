@@ -17,14 +17,8 @@ def url_last_edit(path: str) -> str:
 def render_base_template(name: str, **kwargs) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)
 
-def generate_code() -> tuple[str, int]:
-    r=random.Random()
-    code=r.randint(0, 999999)
-    code=f"{code:06d}"
-    return code, c.TIME_TO_EXPIRE
-
 def get_timestamp() -> datetime:
-    return datetime.today().astimezone(tz=timezone.utc)
+    return datetime.now(timezone.utc)
 
 def get_function(back: int=0) -> str:
     frame=sys._getframe(back+1)
