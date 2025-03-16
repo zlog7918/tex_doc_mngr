@@ -75,9 +75,12 @@ def add_round(article_id):
 @editor_articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
 @login_required
 def assign_reviewers(article_id):
-    assigned_reviewers = request.form.get('assigned_reviewers[]')
+    assigned_reviewers = request.form.getlist('assigned_reviewers[]')
     deadline_confirm = request.form.get('deadline_confirm')
     deadline_submit = request.form.get('deadline_submit')
+    
+    if not deadline_confirm or not deadline_submit:
+        return Response.error_response(message="Both deadlines must be provided.")
     
     response = ac.assign_reviewers(article_id, assigned_reviewers, deadline_confirm, deadline_submit)
 

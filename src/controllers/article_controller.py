@@ -1,6 +1,6 @@
 import os
 import subprocess
-from db.db_base import db
+from db.db_base import db, log_activity
 import services.article as aq
 import services.user as us
 from models.usr.User import User
@@ -8,7 +8,7 @@ from flask_login import current_user
 from flask import send_from_directory
 from models.utils.Response import Response
 from models.article.Article import Article, ArticleStatusEnum
-from models.utils.utils import get_temp_folder, get_upload_folder
+from models.utils.utils import get_function, get_temp_folder, get_upload_folder
 
 def get_available_editors() -> dict[int, str]:
     return aq.get_available_editors()
@@ -17,7 +17,7 @@ def is_valid_editor(editor_id: int) -> Response:
     user: User = current_user
     if editor_id == user.id:
         return Response.error_response(message="An author cannot assign themselves as an editor.")
-    elif us.user_loader(editor_id):
+    elif not us.user_loader(editor_id):
         return Response.error_response(message="Editor does not exist.")
     else:
         return Response.success_response()
@@ -81,13 +81,25 @@ def add_round(article_id: int) -> Response:
         return Response.success_response(message=f"Round {new_round_number} added successfully")
     else:
         return Response.error_response(message='Round was not created.')
-    
+
 def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     if not assigned_reviewers:
         return Response.error_response(message = 'No reviewers assigned')
     
     try:
-        assigned_reviewers_ids = [int(rid.strip()) for rid in assigned_reviewers.split(',')]
+        article = aq.get_article(article_id)
+        if not article:
+            log_activity(get_function(), False, {'err': f'Editor attepted to set reviewers to a non-existing article {article_id}.'})
+            return Response.error_response(message = f"Article {article_id} does not exist")
+
+        assigned_reviewers_ids = [int(rid) for rid in assigned_reviewers]
+        available_editors = get_available_editors()
+
+        for rid in assigned_reviewers_ids:
+            if rid not in available_editors:
+                log_activity(get_function(), False, {'err': f'Editor attempted to assign a reviewer {rid}'})
+                return Response.error_response(message=f"Reviewer {rid} cannot be assigned.")
+
         last_round_number = aq.get_last_round_number(article_id)
         new_round_number = last_round_number + 1 if last_round_number else 1
         aq.create_round(article_id, new_round_number, deadline_confirm, deadline_submit)
