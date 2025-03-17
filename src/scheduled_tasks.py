@@ -1,7 +1,10 @@
 from typing import Callable
 import services.review as rs
+from datetime import timedelta
 from flask.ctx import AppContext
 from models.utils.utils import get_timestamp
+from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.events import JobExecutionEvent, EVENT_JOB_EXECUTED, EVENT_JOB_ERROR
 
@@ -27,11 +30,11 @@ def job_listener(event: JobExecutionEvent) -> None:
 def create_scheduler(callable_context: ContextFun) -> BackgroundScheduler:
     scheduler = BackgroundScheduler()
 
-    # Uruchomienie przy starcie aplikacji
-    scheduler.add_job(set_context(set_reviews_expired, callable_context), 'date', run_date=get_timestamp())
+    # Uruchomienie 5s po starcie aplikacji (bez timedelta aplikacja potrafi się zawiesić)
+    scheduler.add_job(set_context(set_reviews_expired, callable_context), DateTrigger(get_timestamp()+timedelta(seconds=5)))
 
     # Uruchamianie codziennie o północy
-    scheduler.add_job(set_context(set_reviews_expired, callable_context), 'cron', hour=0, minute=0)
+    scheduler.add_job(set_context(set_reviews_expired, callable_context), CronTrigger(hour=0, minute=0))
 
     scheduler.add_listener(job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 

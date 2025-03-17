@@ -1,5 +1,6 @@
 import os
 import time
+import atexit
 from flask import Flask
 from db.db_base import db
 from db.seed_db import seed_data
@@ -57,5 +58,6 @@ def index():
     return render_base_template(('logged.html' if user.is_approved() else 'check_approval.html') if current_user.is_authenticated else 'login_form.html')
 
 scheduler = create_scheduler(app.app_context)
+atexit.register(lambda: scheduler.shutdown())
 if __name__=='__main__':
     app.run(debug=True)
