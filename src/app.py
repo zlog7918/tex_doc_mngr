@@ -1,4 +1,5 @@
 import os
+import time
 from flask import Flask
 from db.db_base import db
 from db.seed_db import seed_data
@@ -18,6 +19,12 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
 with app.app_context():
+    for _ in range(10):
+        try:
+            db.engine.connect()
+            break
+        except Exception:
+            time.sleep(0.2)
     db.create_all()
     seed_data(db)
 
