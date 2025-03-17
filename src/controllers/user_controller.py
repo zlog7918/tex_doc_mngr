@@ -1,13 +1,14 @@
 import re
-import datetime
+from typing import Callable
 import email_validator as emailV
 from models.usr.User import User
 from models.mail.SendMail import SendMail
 from models.utils.Response import Response
+from models.utils.utils import get_function
+from services import user as su, code as sc
 from db.db_base import log_activity, log_err
-from models.utils.utils import get_function, generate_code
-from flask_login import login_user, logout_user, current_user 
-from services.user import user_loader_by_nick, is_user_existing, add_user
+from models.usr.Code import Code, CodePurposeEnum
+from flask_login import login_user, logout_user, current_user
 
 def validate_nick(nick: str) -> None:
   ret_mess='Nick nie spełnia wymagań'
@@ -25,7 +26,7 @@ def login(nick: str, passwd: str) -> Response:
     validate_nick(nick)
   except Exception as e:
     return Response.error_response(message=str(e))
-  user = user_loader_by_nick(nick)
+  user=su.user_loader_by_nick(nick)
   if user is None:
     log_activity(get_function(), False, {'err': 'Nie prawidłowy login'})
     return Response.error_response(message = 'Nieprawidłowy login lub hasło')
@@ -53,14 +54,14 @@ def check_password(passwd: str) -> str:
   return user.get_passwd()
 
 def check_user_existence(nick: str, email: str) -> None:
-  if is_user_existing(nick, email):
+  if su.is_user_existing(nick, email):
     raise Exception('Użytkownik o podanym nicku lub e-mailu już istnieje')
 
-def send_validation_email(email: str, code: str) -> None:
+def send_code_by_email(send_func: Callable[[SendMail, str, Code], bool], email: str, code: Code) -> None:
   try:
     flag=False
     s=SendMail()
-    if not s.sendCode([email], code):
+    if not send_func(s, email, code):
       log_activity(get_function(), False, {'err': f'Nie prawidłowo wysłany kod do: {email}'})
       flag=True
   except Exception as e:
@@ -70,16 +71,15 @@ def send_validation_email(email: str, code: str) -> None:
     if flag:
       raise Exception('Nie udało sie wysłać e-maila weryfikującego')
 
-def create_user(nick: str, email: str, passwd: str, code: str, code_exp: int) -> None:
-  user = User(nick=nick, email=email, passwd=passwd, approved=False,
-              code=code, code_exp=datetime.datetime.now() + datetime.timedelta(seconds=code_exp))
-  if not add_user(user):
+def create_user(nick: str, email: str, passwd: str) -> None:
+  user = User(nick=nick, email=email, passwd=passwd)
+  if not su.add_user(user):
     raise Exception('Konto nie zostało utworzone')
   
 def validate_email(email: str) -> str:
   try:
     v=emailV.validate_email(email)
-    return v['email']
+    return v.email
   except emailV.EmailNotValidError as e:
     raise Exception('E-mail nie przeszedł weryfikacji')
 
@@ -91,11 +91,14 @@ def signup_user(nick: str, email: str, passwd: str, rep_passwd: str) -> Response
     passwd=check_password(passwd)
     check_user_existence(nick, email)
     
-    code, code_exp=generate_code()
-    send_validation_email(email, code)
+    create_user(nick, email, passwd)
+    user=su.user_loader_by_nick(nick)
+    if user is None:
+      return Response.error_response(message='Konto nie zostało utworzone')
     
-    create_user(nick, email, passwd, code, code_exp)
-    user=user_loader_by_nick(nick)
+    code, code_exp=sc.gen_code(user, CodePurposeEnum.ApproveUser)
+    send_code_by_email(SendMail.sendCode, email, code)
+    
     login_user(user)
     log_activity(get_function(), True, {'details': f'Poprawnie stworzono konto: {nick}[{email}]'})
     return Response.success_response(
@@ -104,27 +107,83 @@ def signup_user(nick: str, email: str, passwd: str, rep_passwd: str) -> Response
   except Exception as e:
     return Response.error_response(message=str(e))
 
-def approve(code: str) -> Response:
-  user: User=current_user
-  if user.is_approved():
-    return Response.error_response(message = 'Konto nie wymaga potwierdzenia')
-  flag=user.approve(code)
-  if flag:
-    log_activity(get_function(), True, {'details': f'Poprawnie potwierdzono konto: {user.get_nick()}'})
-    return Response.success_response()
-  log_activity(get_function(), False, {'err': f'Wprowadzono nie prawidłowy kod dla: {user.get_nick()}'})
-  return Response.error_response(message = 'Konto nie zostało potwierdzone')
+def approve(email: str, code: str) -> Response:
+  try:
+    email=validate_email(email)
+    user=su.user_loader_by_email(email)
+    if user is None:
+      return Response.error_response(message = 'Konto nie wymaga potwierdzenia')
+    if user.is_approved():
+      return Response.error_response(message = 'Konto nie wymaga potwierdzenia')
+    if sc.check_code(user, code, CodePurposeEnum.ApproveUser):
+      su.approve_user(user)
+      log_activity(get_function(), True, {'details': f'Poprawnie potwierdzono konto: {user.get_nick()}'})
+      return Response.success_response()
+    log_activity(get_function(), False, {'err': f'Wprowadzono nie prawidłowy kod dla: {user.get_nick()}'})
+    return Response.error_response(message = 'Konto nie zostało potwierdzone')
+  except Exception as e:
+    return Response.error_response(message = str(e))
 
 def change_password(passwd: str, new_passwd: str, rep_passwd: str) -> Response:
   try:
     validate_passwords(new_passwd, rep_passwd)
-    user: User=current_user
+    user=su.get_curr_user_or_err()
     if not user.verify_pass(passwd):
       log_activity(get_function(), False, {'err': f'Wprowadzono nie prawidłowe stare hasło dla: {user.get_nick()}'})
       return Response.error_response(message = 'Nieprawidłowe stare hasło')
-    if not user.ch_pass(new_passwd):
-      return Response.error_response(message = 'Hasło nie spełnia wymogów lub jest takie samo jak poprzednie')
-    log_activity(get_function(), True, {'details': f'Poprawnie zmieniono hasło konta: {user.get_nick()}'})
-    return Response.success_response()
+
+    if su.change_user_pass(user, new_passwd):
+      log_activity(get_function(), True, {'details': f'Poprawnie zmieniono hasło konta: {user.get_nick()}'})
+      return Response.success_response()
+    return Response.error_response(message = 'Hasło nie spełnia wymogów')
   except Exception as e:
     return Response.error_response(message = str(e))
+
+def request_pass_reset(email: str) -> Response:
+  message='Wiadmość została pomyślnie wysłana'
+  try:
+    email=validate_email(email)
+    user=su.user_loader_by_email(email)
+    if user is None:
+      log_activity(get_function(), False, {'err': f'Żądany kod dla konta o nieistniejącym email: {email}'})
+      # TODO: add sleep
+      return Response.success_response(message=message)
+    code, _=sc.gen_code(user, CodePurposeEnum.ResetUserPassReq)
+    send_code_by_email(SendMail.sendResetReqest, email, code)
+    return Response.success_response(message=message)
+  except Exception as e:
+    return Response.error_response(message=str(e))
+
+def pass_reset(email: str, code: str) -> Response:
+  message='Nie prawidłowy kod'
+  try:
+    email=validate_email(email)
+    user=su.user_loader_by_email(email)
+    if user is None:
+      log_activity(get_function(), False, {'err': f'Próba zmiany hasła konta o nieistniejącym email: {email}'})
+      return Response.error_response(message=message)
+    if sc.check_code(user, code, CodePurposeEnum.ResetUserPassReq):
+      _code, _=sc.gen_code(user, CodePurposeEnum.ResetUserPass)
+      return Response.success_response(data=_code.code)
+    return Response.error_response(message=message)
+  except Exception as e:
+    return Response.error_response(message=str(e))
+
+def pass_reset_new_pass(email: str, code: str, passwd: str, rep_passwd: str) -> Response:
+  message='Nie prawidłowy kod'
+  try:
+    validate_passwords(passwd, rep_passwd)
+    email=validate_email(email)
+    user=su.user_loader_by_email(email)
+    if user is None:
+      log_activity(get_function(), False, {'err': f'Próba zmiany hasła konta o nieistniejącym email: {email}'})
+      return Response.error_response(message=message)
+    if sc.check_code(user, code, CodePurposeEnum.ResetUserPass):
+      if su.change_user_pass(user, passwd):
+        log_activity(get_function(), True, {'details': f'Poprawnie zmieniono hasło konta: {user.get_nick()}'})
+        return Response.success_response()
+      _code, _=sc.gen_code(user, CodePurposeEnum.ResetUserPass)
+      return Response.error_response(message='Hasło nie spełnia wymogów', data=_code.code)
+    return Response.error_response(message=message)
+  except Exception as e:
+    return Response.error_response(message=str(e))  

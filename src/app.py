@@ -1,16 +1,16 @@
 import os
 import time
-from flask import Flask
 from db.db_base import db
 from db.seed_db import seed_data
 from models.usr.User import User
+from flask_login import LoginManager
 from routes.users.users import user_bp
+from flask import Flask, Request as flRequest
 from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
-from flask_login import LoginManager, current_user
 from models.utils.utils import render_base_template
 from routes.editor.articles import editor_articles_bp
-from services.user import user_loader, user_loader_by_nick
+from services.user import user_loader, get_curr_user, user_loader_by_nick
 
 app = Flask(__name__)
 
@@ -45,15 +45,17 @@ def ul(id: str|None) -> User|None:
     return user_loader(int(id))
 
 @login_manager.request_loader
-def request_loader(request):
+def request_loader(request: flRequest):
     nick=request.form.get('nick')
+    if nick is None:
+        return None
     user=user_loader_by_nick(nick)
     return user
 
 @app.route('/')
 def index():
-    user: User=current_user
-    return render_base_template(('logged.html' if user.is_approved() else 'check_approval.html') if current_user.is_authenticated else 'login_form.html')
+    user=get_curr_user()
+    return render_base_template('login_form.html' if user is None else ('logged.html' if user.is_approved() else 'check_approval.html'))
 
 if __name__=='__main__':
     app.run(debug=True)

@@ -5,17 +5,11 @@
     <div class="confirmation-box">
         <h2>Potwierdzenie konta</h2>
         <p>Cześć, dziękujemy za założenie konta! Proszę potwierdzić swoje konto kodem wysłanym na Twój e-mail.</p>
-
-        <form id="approve-form">
-            <label>Kod potwierdzający:</label>
-            <input type="text" name="code" required>
-            <button type="button" id="approve-btn" class="primary-btn">Potwierdź</button>
-        </form>
         
         <hr>
 
         <form id="logout-form">
-            <button type="button" id="logout-btn" class="secondary-btn">Wyloguj</button>
+            <button type="button" id="logout-btn" class="primary-btn">Wyloguj</button>
         </form>
     </div>
 </div>
@@ -54,6 +48,7 @@ body {
     font-weight: 700;
     color: #2d1053;
     margin-bottom: 15px;
+    margin-top: 0;
 }
 
 /* Tekst */
@@ -62,17 +57,6 @@ body {
     color: #333;
     margin-bottom: 20px;
     line-height: 1.4;
-}
-
-/* Formularze */
-input {
-    width: 90%;
-    margin-top: 10px;
-    margin-bottom: 15px;
-    padding: 12px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 16px;
 }
 
 /* Przyciski */
@@ -88,23 +72,12 @@ button {
 
 /* Główne przyciski akcji */
 .primary-btn {
-    background: #5a3d90;
-    color: white;
-    transition: 0.3s;
-}
-
-.primary-btn:hover {
-    background: #4a1e87;
-}
-
-/* Drugorzędne przyciski */
-.secondary-btn {
     background: #2d1053;
     color: white;
     transition: 0.3s;
 }
 
-.secondary-btn:hover {
+.primary-btn:hover {
     background: #1f083c;
 }
 
@@ -120,16 +93,6 @@ hr {
 <script>
     document.getElementById("logout-btn").addEventListener("click", function () {
         ajax_json_call('/user/logout').then(data => {
-            if (data['success'])
-                window.location.reload();
-            else
-                alert(`Err: ${data['message']}`);
-        }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
-    });
-
-    document.getElementById("approve-btn").addEventListener("click", function () {
-        let form = document.getElementById("approve-form");
-        ajax_json_call('/user/approve', null, form).then(data => {
             if (data['success'])
                 window.location.reload();
             else

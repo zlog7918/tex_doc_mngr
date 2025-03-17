@@ -1,4 +1,5 @@
-from flask_login import login_required
+import services.article as aq
+from decors import approve_required
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from models.utils.utils import render_base_template
@@ -19,17 +20,17 @@ Final - artykół jest zakończony, nie wymaga poprawek, wersja końcowa
 
 
 @editor_articles_bp.route('/')
-@login_required
+@approve_required
 def show_articles():
     try:
         articles = ac.get_all_articles_by_editor()
     except Exception as err:
-        return Response.Response.error_response(message=str(err)).to_dict()
+        return Response.error_response(message=str(err)).to_dict()
     return render_base_template("articles.html", articles=articles)
 
 
 @editor_articles_bp.route('/<int:article_id>')
-@login_required
+@approve_required
 def article_details(article_id):
     if not ac.is_editor(article_id):
         return Response.error_response(message = "You are not an editor of this article").to_dict()
@@ -63,7 +64,7 @@ def article_details(article_id):
 
 
 @editor_articles_bp.route('/<int:article_id>/accept', methods=['POST'])
-@login_required
+@approve_required
 def accept_article(article_id):
     if not ac.is_editor(article_id):
         return Response.error_response(message = "You are not an editor of this article").to_dict()
@@ -72,7 +73,7 @@ def accept_article(article_id):
 
 
 @editor_articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
-@login_required
+@approve_required
 def add_round(article_id):
     if not ac.is_editor(article_id):
         return Response.error_response(message = "You are not an editor of this article").to_dict()
@@ -80,7 +81,7 @@ def add_round(article_id):
 
 
 @editor_articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
-@login_required
+@approve_required
 def assign_reviewers(article_id):
     if not ac.is_editor(article_id):
         return Response.error_response(message = "You are not an editor of this article").to_dict()
@@ -97,7 +98,7 @@ def assign_reviewers(article_id):
 
 
 @editor_articles_bp.route('/<int:article_id>/reject', methods=['POST'])
-@login_required
+@approve_required
 def reject_article(article_id):
     if not ac.is_editor(article_id):
         return Response.error_response(message = "You are not an editor of this article").to_dict()
@@ -109,7 +110,7 @@ def reject_article(article_id):
 
 
 # @editor_articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
-# @login_required
+# @approve_required
 # def update_article_status(article_id):
 #     try:
 #         article = aq.get_article(article_id)

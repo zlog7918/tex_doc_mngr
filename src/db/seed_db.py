@@ -1,5 +1,6 @@
 from models.usr.User import User
 from flask_sqlalchemy import SQLAlchemy
+from models.usr.Code import CodePurpose, CodePurposeEnum
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 from models.article.Questions import Question, QuestionA, QuestionSet, QuestionSetQuestions
 
@@ -7,11 +8,17 @@ def seed_data(db: SQLAlchemy) -> None:
     if not User.query.first():
         # WARNING: password here is "aaaa" for randomly generated pepper, to use those accounts please generate for own pepper and replace passwd entries below
         users = [
-            User(nick='aaaa', email='a@a.a', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
-            User(nick='bbbb', email='b@b.b', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
-            User(nick='cccc', email='c@c.c', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
+            User(nick='aaaa', email='a@a.a', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True),
+            User(nick='bbbb', email='b@b.b', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True),
+            User(nick='cccc', email='c@c.c', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True),
         ]
         db.session.add_all(users)
+    
+    if not CodePurpose.query.first():
+        purposes = [
+            CodePurpose(purpose=p) for p in CodePurposeEnum
+        ]
+        db.session.add_all(purposes)
     
     if not ArticleStatus.query.first():
         statuses = [

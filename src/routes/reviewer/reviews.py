@@ -1,7 +1,7 @@
+import services.user as su
 import services.review as rq
 import services.article as aq
-from models.usr.User import User
-from flask_login import login_required, current_user
+from decors import approve_required
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 import controllers.article_controller as ac
 from models.utils.Response import Response
@@ -10,10 +10,10 @@ review_bp = Blueprint("review", __name__)
 
 
 @review_bp.route("/")
-@login_required
+@approve_required
 def list_reviewer_reviews():
     try:
-        user: User=current_user
+        user=su.get_curr_user_or_err()
         articles = rq.get_articles_as_reviewer(int(user.get_id()))
     except Exception as err:
         return str(err), 500
@@ -21,13 +21,13 @@ def list_reviewer_reviews():
 
 
 @review_bp.route("/<int:article_id>", methods=["GET"])
-@login_required
+@approve_required
 def article_details(article_id):
     try:
         if not ac.is_reviewer(article_id):
             return Response.error_response(message = "You are not a reviewer of this article").to_dict()
 
-        user: User=current_user
+        user=su.get_curr_user_or_err()
         article = aq.get_article(article_id)
         review = rq.get_review(article_id, int(user.get_id()))
         if not review:
@@ -54,7 +54,7 @@ def article_details(article_id):
 
 
 @review_bp.route("/<int:review_id>/accept", methods=["POST"])
-@login_required
+@approve_required
 def accept_article(review_id):
     try:
         if not ac.is_reviewer_of_review(review_id):
@@ -71,7 +71,7 @@ def accept_article(review_id):
         return {"error": str(err)}, 500
     
 @review_bp.route("/<int:review_id>/reject", methods=["POST"])
-@login_required
+@approve_required
 def reject_article(review_id):
     try:
         if not ac.is_reviewer_of_review(review_id):
@@ -86,7 +86,7 @@ def reject_article(review_id):
         return {"error": str(err)}, 500
     
 @review_bp.route('/<int:review_id>/submit_review', methods=['POST'])
-@login_required
+@approve_required
 def submit_review(review_id):
     if not ac.is_reviewer_of_review(review_id):
         return Response.error_response(message = "You are not a reviewer of this review").to_dict()

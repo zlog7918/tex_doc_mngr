@@ -2,10 +2,9 @@ import os
 import subprocess
 from db.db_base import db, log_activity, log_err
 from models.article.Review import Review
+import services.user as au
 import services.article as aq
 import services.review as rs
-from models.usr.User import User
-from flask_login import current_user
 from flask import send_from_directory
 from models.utils.Response import Response
 from models.article.Article import Article, ArticleStatusEnum
@@ -13,8 +12,8 @@ from models.utils.utils import get_function, get_temp_folder, get_upload_folder
 
 def is_editor(article_id: int) -> bool:
     try:
-        user: User=current_user
-        article: Article=aq.get_article(article_id)
+        user = au.get_curr_user_or_err()
+        article = aq.get_article(article_id)
         if not article or not article.editor_id:
             log_activity(get_function(), False, {'err': f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
             return False
@@ -25,15 +24,14 @@ def is_editor(article_id: int) -> bool:
         log_err(get_function(), e)
         return False
 
-def is_reviewer(article_id: int) -> bool:
+def is_reviewer(article_id: int, user_id: int) -> bool:
     try:
-        user: User=current_user
-        review = rs.get_review(article_id, int(user.get_id()))
+        review = rs.get_review(article_id, user_id)
 
         if review:
             return True
         
-        log_activity(get_function(), False, {'err': f'Reviewer {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
+        log_activity(get_function(), False, {'err': f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
         return False
     except Exception as e:
         print("error: " + str(e))
@@ -42,8 +40,11 @@ def is_reviewer(article_id: int) -> bool:
     
 def is_reviewer_of_review(review_id: int):
     try:
-        user: User=current_user
-        review: Review = rs.get_review_by_id(review_id)
+        user = au.get_curr_user_or_err()
+        review = rs.get_review_by_id(review_id)
+        if not review:
+            log_activity(get_function(), False, {'err': f'Reviewer {user.get_id()} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}'})
+            return False
         if int(review.reviewer_id) == int(user.get_id()):
             return True
         log_activity(get_function(), False, {'err': f'Reviewer {user.get_id()} usiłował uzyskać dostęp do review o id: {review_id}'})
@@ -53,7 +54,7 @@ def is_reviewer_of_review(review_id: int):
         return False
 
 def get_all_articles_by_editor() -> list[Article]:
-    user: User=current_user
+    user=au.get_curr_user_or_err()
     return aq.get_all_articles_by_editor_id(int(user.get_id()))
 
 def get_article_data(article_id: int) -> Response:
