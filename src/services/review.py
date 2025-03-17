@@ -86,7 +86,7 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
         log_err(get_function(), e)
 
 
-def get_articles_as_reviewer(reviewer_id: int) -> list[Article, int]:
+def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
     try:
         articles = (
             db.session.query(Article, Review.status)
@@ -96,8 +96,8 @@ def get_articles_as_reviewer(reviewer_id: int) -> list[Article, int]:
             .all()
         )
 
-        # Konwersja do listy słowników
-        return articles
+        return [(row[0], row[1]) for row in articles]
+
 
     except Exception as e:
         log_err(get_function(), e)
