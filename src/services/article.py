@@ -1,4 +1,4 @@
-from sqlalchemy import and_
+from sqlalchemy import and_, select
 from models.utils.utils import get_function
 from . import user as uq
 from db.db_base import db, log_err
@@ -62,14 +62,14 @@ def get_available_reviewers(article_id: int) -> list[dict[int, str]]:
 
         assigned_reviewers_subquery = (
             db.session.query(Review.reviewer_id)
-            .filter(Review.round_id.in_(latest_round_subquery))
+            .filter(Review.round_id.in_(select(latest_round_subquery)))
             .subquery()
         )
 
         reviewers = (
             db.session.query(User.id, User.nick)
             .where(and_(
-                ~User.id.in_(assigned_reviewers_subquery),
+                ~User.id.in_(select(assigned_reviewers_subquery)),
                 User.id != user_id,
                 User.id != author_id
             ))
@@ -114,7 +114,7 @@ def get_assigned_reviewers(article_id: int) -> list[dict[int, str]]:
         reviewers = (
             db.session.query(User.id, User.nick)
             .join(Review, Review.reviewer_id == User.id)
-            .filter(Review.round_id.in_(latest_round_subquery))
+            .filter(Review.round_id.in_(select(latest_round_subquery)))
             .all()
         )
 
@@ -142,7 +142,7 @@ def get_assigned_reviews(article_id: int) -> list[Review]:
         # Pobieramy recenzje przypisane do tej rundy
         reviews = (
             db.session.query(Review)
-            .filter(Review.round_id.in_(latest_round_subquery))
+            .filter(Review.round_id.in_(select(latest_round_subquery)))
             .all()
         )
 

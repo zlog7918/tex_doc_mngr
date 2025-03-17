@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from db.db_base import db
 from . import article as aq
 from models.article.Round import Round
@@ -39,7 +40,7 @@ def get_assigned_reviews(article_id: int) -> list[dict[int, str]]:
         # Pobieramy przypisane recenzje dla danej rundy
         reviews = (
             db.session.query(Review)
-            .filter(Review.round_id.in_(latest_round_subquery))
+            .filter(Review.round_id.in_(select(latest_round_subquery)))
             .all()
         )
 
