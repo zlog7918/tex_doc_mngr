@@ -5,9 +5,12 @@ from models.article.Article import Article, ArticleStatusEnum
 from models.usr.User import User
 from models.utils.Response import Response
 from models.utils.utils import get_function, get_temp_folder, get_upload_folder
+import services.article as aq
 from flask_login import current_user
 from flask import send_from_directory
-import db.queries.article as aq
+from models.utils.Response import Response
+from models.article.Article import Article, ArticleStatusEnum
+from models.utils.utils import get_temp_folder, get_upload_folder
 
 def get_all_articles_by_editor() -> list[Article]:
     user: User=current_user

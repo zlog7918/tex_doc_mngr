@@ -30,9 +30,11 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
         MAIL_PASSWORD=<hasło wysyłającego na serwerze email>
         MAIL_AUTH_TYPE=<typ autoryzacji: ssl|tls|plain|none>
         DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
-        TEMP_FOLDER=<ścieżka gdzie będą przechowywane tymczasowo pliki latex po pogdlądu jako pdf>
+        TEMP_FOLDER=<ścieżka gdzie będą przechowywane tymczasowo pliki latex do pogdlądu jako pdf>
+        PEPPER_VAL=<wartość pieprzu dodawanego do haseł>
         ```
         komenda do wygenerowania sekretnego klucza: `python -c 'import os; print(os.urandom(24).hex())'`
+        przykładowa komenda do wygenerowania pieprzu: `python -c 'import os; print(os.urandom(12).hex())'`
     - `.psql.env`
         ```
         POSTGRES_DB=<nazwa bazy>

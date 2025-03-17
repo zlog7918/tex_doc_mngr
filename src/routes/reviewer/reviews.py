@@ -1,13 +1,9 @@
-from db.db_base import db, log_activity
+from db.db_base import log_activity
+import services.review as rq
+import services.article as aq
 from models.usr.User import User
-from models.article.Round import Round
-from models.article.Review import Review
-from models.article.Article import Article
 from flask_login import login_required, current_user
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
-import db.queries.article as aq
-import db.queries.review as rq
 from models.utils.Response import Response
 from models.utils.utils import get_function
 

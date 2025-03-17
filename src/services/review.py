@@ -1,5 +1,5 @@
-from db.db_base import db, log_err
 from models.utils.utils import get_function
+from db.db_base import db, log_activity, log_err
 from . import article as aq
 from models.article.Round import Round
 from models.article.Review import Review
@@ -8,6 +8,9 @@ from models.article.Questions import QuestionSet, Answer, Question, QuestionA, Q
 
 def get_review_by_id(review_id: int) -> Review|None:
     return Review.query.where(Review.id==review_id).first()
+
+def get_article(article_id: int):
+    return Article.query.get_or_404(article_id)
 
 def get_review(article_id: int, reviewer_id: int) -> Review|None:
     try:
@@ -109,7 +112,6 @@ def post_review(review: Review) -> bool:
         return True
     except Exception as e:
         log_err(get_function(), e)
-        db.session.rollback()
         return False
 
 
@@ -120,10 +122,10 @@ def update_review_status(review_id: int, status: str) -> bool:
             review.status = status
             db.session.commit()
             return True
+        log_activity(get_function(), False, {'err': f'Review with id: {review_id} not found'})
         return False
     except Exception as e:
-        log_err(get_function(), err)
-        db.session.rollback()
+        log_err(get_function(), e)
         return False
 
 
@@ -175,7 +177,6 @@ def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
         return True
     except Exception as e:
         log_err(get_function(), e)
-        db.session.rollback()
         return False
 
 
