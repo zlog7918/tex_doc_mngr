@@ -38,12 +38,11 @@ class Article(db.Model):
             status = ArticleStatus.query.where(ArticleStatus.stat == new_status).first()
             if status:
                 self.status_id = status.id
-                db.session.commit()
                 log_activity(get_function(), True, {'details': f'Changed article status with id: {self.id} to: {new_status.value}'})
                 return True
             log_activity(get_function(), False, {'err': f'Article {self.id} status not changed to: {new_status.value} '})
             return False
         except Exception as e:
-            log_err(get_function(), e)
             db.session.rollback()
+            log_err(get_function(), e)
             return False

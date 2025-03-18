@@ -48,7 +48,7 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
             log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
             return Response.error_response("Article not found")
 
-        result = article.update_status(status)
+        result = aq.set_article_status(article, status)
         if not result:
             return Response.error_response(f"Article status not updated to {status.value}")
 

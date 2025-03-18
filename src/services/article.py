@@ -37,8 +37,8 @@ def create_article(title: str, file_url: str, editor_nick: str) -> bool:
         return True
 
     except Exception as e:
-        log_err(get_function(), e)
         db.session.rollback()
+        log_err(get_function(), e)
         return False
 
 
@@ -48,6 +48,14 @@ def get_article(article_id: int) -> Article|None:
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
     return Article.query.where(Article.editor_id == editor_id).all()
+
+
+def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
+    if article.update_status(new_status):
+        db.session.commit()
+        return True
+    else:
+        return False
 
 
 def get_available_reviewers(article_id: int) -> list[dict[int, str]]:
@@ -180,8 +188,8 @@ def update_article_status(article_id: int, status: int) -> bool:
         log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
         return False
     except Exception as e:
-        log_err(get_function(), e)
         db.session.rollback()
+        log_err(get_function(), e)
         return False
 
 
@@ -213,8 +221,8 @@ def create_round(article_id: int, round_number: int, deadline_confirm: str = Non
         db.session.commit()
         return True
     except Exception as e:
-        log_err(get_function(), e)
         db.session.rollback()
+        log_err(get_function(), e)
         return False
 
 
@@ -242,6 +250,6 @@ def add_reviewer_to_article(article_id: int, reviewer_id: int) -> bool:
             return False
 
     except Exception as e:
-        log_err(get_function(), e)
         db.session.rollback()
+        log_err(get_function(), e)
         return False
