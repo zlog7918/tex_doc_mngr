@@ -49,12 +49,8 @@
         newReviewerItem.setAttribute('data-id', selectedReviewerId);
         assignedReviewersList.appendChild(newReviewerItem);
 
-        // let assignedIds = hiddenInput.value ? hiddenInput.value.split(',') : [];
-        // assignedIds.push(selectedReviewerId);
-        // hiddenInput.value = assignedIds.join(',');
-
         const hiddenInput = document.createElement('input');
-        // hiddenInput.type = 'hidden';
+        hiddenInput.type = 'hidden';
         hiddenInput.name = 'assigned_reviewers[]';
         hiddenInput.value = selectedReviewerId;
         assignedReviewersList.appendChild(hiddenInput);
