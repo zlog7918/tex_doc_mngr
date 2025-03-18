@@ -3,8 +3,8 @@
     <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post">
         <label for="reviewer">Select a reviewer:</label>
         <select id="reviewer" name="reviewer" required>
-            {% for reviewer in reviewers %}
-                <option value="{{ reviewer.id }}">{{ reviewer.nick }}</option>
+            {% for reviewer_id, reviewer_nick in reviewers.items() %}
+                <option value="{{ reviewer_id }}">{{ reviewer_nick }}</option>
             {% endfor %}
         </select>
         <button type="button" id="addReviewer">Add Reviewer</button>

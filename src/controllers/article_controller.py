@@ -1,10 +1,9 @@
 import os
 import subprocess
-from db.db_base import db, log_activity
+from db.db_base import db, log_activity, log_err
+import services.user as au
 import services.article as aq
-import services.user as us
-from models.usr.User import User
-from flask_login import current_user
+import services.review as rs
 from flask import send_from_directory
 from models.utils.Response import Response
 from models.article.Article import Article, ArticleStatusEnum
@@ -22,10 +21,52 @@ def is_valid_editor(editor_id: int) -> Response:
     else:
         return Response.success_response()
 
-def get_all_articles_by_editor() -> list[Article]:
-    user: User=current_user
-    return aq.get_all_articles_by_editor_id(int(user.get_id()))
+def is_editor(article_id: int) -> bool:
+    try:
+        user = au.get_curr_user_or_err()
+        article = aq.get_article(article_id)
+        if not article or not article.editor_id:
+            log_activity(get_function(), False, {'err': f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
+            return False
+        
+        return int(article.editor_id) == int(user.get_id())
+    except Exception as e:
+        print(e)
+        log_err(get_function(), e)
+        return False
 
+def is_reviewer(article_id: int, user_id: int) -> bool:
+    try:
+        review = rs.get_review(article_id, user_id)
+
+        if review:
+            return True
+        
+        log_activity(get_function(), False, {'err': f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
+        return False
+    except Exception as e:
+        print("error: " + str(e))
+        log_err(get_function(), e)
+        return False
+    
+def is_reviewer_of_review(review_id: int):
+    try:
+        user = au.get_curr_user_or_err()
+        review = rs.get_review_by_id(review_id)
+        if not review:
+            log_activity(get_function(), False, {'err': f'Reviewer {user.get_id()} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}'})
+            return False
+        if int(review.reviewer_id) == int(user.get_id()):
+            return True
+        log_activity(get_function(), False, {'err': f'Reviewer {user.get_id()} usiłował uzyskać dostęp do review o id: {review_id}'})
+        return False
+    except Exception as e:
+        log_err(get_function(), e)
+        return False
+
+def get_all_articles_by_editor() -> list[Article]:
+    user=au.get_curr_user_or_err()
+    return aq.get_all_articles_by_editor_id(int(user.get_id()))
 
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
@@ -112,6 +153,21 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
             return Response.error_response(message = 'Failed to update article status to 3.')
 
         return Response.success_response()
+    except Exception as err:
+        return Response.error_response(str(err))
+    
+def set_review_status(review_id: int, status: str) -> Response:
+    try:
+        review = rs.get_review_by_id(review_id)
+        if not review:
+            return Response.error_response("Review not found")
+
+        result = rs.update_review_status(review_id, status)
+        if not result:
+            return Response.error_response("Review status not updated")
+
+        return Response.success_response()
+
     except Exception as err:
         return Response.error_response(str(err))
 

@@ -1,16 +1,16 @@
 from sqlalchemy import select
-from db.db_base import db
+from db.db_base import db, log_err
+from models.utils.utils import get_function
 from . import article as aq
 from models.article.Round import Round
 from models.article.Review import Review
 from models.article.Article import Article
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
-def get_article(article_id: int):
-    return Article.query.get_or_404(article_id)
+def get_review_by_id(review_id: int) -> Review|None:
+    return Review.query.where(Review.id==review_id).first()
 
-
-def get_review(article_id: int, reviewer_id: int) -> Review:
+def get_review(article_id: int, reviewer_id: int) -> Review|None:
     try:
         review = (
             db.session.query(Review)
@@ -23,7 +23,7 @@ def get_review(article_id: int, reviewer_id: int) -> Review:
 
     except Exception as err:
         print("error get_review: " + str(err))
-        return {}
+        return None
 
 
 def get_assigned_reviews(article_id: int) -> list[dict[int, str]]:
@@ -121,19 +121,14 @@ def post_review(review: Review) -> bool:
 
 def update_review_status(review_id: int, status: str) -> bool:
     try:
-        review = db.session.get(Review, review_id)
+        review = get_review_by_id(review_id)
         if review:
             review.status = status
             db.session.commit()
             return True
         return False
     except Exception as err:
-        print(f"Error updating review status: {err}")
-        # self.__log_activity(
-        #     inspect.currentframe().f_code.co_name,
-        #     False,
-        #     {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
-        # )
+        log_err(get_function(), err)
         db.session.rollback()
         return False
 

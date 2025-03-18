@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block body %}
+    <div class="container">
+        <form id="reset-password-form">
+            <input type="hidden" name="email" value="{{email}}" required>
+            <input id="code_input" type="hidden" name="code" value="{{code}}" required>
+            <div class="form-group">
+                <label>Nowe hasło:</label>
+                <input type="password" name="passwd" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Powtórz nowe hasło:</label>
+                <input type="password" name="rep_passwd" required>
+            </div>
+
+            <button type="button" id="change-password-btn" class="primary-btn">Zresetuj hasło</button>
+        </form>
+    </div>
+
+    <style>
+        .container {
+            text-align: center;
+            padding: 20px;
+            max-width: 400px;
+            margin: auto;
+        }
+
+        .actions {
+            margin: 20px 0;
+        }
+
+        .primary-btn, .secondary-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .primary-btn {
+            background: #5a3d90;
+            color: white;
+        }
+
+        .secondary-btn {
+            background: #2d1053;
+            color: white;
+        }
+
+        .primary-btn:hover, .secondary-btn:hover {
+            opacity: 0.9;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .form-group {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input {
+            width: 80%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+
+    <script>
+        document.getElementById("change-password-btn").addEventListener("click", ()=>{
+            let form=document.getElementById("reset-password-form");
+            let input=document.getElementById('code_input');
+            ajax_json_call('/user/pass_reset', null, form).then(data => {
+                if (data['success']) {
+                    alert(`Poprawnie zmieniono hasło`);
+                    window.location.href='/'
+                } else {
+                    alert(`Err: ${data['message']}`);
+                    if(data['data']!==null)
+                        input.value=data['data'];
+                }
+            }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
+        });
+    </script>
+{% endblock %}

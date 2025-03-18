@@ -1,5 +1,5 @@
 import services.article as aq
-from flask_login import login_required
+from decors import approve_required
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from models.utils.utils import render_base_template
@@ -20,18 +20,21 @@ Final - artykół jest zakończony, nie wymaga poprawek, wersja końcowa
 
 
 @editor_articles_bp.route('/')
-@login_required
+@approve_required
 def show_articles():
     try:
         articles = ac.get_all_articles_by_editor()
     except Exception as err:
-        return Response.Response.error_response(message=str(err)).to_dict()
+        return Response.error_response(message=str(err)).to_dict()
     return render_base_template("articles.html", articles=articles)
 
 
 @editor_articles_bp.route('/<int:article_id>')
-@login_required
+@approve_required
 def article_details(article_id):
+    if not ac.is_editor(article_id):
+        return Response.error_response(message = "You are not an editor of this article").to_dict()
+
     response = ac.get_article_data(article_id)
 
     if not response.success:
@@ -61,21 +64,33 @@ def article_details(article_id):
 
 
 @editor_articles_bp.route('/<int:article_id>/accept', methods=['POST'])
-@login_required
+@approve_required
 def accept_article(article_id):
+    if not ac.is_editor(article_id):
+        return Response.error_response(message = "You are not an editor of this article").to_dict()
+
     return ac.set_article_status(article_id, ArticleStatusEnum.Accepted).to_dict()
 
 
 @editor_articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
-@login_required
+@approve_required
 def add_round(article_id):
+    if not ac.is_editor(article_id):
+        return Response.error_response(message = "You are not an editor of this article").to_dict()
     return ac.add_round(article_id).to_dict()
 
 
 @editor_articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
-@login_required
+@approve_required
 def assign_reviewers(article_id):
+<<<<<<< HEAD
     assigned_reviewers = request.form.getlist('assigned_reviewers[]')
+=======
+    if not ac.is_editor(article_id):
+        return Response.error_response(message = "You are not an editor of this article").to_dict()
+
+    assigned_reviewers = request.form.get('assigned_reviewers[]')
+>>>>>>> develop
     deadline_confirm = request.form.get('deadline_confirm')
     deadline_submit = request.form.get('deadline_submit')
     
@@ -90,16 +105,19 @@ def assign_reviewers(article_id):
 
 
 @editor_articles_bp.route('/<int:article_id>/reject', methods=['POST'])
-@login_required
+@approve_required
 def reject_article(article_id):
-    result = aq.update_article_status(article_id, 5)
+    if not ac.is_editor(article_id):
+        return Response.error_response(message = "You are not an editor of this article").to_dict()
+
+    result = ac.set_article_status(article_id, ArticleStatusEnum.Rejected)
     if not result:
         return Response.error_response("Article status not updated")
     return Response.success_response()
 
 
 # @editor_articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
-# @login_required
+# @approve_required
 # def update_article_status(article_id):
 #     try:
 #         article = aq.get_article(article_id)
