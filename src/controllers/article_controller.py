@@ -12,11 +12,14 @@ from models.utils.utils import get_function, get_temp_folder, get_upload_folder
 def get_available_editors() -> dict[int, str]:
     return aq.get_available_editors()
 
+def get_available_reviewers(article_id: int) -> dict[int, str]:
+    return aq.get_available_reviewers(article_id)
+
 def is_valid_editor(editor_id: int) -> Response:
-    user: User = current_user
+    user = au.get_curr_user_or_err()
     if editor_id == user.id:
         return Response.error_response(message="An author cannot assign themselves as an editor.")
-    elif not us.user_loader(editor_id):
+    elif not au.user_loader(editor_id):
         return Response.error_response(message="Editor does not exist.")
     else:
         return Response.success_response()
@@ -31,7 +34,6 @@ def is_editor(article_id: int) -> bool:
         
         return int(article.editor_id) == int(user.get_id())
     except Exception as e:
-        print(e)
         log_err(get_function(), e)
         return False
 
@@ -45,7 +47,6 @@ def is_reviewer(article_id: int, user_id: int) -> bool:
         log_activity(get_function(), False, {'err': f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
         return False
     except Exception as e:
-        print("error: " + str(e))
         log_err(get_function(), e)
         return False
     
@@ -134,10 +135,15 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
             return Response.error_response(message = f"Article {article_id} does not exist")
 
         assigned_reviewers_ids = [int(rid) for rid in assigned_reviewers]
-        available_editors = get_available_editors()
+
+        if article.editor_id in assigned_reviewers_ids:
+            log_activity(get_function(), False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
+            return Response.error_response(message = f"Article {article_id} does not exist")
+
+        available_reviewers = get_available_reviewers(article_id)
 
         for rid in assigned_reviewers_ids:
-            if rid not in available_editors:
+            if rid not in available_reviewers:
                 log_activity(get_function(), False, {'err': f'Editor attempted to assign a reviewer {rid}'})
                 return Response.error_response(message=f"Reviewer {rid} cannot be assigned.")
 

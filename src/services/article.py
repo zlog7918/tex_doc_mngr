@@ -77,7 +77,7 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
         )
 
         # Konwersja wyników na listę słowników
-        return {row.id: row.nick for row in reviewers}
+        return { row.id: row.nick for row in reviewers }
 
     except Exception as err:
         print("error1: " + str(err))

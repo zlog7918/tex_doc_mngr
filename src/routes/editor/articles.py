@@ -83,14 +83,7 @@ def add_round(article_id):
 @editor_articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
 @approve_required
 def assign_reviewers(article_id):
-<<<<<<< HEAD
     assigned_reviewers = request.form.getlist('assigned_reviewers[]')
-=======
-    if not ac.is_editor(article_id):
-        return Response.error_response(message = "You are not an editor of this article").to_dict()
-
-    assigned_reviewers = request.form.get('assigned_reviewers[]')
->>>>>>> develop
     deadline_confirm = request.form.get('deadline_confirm')
     deadline_submit = request.form.get('deadline_submit')
     
