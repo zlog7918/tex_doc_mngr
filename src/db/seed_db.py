@@ -10,6 +10,8 @@ def seed_data(db: SQLAlchemy) -> None:
             User(nick='aaaa', email='a@a.a', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
             User(nick='bbbb', email='b@b.b', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
             User(nick='cccc', email='c@c.c', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
+            User(nick='dddd', email='d@d.d', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
+            User(nick='eeee', email='e@e.e', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True, code='', code_exp='2025-02-05 00:31:54.716565'),
         ]
         db.session.add_all(users)
     

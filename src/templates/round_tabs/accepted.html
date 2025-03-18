@@ -12,7 +12,7 @@
         <h3>Assigned Reviewers:</h3>
         <ul id="assignedReviewers"></ul>
 
-        <input type="hidden" id="assignedReviewersInput" name="assigned_reviewers[]">
+        <div id="assignedReviewersInput" name="assigned_reviewers[]">
 
         <label for="deadline_confirm">Confirmation Deadline:</label>
         <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required>
@@ -29,24 +29,34 @@
         const reviewerSelect = document.getElementById('reviewer');
         const selectedReviewerId = reviewerSelect.value;
         const selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
+        const assignedReviewersList = document.getElementById('assignedReviewers');
 
         if (!selectedReviewerId) {
             alert('Please select a reviewer.');
             return;
         }
 
-        const assignedReviewersList = document.getElementById('assignedReviewers');
+        const existingItems = assignedReviewersList.querySelectorAll('li');
+        for (let item of existingItems) {
+            if (item.getAttribute('data-id') === selectedReviewerId) {
+                alert('Reviewer already added.');
+                return;
+            }
+        }
+
         const newReviewerItem = document.createElement('li');
         newReviewerItem.textContent = selectedReviewerName;
         newReviewerItem.setAttribute('data-id', selectedReviewerId);
         assignedReviewersList.appendChild(newReviewerItem);
 
-        // Aktualizacja ukrytego pola z listą recenzentów
-        const hiddenInput = document.getElementById('assignedReviewersInput');
-        const currentReviewers = hiddenInput.value ? hiddenInput.value.split(',') : [];
-        if (!currentReviewers.includes(selectedReviewerId)) {
-            currentReviewers.push(selectedReviewerId);
-        }
-        hiddenInput.value = currentReviewers.join(',');
+        // let assignedIds = hiddenInput.value ? hiddenInput.value.split(',') : [];
+        // assignedIds.push(selectedReviewerId);
+        // hiddenInput.value = assignedIds.join(',');
+
+        const hiddenInput = document.createElement('input');
+        // hiddenInput.type = 'hidden';
+        hiddenInput.name = 'assigned_reviewers[]';
+        hiddenInput.value = selectedReviewerId;
+        assignedReviewersList.appendChild(hiddenInput);
     });
 </script>
