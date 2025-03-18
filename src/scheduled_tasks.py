@@ -1,8 +1,9 @@
+import time
 from typing import Callable
 import services.review as rs
-from datetime import timedelta
 from flask.ctx import AppContext
-from models.utils.utils import get_timestamp
+from models.utils import utils as util
+from datetime import datetime, timedelta
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.triggers.date import DateTrigger
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -31,13 +32,16 @@ def create_scheduler(callable_context: ContextFun) -> BackgroundScheduler:
     scheduler = BackgroundScheduler()
 
     # Uruchomienie 5s po starcie aplikacji (bez timedelta aplikacja potrafi się zawiesić)
-    scheduler.add_job(set_context(set_reviews_expired, callable_context), DateTrigger(get_timestamp()+timedelta(seconds=5)))
+    scheduler.add_job(set_context(set_reviews_expired, callable_context), DateTrigger(util.get_timestamp()+timedelta(seconds=5)))
 
     # Uruchamianie codziennie o północy
-    scheduler.add_job(set_context(set_reviews_expired, callable_context), CronTrigger(hour=0, minute=0))
+    scheduler.add_job(set_context(set_reviews_expired, callable_context), CronTrigger(hour=0, minute=0, second=0))
 
     scheduler.add_listener(job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
+    date=util.get_timestamp()+timedelta(seconds=2)
+    if datetime(year=date.year, month=date.month, day=date.day, tzinfo=util.unifide_timezone())<=date and date<=datetime(year=date.year, month=date.month, day=date.day, second=2, tzinfo=util.unifide_timezone()):
+        time.sleep(2)
     scheduler.start()
 
     return scheduler

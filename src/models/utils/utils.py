@@ -28,8 +28,11 @@ def generate_code() -> tuple[str, int]:
     code=f"{code:06d}"
     return code, c.TIME_TO_EXPIRE
 
-def get_timestamp() -> datetime:
-    return datetime.today().astimezone(tz=timezone.utc)
+def unifide_timezone() -> timezone:
+    return timezone.utc
+
+def get_timestamp(timezone: timezone=unifide_timezone()) -> datetime:
+    return datetime.today().astimezone(tz=timezone)
 
 def get_function(back: int=0) -> str:
     frame=sys._getframe(back+1)
