@@ -138,14 +138,11 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
 
         if article.editor_id in assigned_reviewers_ids:
             log_activity(get_function(), False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
-            return Response.error_response(message = f"Article {article_id} does not exist")
-
-        available_reviewers = get_available_reviewers(article_id)
-
-        for rid in assigned_reviewers_ids:
-            if rid not in available_reviewers:
-                log_activity(get_function(), False, {'err': f'Editor attempted to assign a reviewer {rid}'})
-                return Response.error_response(message=f"Reviewer {rid} cannot be assigned.")
+            return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+        
+        if article.author_id in assigned_reviewers_ids:
+            log_activity(get_function(), False, {'err': f'Editor attempted to assign author {article.author_id} to the article {article_id}.'})
+            return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
 
         last_round_number = aq.get_last_round_number(article_id)
         new_round_number = last_round_number + 1 if last_round_number else 1
