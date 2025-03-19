@@ -1,10 +1,10 @@
 import os
-from db.db_base import log_err
 from models.usr.Code import Code
 from .Sender import Sender, SenderLoginOpt
-from models.utils.utils import get_function
+from models.utils.MessageException import MessageException
 
 class SendMail:
+    __ERROR_MESSAGE='Błąd przy wysyłaniu mail\'a'
     def __init__(self):
         (host, port, addr, usr, passwd, auth_type)=(
             os.environ.get('MAIL_HOST')
@@ -16,7 +16,7 @@ class SendMail:
         )
         self.__sender=Sender(host, port, addr, usr, passwd, SenderLoginOpt(auth_type))
 
-    def sendCode(self, reciever: str, code: Code) -> bool:
+    def sendCode(self, reciever: str, code: Code) -> None:
         port=int(os.getenv('NGINX_HTTPS_OUTER_PORT', '443'))
         link=f'https://{os.getenv('SERVER_NAME', 'SERVER_NAME')}{'' if port==443 else f':{port}'}/user/approve/{reciever}/{code.code}'
         try:
@@ -34,11 +34,9 @@ class SendMail:
                 </html>
             ''')
         except Exception as e:
-            log_err(get_function(), e)
-            return False
-        return True
+            raise MessageException.from_exception(e, self.__ERROR_MESSAGE)
 
-    def sendResetReqest(self, reciever: str, code: Code) -> bool:
+    def sendResetReqest(self, reciever: str, code: Code) -> None:
         port=int(os.getenv('NGINX_HTTPS_OUTER_PORT', '443'))
         link=f'https://{os.getenv('SERVER_NAME', 'SERVER_NAME')}{'' if port==443 else f':{port}'}/user/pass_reset/{reciever}/{code.code}'
         try:
@@ -56,7 +54,5 @@ class SendMail:
                 </html>
             ''')
         except Exception as e:
-            log_err(get_function(), e)
-            return False
-        return True
+            raise MessageException.from_exception(e, self.__ERROR_MESSAGE)
 

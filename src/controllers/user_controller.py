@@ -65,16 +65,14 @@ def check_user_existence(nick: str, email: str) -> None:
   if su.is_user_existing(nick, email):
     raise MessageException('Użytkownik o podanym nicku lub e-mailu już istnieje')
 
-def send_code_by_email(send_func: Callable[Concatenate[SendMail, str, P], bool], email, *args: P.args, **kwargs: P.kwargs) -> None:
-  flag=False
+def send_code_by_email(send_func: Callable[Concatenate[SendMail, str, P], None], email, *args: P.args, **kwargs: P.kwargs) -> None:
   try:
     s=SendMail()
-    if not send_func(s, email, *args, **kwargs):
-      raise Exception(f'Nie prawidłowo wysłany kod do: {email}')
+    send_func(s, email, *args, **kwargs)
   except MessageException as e:
     raise e from None
   except Exception as e:
-    raise MessageException('Nie udało sie wysłać e-maila', e)
+    raise MessageException.from_exception(e, 'Nie udało sie wysłać e-maila')
       
 
 def create_user(nick: str|None, email: str, passwd: str) -> None:
