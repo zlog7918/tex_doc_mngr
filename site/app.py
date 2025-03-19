@@ -1,6 +1,6 @@
 import os
 from paths.users.users import user_bp
-from flask import Flask, render_template
+from flask import Flask, redirect, render_template
 from paths.routes.reviews import review_bp
 from classes.utils.utils import url_last_edit, render_base_template
 from paths.routes.articles import articles_bp
@@ -30,8 +30,12 @@ def request_loader(request):
 
 @app.route('/')
 def index():
-    user: User=current_user
-    return render_base_template(('logged.html' if user.is_approved() else 'check_approval.html') if current_user.is_authenticated else 'login_form.html')
+    user: User = current_user
+    if user.is_authenticated:
+        if user.is_approved():
+            return redirect('/articles')  
+        return render_base_template('check_approval.html')  
+    return render_base_template('login_form.html') 
 
 if __name__=='__main__':
     app.run(debug=True)

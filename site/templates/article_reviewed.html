@@ -1,68 +1,165 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ article.title }}</title>
+{% extends "base.html" %}
+
+{% block title %} {{ article.title }} {% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
     <style>
+        .main-content {
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+            border-radius: 0; /* Usuwamy zaokrąglenia, jeśli były */
+            box-shadow: none; /* Usuwamy cień */
+            margin: 0; /* Usuwamy margines */
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: #2d1053;
+            margin-bottom: 15px;
+        }
+
+        .article-info {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
         .tab {
-            display: inline-block;
-            margin-right: 5px;
-            padding: 10px;
-            background-color: #ddd;
+            padding: 12px 18px;
+            background: #ddd;
+            border-radius: 5px;
             cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+            color: #333;
+            text-transform: uppercase;
         }
+
         .tab.active {
-            background-color: #aaa;
+            background: #5a3d90;
+            color: white;
         }
+
         .tab-content {
+    width: 100%; /* Zajmuje całą szerokość */
+    background: none; /* Usunięcie tła */
+    padding: 0; /* Usunięcie wewnętrznych odstępów */
+    border: none; /* Usunięcie obramowania */
+    font-size: 16px;
+    color: #333;
+}
+
+
+        .button-group {
+            display: flex;
+            gap: 10px;
             margin-top: 20px;
-            border: 1px solid #ccc;
-            padding: 10px;
         }
-        button {
-            margin-top: 20px;
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
         }
+
+        .btn-add {
+            background: #5a3d90;
+            color: white;
+        }
+
+        .btn-add:hover {
+            background: #4a1e87;
+        }
+
+        .btn-reject {
+            background: #a8a8a8;
+            color: white;
+        }
+
+        .btn-reject:hover {
+            background: #8c8c8c;
+        }
+
+        .top-bar {
+    margin-bottom: 20px;
+}
+
+.back-btn {
+    padding: 8px 16px;
+    background: #5a3d90;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: 0.3s;
+    display: inline-block;
+}
+
+.back-btn:hover {
+    background: #4a1e87;
+}
+
     </style>
-</head>
-<body>
-    <h1>{{ article.title }}</h1>
-    <p><strong>Author:</strong> {{ article.author }}</p>
-    <div id="tabs">
-        {% for round in article.rounds %}
-            <div class="tab {% if loop.last %}active{% endif %}" data-index="{{ loop.index }}" onclick="showTab(this.getAttribute('data-index'))">
-                Round {{ round.id }}
-            </div>
-        {% endfor %}
+
+    <div class="main-content">
+
+        <div class="top-bar">
+            <a href="{{ url_for('articles.show_articles') }}" class="back-btn">Wróć do listy</a>
+        </div>
+
+        <h1>{{ article.title }}</h1>
+        <p class="article-info"><strong>Autor:</strong> {{ article.author }}</p>
+
+        <div class="tabs">
+            {% for round in article.rounds %}
+                <div class="tab {% if loop.last %}active{% endif %}" 
+                     data-index="{{ loop.index }}" 
+                     onclick="showTab(this.getAttribute('data-index'))">
+                    Runda {{ round.id }}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="tab-content" id="tab-content">
+            {{ tab_content|safe }}
+        </div>
+
+        <div class="button-group">
+            <button class="btn btn-add" id="add-round" onclick="addRound()">Dodaj rundę</button>
+            <button class="btn btn-reject" id="reject" onclick="rejectArticle()">Odrzuć</button>
+        </div>
     </div>
-    <div class="tab-content" id="tab-content">
-        {{ tab_content|safe }}
-    </div>
-    <button id="add-round" onclick="addRound()">
-        Add Round
-    </button>
-    <button id="reject" onclick="rejectArticle()">Reject</button>
 
     <script>
         function showTab(index) {
-            // Zmiana aktywnej zakładki
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelector(`.tab:nth-child(${index})`).classList.add('active');
 
-            // Pobieranie danych dla odpowiedniej rundy
             const rounds = {{ article.rounds|tojson }};
             const selectedRound = rounds[index - 1];
+
             document.getElementById('tab-content').innerHTML = `
-                <p>Reviews for Round ${selectedRound.id}:</p>
+                <p><strong>Recenzje dla rundy ${selectedRound.id}:</strong></p>
                 <ul>${selectedRound.reviews.map(r => `<li>${r}</li>`).join('')}</ul>
             `;
 
             const addRoundButton = document.getElementById('add-round');
-            if (index === rounds.length) {
-                addRoundButton.style.display = 'inline-block';
-            } else {
-                addRoundButton.style.display = 'none';
-            }
+            addRoundButton.style.display = index == rounds.length ? 'inline-block' : 'none';
         }
 
         function addRound() {
@@ -72,7 +169,7 @@
                     if (data.success) {
                         location.reload();
                     } else {
-                        alert("Unable to add a new round.");
+                        alert("Nie udało się dodać nowej rundy.");
                     }
                 });
         }
@@ -82,13 +179,13 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert("Article has been rejected.");
+                        alert("Artykuł został odrzucony.");
                         location.reload();
                     } else {
-                        alert("Unable to reject the article.");
+                        alert("Nie udało się odrzucić artykułu.");
                     }
                 });
         }
     </script>
-</body>
-</html>
+
+{% endblock %}

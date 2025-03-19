@@ -1,26 +1,107 @@
-<div>
-    <h2>Assign Reviewers</h2>
+<style>
+    .reviewer-container {
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+
+    .reviewer-container h2 {
+        font-size: 24px;
+        font-weight: bold;
+        color: black;
+        margin-bottom: 15px;
+    }
+
+    .reviewer-container label {
+        font-size: 16px;
+        font-weight: 600;
+        color: #2d1053;
+        display: block;
+        margin-top: 10px;
+    }
+
+    .reviewer-container select,
+    .reviewer-container input {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+
+    .reviewer-container button {
+        margin-top: 20px;
+        width: 100%;
+        padding: 10px;
+        background: #5a3d90;
+        color: white;
+        font-size: 16px;
+        font-weight: bold;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .reviewer-container button:hover {
+        background: #4a1e87;
+    }
+
+    .assigned-reviewers {
+        margin-top: 20px;
+    }
+
+    .assigned-reviewers h3 {
+        font-size: 20px;
+        font-weight: bold;
+        color: black;
+    }
+
+    .assigned-reviewers ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .assigned-reviewers li {
+        font-size: 16px;
+        padding: 8px;
+        background: #f3f1f9;
+        border-radius: 5px;
+        margin-top: 5px;
+    }
+</style>
+
+<div class="reviewer-container">
+    <h2>Przydziel recenzentów</h2>
     <form action="/articles/assign_reviewers/{{ article.id }}" method="post">
-        <label for="reviewer">Select a reviewer:</label>
+        <label for="reviewer">Wybierz recenzenta:</label>
         <select id="reviewer" name="reviewer" required>
             {% for reviewer in reviewers %}
                 <option value="{{ reviewer.id }}">{{ reviewer.nick }}</option>
             {% endfor %}
         </select>
 
-        <label for="deadline_confirm">Confirmation Deadline:</label>
+        <label for="deadline_confirm">Termin potwierdzenia:</label>
         <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required>
 
-        <label for="deadline_submit">Submission Deadline:</label>
+        <label for="deadline_submit">Termin oddania recenzji:</label>
         <input type="datetime-local" id="deadline_submit" name="deadline_submit" required>
 
-        <button type="submit">Add reviewer</button>
+        <button type="submit">Dodaj recenzenta</button>
     </form>
 
-    <h3>Assigned Reviewers:</h3>
-    <ul>
-        {% for reviewer in assigned_reviewers %}
-            <li>{{ reviewer.nick }}</li>
-        {% endfor %}
-    </ul>
+    <div class="assigned-reviewers">
+        <h3>Przydzieleni recenzenci:</h3>
+        <ul>
+            {% for reviewer in assigned_reviewers %}
+                <li>{{ reviewer.nick }}</li>
+            {% endfor %}
+        </ul>
+    </div>
 </div>

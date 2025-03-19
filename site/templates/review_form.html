@@ -1,23 +1,85 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Review Form</title>
-</head>
-<body>
-    <h1>Review Article</h1>
-    <form method="POST">
-        <label for="reviewer">Reviewer Name:</label>
-        <input type="text" id="reviewer" name="reviewer" required><br>
-        <label for="comments">Comments:</label>
-        <textarea id="comments" name="comments" required></textarea><br>
-        <label for="rating">Rating:</label>
-        <select id="rating" name="rating" required>
-            <option value="Fine as it is">Fine as it is</option>
-            <option value="Requires small changes">Requires small changes</option>
-            <option value="Needs major revisions">Needs major revisions</option>
-            <option value="Rejected">Rejected</option>
-        </select><br>
-        <button type="submit">Submit Review</button>
-    </form>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %}Review Article{% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
+    <style>
+        .review-container {
+            padding: 40px;
+            border-radius: 0;
+            box-shadow: none;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .review-container h1 {
+            font-size: 28px;
+            color: #5a3d90;
+            margin-bottom: 20px;
+        }
+
+        .review-container label {
+            font-size: 18px;
+            color: #333;
+            font-weight: 600;
+            display: block;
+            margin-top: 15px;
+        }
+
+        .review-container input, 
+        .review-container textarea, 
+        .review-container select {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 18px;
+        }
+
+        .review-container textarea {
+            resize: vertical;
+            height: 150px;
+        }
+
+        .review-container button {
+            background: #5a3d90;
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 18px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: 0.3s;
+        }
+
+        .review-container button:hover {
+            background: #4b2f78;
+        }
+    </style>
+
+    <div class="review-container">
+        <h1>Review Article</h1>
+        <form method="POST">
+            <label for="reviewer">Reviewer Name:</label>
+            <input type="text" id="reviewer" name="reviewer" required>
+
+            <label for="comments">Comments:</label>
+            <textarea id="comments" name="comments" required></textarea>
+
+            <label for="rating">Rating:</label>
+            <select id="rating" name="rating" required>
+                <option value="Fine as it is">Fine as it is</option>
+                <option value="Requires small changes">Requires small changes</option>
+                <option value="Needs major revisions">Needs major revisions</option>
+                <option value="Rejected">Rejected</option>
+            </select>
+
+            <button type="submit">Submit Review</button>
+        </form>
+    </div>
+{% endblock %}
