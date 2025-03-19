@@ -1,10 +1,11 @@
-from .Round import Round
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .Round import Round
 from db.db_base import db
 from enum import Enum as PyEnum
 from models.usr.User import User
 from sqlalchemy import ForeignKey, String, Integer, Text, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.orm.relationships import _RelationshipDeclared
 
 class ArticleStatusEnum(PyEnum):
     Submitted='Submitted'
@@ -31,11 +32,11 @@ class Article(db.Model):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     status_id: Mapped[int] = mapped_column(ForeignKey(ArticleStatus.id), nullable=False)
     
-    author: _RelationshipDeclared[User] = relationship(User, foreign_keys=[author_id])
-    editor: _RelationshipDeclared[User] = relationship(User, foreign_keys=[editor_id])
-    status: _RelationshipDeclared[ArticleStatus] = relationship(ArticleStatus, foreign_keys=[status_id])
+    author: Mapped[User] = relationship(foreign_keys=[author_id])
+    editor: Mapped[User] = relationship(foreign_keys=[editor_id])
+    status: Mapped[ArticleStatus] = relationship(foreign_keys=[status_id])
 
-    rounds: _RelationshipDeclared[list[Round]] = relationship(Round, back_populates=str(Round.article))
+    rounds: Mapped[list["Round"]] = relationship(back_populates='article')
 
     def update_status(self, new_status: ArticleStatus) -> None:
         self.status_id = new_status.id

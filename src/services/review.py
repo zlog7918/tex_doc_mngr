@@ -1,5 +1,6 @@
 from . import article as aq
-from db.db_base import db, log_err
+from db.db_base import db
+from models.utils import utils as util
 from models.article.Round import Round
 from models.article.Review import Review
 from models.article.Article import Article
@@ -168,7 +169,11 @@ def get_questions_with_answers(q_set_id: int) -> list[dict[int, str]]:
 def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
     try:
         for question_id, answer in answers.items():
-            new_answer = Answer(review_id=review_id, question_id=question_id, answer=answer)
+            new_answer = Answer(**util.get_kwargs_for(Answer, {
+                Answer.review_id: review_id,
+                Answer.question_id: question_id,
+                Answer.answer: answer,
+            }))
             db.session.add(new_answer)
 
         update_review_status(review_id=review_id, status='Reviewed')    # TODO: rollback answer submitting when exception here

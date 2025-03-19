@@ -16,6 +16,9 @@ def url_last_edit(path: str) -> str:
 def render_base_template(name: str, **kwargs: object) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)
 
+def get_kwargs_for(t: type, d: dict[object, object]) -> dict[str, object]:
+    return {str(k).removeprefix(f'{t.__name__}.'):i for k, i in d.items()}
+
 def get_traceback(err: Exception) -> str:
     return ''.join(traceback.format_tb(err.__traceback__))
 

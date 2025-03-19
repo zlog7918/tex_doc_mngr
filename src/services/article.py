@@ -2,6 +2,7 @@ from . import user as uq
 from db.db_base import db
 from models.usr.User import User
 from models.article.Round import Round
+from models.utils import utils as util
 from models.article.Review import Review
 from models.article.Questions import Answer, Question
 from models.utils.MessageException import MessageException
@@ -19,13 +20,13 @@ def create_article(title: str, file_url: str, editor_nick: str) -> None:
         editor_id = uq.get_user_id(editor_nick)
         status = __get_status_or_err(ArticleStatusEnum.Submitted)
 
-        new_article = Article(**{
+        new_article = Article(**util.get_kwargs_for(Article, {
             Article.title: title,
             Article.author_id: int(user_id),
             Article.editor_id: editor_id,
             Article.content: file_url,
             Article.status_id: status.id,
-        })
+        }))
         db.session.add(new_article)
     except MessageException as e:
         raise MessageException.from_exception(e, 'Article not created')
@@ -169,13 +170,13 @@ def get_last_round_number(article_id: int) -> int:
 
 def create_round(article_id: int, round_number: int, deadline_confirm: str|None=None, deadline_submit: str|None=None) -> None:
     try:
-        new_round = Round(**{
+        new_round = Round(**util.get_kwargs_for(Round, {
             Round.article_id: article_id,
             Round.round_number: round_number,
             Round.q_set_id: 1, # TODO: should be set later
             Round.deadline_confirm: deadline_confirm,
             Round.deadline_submit: deadline_submit,
-        })
+        }))
         db.session.add(new_round)
     except Exception as err:
         raise MessageException.from_exception(err, 'Round was not created')
@@ -192,11 +193,11 @@ def add_reviewer_to_article(article_id: int, reviewer_id: int) -> None:
         )
 
         if round_id:
-            new_review = Review(**{
+            new_review = Review(**util.get_kwargs_for(Review, {
                 Review.round_id: round_id,
                 Review.reviewer_id: reviewer_id,
                 Review.status: 'Pending confirmation',
-            })
+            }))
             db.session.add(new_review)
         else:
             raise MessageException(f'No round found for the given article_id: {article_id}')

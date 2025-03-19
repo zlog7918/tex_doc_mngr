@@ -6,7 +6,6 @@ from typing import Optional
 from ..utils import consts as c
 from enum import Enum as PyEnum, auto
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.orm.relationships import _RelationshipDeclared
 from sqlalchemy import or_, Enum, Integer, Boolean, Text, DateTime, ForeignKey, UniqueConstraint, CheckConstraint, Index
 
 def __gen_len_code(alphabet: str, len: int) -> str:
@@ -41,8 +40,8 @@ class Code(db.Model):
     timest: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     code_exp: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
 
-    purpose: _RelationshipDeclared[CodePurpose] = relationship(CodePurpose, foreign_keys=[purpose_id])
-    usr: _RelationshipDeclared[User] = relationship(User, foreign_keys=[usr_id])
+    purpose: Mapped[CodePurpose] = relationship(foreign_keys=[purpose_id])
+    usr: Mapped[User] = relationship(foreign_keys=[usr_id])
     __table_args__ = (
         UniqueConstraint(code, is_active),
         CheckConstraint(or_(

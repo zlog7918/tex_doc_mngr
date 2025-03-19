@@ -19,14 +19,14 @@ def __gen_unique_code(user: User, purpose: CodePurpose) -> tuple[str, int]:
         try:
             code, code_exp=purpose.purpose.gen_code()
             time=util.get_timestamp()
-            _code=Code(**{
+            _code=Code(**util.get_kwargs_for(Code, {
                 Code.usr_id: user.id,
                 Code.purpose_id: purpose.id,
                 Code.code: code,
                 Code.is_active: True,
                 Code.timest: time,
                 Code.code_exp: time+timedelta(seconds=code_exp),
-            })
+            }))
             db.session.add(_code)
             save_point.commit()
             return code, code_exp

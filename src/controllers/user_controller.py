@@ -1,6 +1,7 @@
 import re
 import email_validator as emailV
 from models.usr.User import User
+from models.utils import utils as util
 from db.db_base import db, log_activity
 from models.mail.SendMail import SendMail
 from models.utils.Response import Response
@@ -77,11 +78,11 @@ def send_code_by_email(send_func: Callable[Concatenate[SendMail, str, P], bool],
       
 
 def create_user(nick: str|None, email: str, passwd: str) -> None:
-  user = User(**{
+  user = User(**util.get_kwargs_for(User, {
     User.nick: nick,
     User.email: email,
     User.passwd: passwd,
-  })
+  }))
   su.add_user(user)
 
 def validate_email(email: str) -> str:

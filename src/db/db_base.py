@@ -31,13 +31,13 @@ def __get_action_name(action: str|None) -> str:
     return (util.get_function(2) if action is None else action)
 def log_activity(is_success: bool, log: dict, action: str|None=None) -> None:
     db.session.add(
-        Log(**{
+        Log(**util.get_kwargs_for(Log, {
             Log.ip: request.environ['REMOTE_ADDR'],
             Log.is_success: is_success,
             Log.action: __get_action_name(action),
             Log.timest: util.get_timestamp(),
             Log.log: json.dumps(log),
-        })
+        }))
     )
 
 def log_err(err: Exception, action: str|None=None) -> None:
