@@ -24,23 +24,27 @@ def validate_nick(nick: str) -> None:
     raise MessageException(ret_mess)
 
 
+@log_if_error
 def login(nick: str, passwd: str) -> Response:
-  try:
-    validate_nick(nick)
-  except MessageException as e:
-    return Response.error_response(message=str(e))
+  message='Nieprawidłowy login lub hasło'
+  validate_nick(nick)
   user=su.get_user_by_nick(nick)
   if user is None:
-    log_activity(False, {'err': 'Nie prawidłowy login'})
-    return Response.error_response(message = 'Nieprawidłowy login lub hasło')
+    raise MessageException(
+      message,
+      Exception('Nie prawidłowy login')
+    )
   if not user.verify_pass(passwd):
-    log_activity(False, {'err': f'Nie prawidłowe hasło dla: {nick}'})
-    return Response.error_response(message = 'Nieprawidłowy login lub hasło')
+    raise MessageException(
+      message,
+      Exception(f'Nie prawidłowe hasło dla: {nick}')
+    )
 
   login_user(user)
   log_activity(True, {'details': f'Poprawnie zalogowano konto: {user.get_nick()}'})
   return Response.success_response()
 
+@log_if_error
 def logout() -> Response:
   logout_user()
   return Response.success_response()

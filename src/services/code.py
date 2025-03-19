@@ -45,7 +45,7 @@ def gen_code(user: User, purpose: CodePurposeEnum) -> tuple[Code, int]:
             ,Code.code_exp<util.get_timestamp()
         )).update({Code.is_active: None})
     except Exception as e:
-        raise MessageException(message, e)
+        raise MessageException.from_exception(e, message)
     try:
         _purpose=__get_purpose_or_err(purpose)
         code, code_exp=__gen_unique_code(user, _purpose)
@@ -60,7 +60,7 @@ def gen_code(user: User, purpose: CodePurposeEnum) -> tuple[Code, int]:
         if _code is not None:
             return _code, code_exp
     except Exception as e:
-        raise MessageException(message, e)
+        raise MessageException.from_exception(e, message)
     raise MessageException(message)
 
 def check_code(user: User, code_str: str, purpose: CodePurposeEnum) -> bool:
@@ -82,4 +82,4 @@ def check_code(user: User, code_str: str, purpose: CodePurposeEnum) -> bool:
         db.session.flush()
         return True
     except Exception as e:
-        raise MessageException('Nie można potwierdzić kodu', e)
+        raise MessageException.from_exception(e, 'Nie można potwierdzić kodu')

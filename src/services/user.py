@@ -21,7 +21,7 @@ def get_user_id(nick: str) -> int:
             raise MessageException(f'{nick}')
         return user.id
     except MessageException as e:
-        raise MessageException(f'Nie znaleziono użytkownika: {str(e)}') from None
+        raise MessageException.from_exception(e, f'Nie znaleziono użytkownika: {str(e)}') from None
 
 def get_curr_user() -> User|None:
     try:
@@ -52,14 +52,14 @@ def add_user(user: User):
     try:
         db.session.add(user)
     except Exception as e:
-        raise MessageException('Użytkownik nie został dodany', e)
+        raise MessageException.from_exception(e, 'Użytkownik nie został dodany')
 
 def approve_user(user: User) -> None:
     try:
         user.approve()
         db.session.flush()
     except Exception as e:
-        raise MessageException('Konto nie zostało potwierdzone', e)
+        raise MessageException.from_exception(e, 'Konto nie zostało potwierdzone')
 
 def change_user_pass(user: User, passwd: str) -> bool:
     try:
@@ -68,4 +68,4 @@ def change_user_pass(user: User, passwd: str) -> bool:
             return True
         return False
     except Exception as e:
-        raise MessageException('Hasło nie zostało zmienione', e)
+        raise MessageException.from_exception(e, 'Hasło nie zostało zmienione')

@@ -2,6 +2,7 @@ from flask import abort
 from functools import wraps
 from . import utils as util
 from .Response import Response
+from functools import _Wrapped
 from services import user as su
 from db.db_base import db, log_err
 from typing import Callable, ParamSpec
@@ -10,7 +11,7 @@ from .MessageException import MessageException
 
 P=ParamSpec('P')
 
-def approve_required(f: Callable[P, ResponseReturnValue]) -> Callable[P, ResponseReturnValue]:
+def approve_required(f: Callable[P, ResponseReturnValue]) -> _Wrapped[P, ResponseReturnValue, P, ResponseReturnValue]:
     @wraps(f)
     def func(*args: P.args, **kwargs: P.kwargs) -> ResponseReturnValue:
         user=su.get_curr_user()
@@ -21,7 +22,7 @@ def approve_required(f: Callable[P, ResponseReturnValue]) -> Callable[P, Respons
         return f(*args, **kwargs)
     return func
 
-def log_if_error(f: Callable[P, Response]) -> Callable[P, Response]:
+def log_if_error(f: Callable[P, Response]) -> _Wrapped[P, Response, P, Response]:
     @wraps(f)
     def func(*args: P.args, **kwargs: P.kwargs) -> Response:
         try:
