@@ -1,31 +1,31 @@
 from sqlalchemy import or_
+from db.db_base import db
 from models.usr.User import User
-from db.db_base import db, log_err
 from flask_login import current_user
-from models.utils.utils import get_function
+from models.utils.MessageException import MessageException
 
-def user_loader(id: int) -> User|None:
+def get_user(id: int) -> User|None:
     return User.query.where(User.id==id).first()
 
-def user_loader_by_nick(nick: str) -> User|None:
+def get_user_by_nick(nick: str) -> User|None:
     return User.query.where(User.nick==nick).first()
 
-def user_loader_by_email(email: str) -> User|None:
+def get_user_by_email(email: str) -> User|None:
     return User.query.where(User.email==email).first()
 
 def get_user_id(nick: str) -> int:
     # TODO: split handling exceptions and handling non-existing user
     try:
-        user=user_loader_by_nick(nick)
+        user=get_user_by_nick(nick)
         if user is None:
-            raise Exception(f'{nick}')
+            raise MessageException(f'{nick}')
         return user.id
-    except Exception as e:
-        raise Exception(f'Nie znaleziono użytkownika: {str(e)}')
+    except MessageException as e:
+        raise MessageException(f'Nie znaleziono użytkownika: {str(e)}') from None
 
 def get_curr_user() -> User|None:
     try:
-        u=current_user._get_current_object()
+        u=current_user._get_current_object() # type: ignore[private_access]
     except RuntimeError:
         return None
     if u is None:
@@ -37,44 +37,35 @@ def get_curr_user() -> User|None:
 def get_curr_user_or_err() -> User:
     u=get_curr_user()
     if u is None:
-        raise Exception('Nie jest zalogowany, żaden użytkownik')
+        raise MessageException('Nie jest zalogowany, żaden użytkownik')
     return u
 
 def is_user_existing(nick: str, email: str) -> bool:
-    try:
-        return User.query.where(
-            or_(
-                User.nick==nick
-                ,User.email==email
-            )
-        ).first() is not None
-    except Exception as e:
-        log_err(get_function(), e)
-        return False
+    return User.query.where(
+        or_(
+            User.nick==nick
+            ,User.email==email
+        )
+    ).first() is not None
 
-def add_user(user: User) -> bool:
+def add_user(user: User):
     try:
         db.session.add(user)
-        db.session.commit()
-        return True 
     except Exception as e:
-        log_err(get_function(), e)
-        return False
+        raise MessageException('Użytkownik nie został dodany', e)
 
 def approve_user(user: User) -> None:
     try:
         user.approve()
-        db.session.commit()
+        db.session.flush()
     except Exception as e:
-        log_err(get_function(), e)
-        raise Exception('Konto nie zostało potwierdzone')
+        raise MessageException('Konto nie zostało potwierdzone', e)
 
 def change_user_pass(user: User, passwd: str) -> bool:
     try:
         if user.ch_pass(passwd):
-            db.session.commit()
+            db.session.flush()
             return True
         return False
     except Exception as e:
-        log_err(get_function(), e)
-        raise Exception('Hasło nie zostało zmienione')
+        raise MessageException('Hasło nie zostało zmienione', e)

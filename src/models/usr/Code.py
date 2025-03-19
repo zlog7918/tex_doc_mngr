@@ -2,20 +2,26 @@ import string
 import random
 from .User import User
 from db.db_base import db
-from sqlalchemy import or_
 from typing import Optional
 from ..utils import consts as c
 from enum import Enum as PyEnum, auto
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Enum, Integer, Boolean, Text, DateTime, ForeignKey, UniqueConstraint, CheckConstraint, Index
+from sqlalchemy import or_, Enum, Integer, Boolean, Text, DateTime, ForeignKey, UniqueConstraint, CheckConstraint, Index
+
+def __gen_len_code(alphabet: str, len: int) -> str:
+    return ''.join(random.choice(alphabet) for _ in range(len))
 
 class CodePurposeEnum(PyEnum):
-    __ALPHABET__=string.digits+string.ascii_letters
+    __ALPHABET=string.digits+string.ascii_letters
+    InviteUser=auto()
     ApproveUser=auto()
-    ResetUserPassReq=auto()
     ResetUserPass=auto()
+    ResetUserPassReq=auto()
     def gen_code(self) -> tuple[str, int]:
-        return ''.join(random.choice(self.__ALPHABET__) for _ in range(c.CODE_GEN_LEN)), c.TIME_TO_EXPIRE
+        code=__gen_len_code(self.__ALPHABET, c.CODE_GEN_LEN)
+        if self.value==self.__class__.InviteUser:
+            return code, c.TIME_TO_EXPIRE_INVITE
+        return code, c.TIME_TO_EXPIRE
     
 class CodePurpose(db.Model):
     __tablename__ = 'code_purpose'

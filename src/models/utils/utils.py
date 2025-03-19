@@ -1,6 +1,6 @@
 import sys
-import random
 import os.path
+import traceback
 from . import consts as c
 from flask import render_template
 from datetime import datetime,timezone
@@ -13,8 +13,11 @@ def url_last_edit(path: str) -> str:
     path_abs=f'{os.environ.get('APP_DIR')}{path}'
     return f'{path}?t={int(os.path.getmtime(path_abs))}'
 
-def render_base_template(name: str, **kwargs) -> str:
+def render_base_template(name: str, **kwargs: object) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)
+
+def get_traceback(err: Exception) -> str:
+    return ''.join(traceback.format_tb(err.__traceback__))
 
 def get_upload_folder() -> str:
     return os.getenv('DOC_FILES_DIR', '/var/www/uploads')
@@ -26,7 +29,7 @@ def get_timestamp() -> datetime:
     return datetime.now(timezone.utc)
 
 def get_function(back: int=0) -> str:
-    frame=sys._getframe(back+1)
+    frame=sys._getframe(back+1) # type: ignore[private_access]
     return f'{frame.f_code.co_filename}:{frame.f_lineno} {frame.f_code.co_name}()'
 
 def validate_pass(passwd: str) -> bool:
