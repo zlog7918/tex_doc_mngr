@@ -229,7 +229,6 @@ def get_question_answers(question_id: int) -> list[dict[int, str]]:
     
 def set_expired_status_for_reviews() -> bool:
     try:
-        print("start")
         now = datetime.now()
         yesterday_end = datetime(now.year, now.month, now.day) - timedelta(seconds=1)
         reviews = (
@@ -249,6 +248,29 @@ def set_expired_status_for_reviews() -> bool:
         db.session.commit()
         return True
     except Exception as e:
-        print("exception: " + str(e))
+        log_err(get_function(), e)
+        return False
+    
+def set_not_reviewed_status_for_reviews() -> bool:
+    try:
+        now = datetime.now()
+        yesterday_end = datetime(now.year, now.month, now.day) - timedelta(seconds=1)
+        reviews = (
+            db.session.query(Review)
+            .join(Round, Round.id == Review.round_id)
+            .join(ReviewStatus, ReviewStatus.id == Review.status_id)
+            .where(ReviewStatus.stat == ReviewStatusEnum.AcceptedByReviewer)
+            .where(Round.deadline_confirm <= yesterday_end)
+            .all()
+        )
+
+        for review in reviews:
+            print(f'Zmieniono status review {review.id} na \'{ReviewStatusEnum.NotReviewed}\'')
+            log_activity(get_function(), True, {'details': f'Zmieniono status review {review.id} na \'Not Reviewed\''})
+            review.status.stat = ReviewStatusEnum.NotReviewed
+
+        db.session.commit()
+        return True
+    except Exception as e:
         log_err(get_function(), e)
         return False
