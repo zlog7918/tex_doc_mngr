@@ -1,7 +1,6 @@
-import services.article as aq
-from decors import approve_required
 from models.utils.Response import Response
 import controllers.article_controller as ac
+from models.utils.decors import approve_required
 from models.utils.utils import render_base_template
 from models.article.Article import ArticleStatusEnum
 from flask import request, redirect, url_for, Blueprint, render_template

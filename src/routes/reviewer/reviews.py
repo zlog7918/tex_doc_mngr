@@ -1,10 +1,10 @@
 import services.user as su
 import services.review as rq
 import services.article as aq
-from decors import approve_required
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-import controllers.article_controller as ac
 from models.utils.Response import Response
+import controllers.article_controller as ac
+from models.utils.decors import approve_required
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 
 review_bp = Blueprint("review", __name__)
 
@@ -22,7 +22,7 @@ def list_reviewer_reviews():
 
 @review_bp.route("/<int:article_id>", methods=["GET"])
 @approve_required
-def article_details(article_id):
+def article_details(article_id: int):
     try:
         if not ac.is_reviewer(article_id):
             return Response.error_response(message = "You are not a reviewer of this article").to_dict()

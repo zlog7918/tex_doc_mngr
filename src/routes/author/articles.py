@@ -1,9 +1,9 @@
 import os
-from decors import approve_required
 from werkzeug.utils import secure_filename
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from werkzeug.datastructures import FileStorage
+from models.utils.decors import approve_required
 from models.utils.consts import ALLOWED_EXTENSIONS
 from flask import request, Blueprint, render_template
 from models.utils.utils import get_temp_folder, get_upload_folder
