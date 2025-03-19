@@ -61,10 +61,6 @@ def check_password(passwd: str) -> str:
     raise MessageException('Konto nie zostało utworzone')
   return user.get_passwd()
 
-def check_user_existence(nick: str, email: str) -> None:
-  if su.is_user_existing(nick, email):
-    raise MessageException('Użytkownik o podanym nicku lub e-mailu już istnieje')
-
 def send_code_by_email(send_func: Callable[Concatenate[SendMail, str, P], None], email, *args: P.args, **kwargs: P.kwargs) -> None:
   try:
     s=SendMail()
@@ -91,16 +87,84 @@ def validate_email(email: str) -> str:
     raise MessageException('E-mail nie przeszedł weryfikacji')
 
 @log_if_error
-def signup_user(nick: str, email: str, passwd: str, rep_passwd: str) -> Response:
-  db.session.begin()
+def invite_user(email: str, message: str|None=None, do_after_create: list[Callable[[], object]]=[]) -> Response:
+  email=validate_email(email)
+  if su.get_user_by_email(email) is not None:
+    raise MessageException('Użytkownik o podanym e-mailu już istnieje')
+
+  create_user(None, email, '')
+  user=su.get_user_by_email(email)
+  if user is None:
+    raise MessageException('Użytkownik nie został stworzony')
+  
+  code, code_exp=sc.gen_code(user, CodePurposeEnum.InviteUserMail)
+  send_code_by_email(SendMail.sendInvite, email, code, message)
+
+  for do in do_after_create:
+    do()
+  
+  log_activity(True, {'details': f'Poprawnie stworzono konto: [{email}]'})
+  return Response.success_response(
+    message=f'Dana osoba będzie mogłą przyjąć zaproszenie za pomocą kodu z mail\'a w ciągu: {code_exp}dni'
+  )
+
+@log_if_error
+def accept_invite(email: str, code: str) -> Response:
+  message='Nie prawidłowy kod'
+  email=validate_email(email)
+  user=su.get_user_by_email(email)
+  if user is None:
+    raise MessageException(message)
+  if user.get_nick()!='':
+    raise MessageException(message)
+  if sc.check_code(user, code, CodePurposeEnum.InviteUserMail):
+    _code, _=sc.gen_code(user, CodePurposeEnum.InviteUser)
+    return Response.success_response(data=_code.code)
+  raise MessageException(message)
+
+@log_if_error
+def accept_invite_cr_user(email: str, code: str, nick: str, passwd: str, rep_passwd: str) -> Response:
+  message='Nie prawidłowy kod'
   validate_nick(nick)
   validate_passwords(passwd, rep_passwd)
   email=validate_email(email)
-  passwd=check_password(passwd)
-  check_user_existence(nick, email)
+  user=su.get_user_by_email(email)
+  if user is None:
+    raise MessageException(message)
+  if user.get_nick()!='':
+    raise MessageException(message)
   
-  create_user(nick, email, passwd)
-  user=su.get_user_by_nick(nick)
+  if sc.check_code(user, code, CodePurposeEnum.InviteUser):
+    su.set_user_nick(user, nick)
+    if su.change_user_pass(user, passwd):
+      log_activity(True, {'details': f'Poprawnie utworzono konto z zaproszenia: {user.get_nick()}'})
+      return Response.success_response()
+    
+    _code, _=sc.gen_code(user, CodePurposeEnum.InviteUser)
+    return Response.error_response(message='Hasło nie spełnia wymogów lub użytkownik o podanym nick\'u już istnieje', data=_code.code)
+  raise MessageException(message)
+
+@log_if_error
+def signup_user(nick: str, email: str, passwd: str, rep_passwd: str) -> Response:
+  message='Użytkownik o podanym nicku lub e-mailu już istnieje'
+  validate_nick(nick)
+  validate_passwords(passwd, rep_passwd)
+  email=validate_email(email)
+  _passwd=check_password(passwd)
+  
+  if su.get_user_by_nick(nick) is not None:
+    raise MessageException(message)
+  user=su.get_user_by_email(email)
+  if user is None:
+    create_user(nick, email, _passwd)
+    user=su.get_user_by_nick(nick)
+  elif user.get_nick()!='':
+    raise MessageException(message)
+  else:
+    su.set_user_nick(user, nick)
+    if not su.change_user_pass(user, passwd):
+      raise MessageException('Konto nie zostało utworzone')
+  
   if user is None:
     raise MessageException('Konto nie zostało utworzone')
 

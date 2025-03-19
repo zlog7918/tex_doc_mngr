@@ -16,6 +16,28 @@ class SendMail:
         )
         self.__sender=Sender(host, port, addr, usr, passwd, SenderLoginOpt(auth_type))
 
+    def sendInvite(self, reciever: str, code: Code, message: str|None=None) -> None:
+        port=int(os.getenv('NGINX_HTTPS_OUTER_PORT', '443'))
+        link=f'https://{os.getenv('SERVER_NAME', 'SERVER_NAME')}{'' if port==443 else f':{port}'}/user/accept_inv/{reciever}/{code.code}'
+        try:
+            # TODO: sanitize {message}
+            self.__sender.send_mess('Zaproszenie', [reciever], f'''
+                <html>
+                    <head>
+                        <meta charset="utf-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                    </head>
+                    <body>
+                        <h1>Hello, zostałeś(aś) zaproszony(a) do naszego programu!</h1>
+                        {'' if message is None else f'Wiadomość: {message}<br>'}
+                        Tu jest Twój link do autoryzacji: <a href="{link}">link</a><br>
+                        Lub jeżeli wolisz własnoręcznie przekopiować link: {link}
+                    </body>
+                </html>
+            ''')
+        except Exception as e:
+            raise MessageException.from_exception(e, self.__ERROR_MESSAGE)
+
     def sendCode(self, reciever: str, code: Code) -> None:
         port=int(os.getenv('NGINX_HTTPS_OUTER_PORT', '443'))
         link=f'https://{os.getenv('SERVER_NAME', 'SERVER_NAME')}{'' if port==443 else f':{port}'}/user/approve/{reciever}/{code.code}'

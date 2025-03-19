@@ -16,6 +16,7 @@ class CodePurposeEnum(PyEnum):
     InviteUser=auto()
     ApproveUser=auto()
     ResetUserPass=auto()
+    InviteUserMail=auto()
     ResetUserPassReq=auto()
     def gen_code(self) -> tuple[str, int]:
         code=__gen_len_code(self.__ALPHABET, c.CODE_GEN_LEN)

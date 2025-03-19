@@ -40,14 +40,6 @@ def get_curr_user_or_err() -> User:
         raise MessageException('Nie jest zalogowany, żaden użytkownik')
     return u
 
-def is_user_existing(nick: str, email: str) -> bool:
-    return User.query.where(
-        or_(
-            User.nick==nick
-            ,User.email==email
-        )
-    ).first() is not None
-
 def add_user(user: User):
     try:
         db.session.add(user)
@@ -69,3 +61,10 @@ def change_user_pass(user: User, passwd: str) -> bool:
         return False
     except Exception as e:
         raise MessageException.from_exception(e, 'Hasło nie zostało zmienione')
+    
+def set_user_nick(user: User, nick: str) -> None:
+    try:
+        user.nick=nick
+        db.session.flush()
+    except Exception as e:
+        raise MessageException.from_exception(e, 'Konto nie zostało utworzone')
