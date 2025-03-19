@@ -24,7 +24,8 @@ def list_reviewer_reviews():
 @approve_required
 def article_details(article_id: int):
     try:
-        if not ac.is_reviewer(article_id):
+        user=su.get_curr_user_or_err()
+        if not ac.is_reviewer(article_id, int(user.get_id())):
             return Response.error_response(message = "You are not a reviewer of this article").to_dict()
 
         user=su.get_curr_user_or_err()
@@ -78,7 +79,7 @@ def reject_article(review_id):
             return Response.error_response(message = "You are not a reviewer of this review").to_dict()
 
         result = ac.set_review_status(review_id, "Rejected by reviewer")
-        if result:
+        if result.success:
             return {"message": "Rejected reviewing the article"}, 200
         else:
             return {"error": "Failed to reject the review"}, 500

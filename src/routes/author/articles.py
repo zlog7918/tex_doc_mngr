@@ -10,12 +10,13 @@ from models.utils.utils import get_temp_folder, get_upload_folder
 
 articles_bp = Blueprint("articles", __name__)
 
-def allowed_file(filename: str) -> bool:
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+# I leave it here, but commented becouse it's not used anywhere
+# def allowed_file(filename: str) -> bool:
+#     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def handle_file(file: FileStorage, folder: str) -> str:
+def __handle_file(file: FileStorage, folder: str) -> str:
     os.makedirs(folder, exist_ok=True)
-    filename = secure_filename(file.filename)
+    filename = secure_filename('' if file.filename is None else file.filename)
     tex_path = os.path.join(folder, filename)
     file.save(tex_path)
     return tex_path
@@ -38,7 +39,7 @@ def upload_file():
     if not file.filename:
         return Response.error_response(message='No file selected').to_dict()
 
-    tex_path=handle_file(file, get_upload_folder())
+    tex_path=__handle_file(file, get_upload_folder())
     return ac.upload_file(title, editor, tex_path).to_dict()
 
 
@@ -58,10 +59,12 @@ def generate_preview():
         return Response.error_response(message='Nie przesłano pliku').to_dict()
 
     file = request.files['file']
+    if not file.filename:
+        return Response.error_response(message='No file selected').to_dict()
     if not file.filename.endswith('.tex'):
         return Response.error_response(message="Nieprawidłowy format pliku").to_dict()
 
-    tex_path=handle_file(file, get_temp_folder())
+    tex_path=__handle_file(file, get_temp_folder())
     response = ac.generate_preview(tex_path)
     if response.success:
         return response.data
@@ -72,6 +75,6 @@ def generate_preview():
 @approve_required
 def temp_preview(filename):
     ret=ac.temp_preview(filename)
-    if isinstance(ret, Response):
-        return ret.to_dict()
-    return ret
+    if ret.success:
+        return ret.data
+    return ret.to_dict()

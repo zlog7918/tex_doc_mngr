@@ -1,9 +1,9 @@
-from db.db_base import db, log_err
-from models.utils.utils import get_function
 from . import article as aq
+from db.db_base import db, log_err
 from models.article.Round import Round
 from models.article.Review import Review
 from models.article.Article import Article
+from models.utils.MessageException import MessageException
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 def get_review_by_id(review_id: int) -> Review|None:
@@ -88,7 +88,7 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
         # )
 
 
-def get_articles_as_reviewer(reviewer_id: int) -> list[Article, int]:
+def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
     try:
         articles = (
             db.session.query(Article, Review.status)
@@ -99,7 +99,7 @@ def get_articles_as_reviewer(reviewer_id: int) -> list[Article, int]:
         )
 
         # Konwersja do listy słowników
-        return articles
+        return [r.tuple() for r in articles]
 
     except Exception as err:
         print("error7: " + str(err))
@@ -110,26 +110,22 @@ def post_review(review: Review) -> bool:
     try:
         # Dodajemy nową recenzję do bazy danych
         db.session.add(review)
-        db.session.commit()
         return True
     except Exception as err:
         print("error8: " + str(err))
-        db.session.rollback()
         return False
 
 
 def update_review_status(review_id: int, status: str) -> bool:
     try:
         review = get_review_by_id(review_id)
-        if review:
-            review.status = status
-            db.session.commit()
-            return True
-        return False
+        if review is None:
+            return False
+        review.status=status
+        db.session.flush()
+        return True
     except Exception as err:
-        log_err(get_function(), err)
-        db.session.rollback()
-        return False
+        raise MessageException('Review status not updated', err) from None
 
 
 

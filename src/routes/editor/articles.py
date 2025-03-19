@@ -103,9 +103,9 @@ def reject_article(article_id):
         return Response.error_response(message = "You are not an editor of this article").to_dict()
 
     result = ac.set_article_status(article_id, ArticleStatusEnum.Rejected)
-    if not result:
-        return Response.error_response("Article status not updated")
-    return Response.success_response()
+    if result.success:
+        return Response.success_response().to_dict()
+    return Response.error_response("Article status not updated").to_dict()
 
 
 # @editor_articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
