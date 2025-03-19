@@ -1,7 +1,10 @@
+from .Round import Round
 from db.db_base import db
 from enum import Enum as PyEnum
+from models.usr.User import User
 from sqlalchemy import ForeignKey, String, Integer, Text, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm.relationships import _RelationshipDeclared
 
 class ArticleStatusEnum(PyEnum):
     Submitted='Submitted'
@@ -22,25 +25,17 @@ class Article(db.Model):
     __tablename__ = 'articles'
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    author_id: Mapped[int] = mapped_column(ForeignKey('usr.id'), nullable=False)
-    editor_id: Mapped[int] = mapped_column(ForeignKey('usr.id'), nullable=True)
+    author_id: Mapped[int] = mapped_column(ForeignKey(User.id), nullable=False)
+    editor_id: Mapped[int] = mapped_column(ForeignKey(User.id), nullable=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    status_id: Mapped[int] = mapped_column(ForeignKey('article_status.id'), nullable=False)
+    status_id: Mapped[int] = mapped_column(ForeignKey(ArticleStatus.id), nullable=False)
     
-    author = relationship('User', foreign_keys=[author_id])
-    editor = relationship('User', foreign_keys=[editor_id])
-    status = relationship('ArticleStatus', backref='articles')
+    author: _RelationshipDeclared[User] = relationship(User, foreign_keys=[author_id])
+    editor: _RelationshipDeclared[User] = relationship(User, foreign_keys=[editor_id])
+    status: _RelationshipDeclared[ArticleStatus] = relationship(ArticleStatus, foreign_keys=[status_id])
 
-    def update_status(self, new_status: ArticleStatusEnum) -> bool:
-        try:
-            status = ArticleStatus.query.filter_by(stat=new_status).first()
-            if status:
-                self.status_id = status.id
-                db.session.commit()
-                return True
-            return False
-        except Exception as err:
-            print("exception:", str(err))
-            db.session.rollback()
-            return False
+    rounds: _RelationshipDeclared[list[Round]] = relationship(Round, back_populates=str(Round.article))
+
+    def update_status(self, new_status: ArticleStatus) -> None:
+        self.status_id = new_status.id
