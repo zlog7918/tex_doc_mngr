@@ -4,6 +4,8 @@ import traceback
 from . import consts as c
 from flask import render_template
 from datetime import datetime,timezone
+from .FormNotFilledException import FormNotFilledException
+from werkzeug.datastructures.structures import ImmutableMultiDict
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):
@@ -12,6 +14,15 @@ def url_last_edit(path: str) -> str:
         return f'{path}?t=ERROR'
     path_abs=f'{os.environ.get('APP_DIR')}{path}'
     return f'{path}?t={int(os.path.getmtime(path_abs))}'
+
+def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> tuple[str, ...]:
+    vs: list[str]=[]
+    for k in keys:
+        v=form.get(k)
+        if v is None:
+            raise FormNotFilledException(f'Formularz nie zawiera "{k}"')
+        vs.append(v)
+    return tuple(*vs)
 
 def render_base_template(name: str, **kwargs: object) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)

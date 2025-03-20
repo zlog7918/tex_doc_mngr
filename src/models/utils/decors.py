@@ -7,6 +7,7 @@ from db.db_base import db, log_err
 from flask.typing import ResponseReturnValue
 from .MessageException import MessageException
 from typing import Callable, ParamSpec, TypeVar, Generic
+from .FormNotFilledException import FormNotFilledException
 
 _PWrapped=ParamSpec('_PWrapped')
 _RWrapped=TypeVar('_RWrapped')
@@ -63,4 +64,13 @@ def log_if_error(f: Callable[P, Response]) -> _Wrapped[P, Response, P, Response]
             db.session.rollback()
             print(f'{type(e)} {e}\nTimestamp: {util.get_timestamp().isoformat()}\nTraceback:\n{util.get_traceback(e)}')
             return Response.error_response(message='Wystąpił poważny błąd serwera, przepraszamy za utrudnienia')
+    return func
+
+def handle_form_not_filled(f: Callable[P, ResponseReturnValue]) -> _Wrapped[P, ResponseReturnValue, P, ResponseReturnValue]:
+    @__ret_wrapped(f)
+    def func(*args: P.args, **kwargs: P.kwargs) -> ResponseReturnValue:
+        try:
+            return f(*args, **kwargs)
+        except FormNotFilledException as e:
+            return Response.error_response(message=str(e)).to_dict()
     return func
