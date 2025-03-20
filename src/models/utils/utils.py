@@ -22,7 +22,7 @@ def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> 
         if v is None:
             raise FormNotFilledException(f'Formularz nie zawiera "{k}"')
         vs.append(v)
-    return tuple(*vs)
+    return tuple(vs)
 
 def render_base_template(name: str, **kwargs: object) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)

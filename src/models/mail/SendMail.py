@@ -4,7 +4,7 @@ from models.usr.Code import Code
 from .Sender import Sender, SenderLoginOpt
 from models.utils.MessageException import MessageException
 
-def __get_link(url: str) -> str:
+def _get_link(url: str) -> str:
     port=int(os.getenv('NGINX_HTTPS_OUTER_PORT', '443'))
     return f'https://{os.getenv('SERVER_NAME', 'SERVER_NAME')}{'' if port==443 else f':{port}'}/{url}'
 
@@ -22,7 +22,7 @@ class SendMail:
         self.__sender=Sender(host, port, addr, usr, passwd, SenderLoginOpt(auth_type))
 
     def sendInvite(self, reciever: str, code: Code, message: str|None=None) -> None:
-        link=__get_link(f'user/accept_inv/{reciever}/{code.code}')
+        link=_get_link(f'user/accept_inv/{reciever}/{code.code}')
         try:
             self.__sender.send_mess('Zaproszenie', [reciever], f'''
                 <html>
@@ -42,7 +42,7 @@ class SendMail:
             raise MessageException.from_exception(e, self.__ERROR_MESSAGE)
 
     def sendCode(self, reciever: str, code: Code) -> None:
-        link=__get_link(f'user/approve/{reciever}/{code.code}')
+        link=_get_link(f'user/approve/{reciever}/{code.code}')
         try:
             self.__sender.send_mess('Kod do autoryzacji', [reciever], f'''
                 <html>
@@ -61,7 +61,7 @@ class SendMail:
             raise MessageException.from_exception(e, self.__ERROR_MESSAGE)
 
     def sendResetReqest(self, reciever: str, code: Code) -> None:
-        link=__get_link(f'user/pass_reset/{reciever}/{code.code}')
+        link=_get_link(f'user/pass_reset/{reciever}/{code.code}')
         try:
             self.__sender.send_mess('Reset hasła', [reciever], f'''
                 <html>

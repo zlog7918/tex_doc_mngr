@@ -78,6 +78,21 @@ def pass_reset(email: str, code: str):
     # return util.render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
 
+@user_bp.route('/create_inv', methods=['POST'])
+@decor.approve_required
+@decor.handle_form_not_filled
+def create_invitation():
+    email,=util.get_from_form(request.form, (
+        'email',
+    ))
+    return uc.invite_user(email).to_dict()
+
+# TODO: after check, delete this func
+@user_bp.route('/create_inv_form')
+@decor.approve_required
+def create_invitation_form():
+    return util.render_base_template('create_inv_form.html')
+
 @user_bp.route('/accept_inv/<email>/<code>', methods=['GET', 'POST'])
 def accept_invitation(email: str, code: str):
     ret=uc.accept_invite(email, code)
@@ -96,11 +111,7 @@ def accept_invitation_cr_user():
         'passwd',
         'rep_passwd',
     ))
-    ret=uc.accept_invite_cr_user(*t)
-    if ret.success:
-        return util.render_base_template('cr_user.html', email=t[0], code=ret.data)
-    # return util.render_base_template('error.html', err=ret.to_dict())
-    return ret.to_dict()
+    return uc.accept_invite_cr_user(*t).to_dict()
 
 @user_bp.route('/pass_reset_form')
 def pass_reset_form():

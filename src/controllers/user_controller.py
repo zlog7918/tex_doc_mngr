@@ -133,16 +133,23 @@ def accept_invite_cr_user(email: str, code: str, nick: str, passwd: str, rep_pas
     raise MessageException(message)
   if user.get_nick()!='':
     raise MessageException(message)
+  if not sc.check_code(user, code, CodePurposeEnum.InviteUser):
+    raise MessageException(message)
   
-  if sc.check_code(user, code, CodePurposeEnum.InviteUser):
-    su.set_user_nick(user, nick)
-    if su.change_user_pass(user, passwd):
-      log_activity(True, {'details': f'Poprawnie utworzono konto z zaproszenia: {user.get_nick()}'})
-      return Response.success_response()
-    
+  su.set_user_nick(user, nick)
+  if not su.change_user_pass(user, passwd):
     _code, _=sc.gen_code(user, CodePurposeEnum.InviteUser)
     return Response.error_response(message='Hasło nie spełnia wymogów lub użytkownik o podanym nick\'u już istnieje', data=_code.code)
-  raise MessageException(message)
+  
+  _code, code_exp=sc.gen_code(user, CodePurposeEnum.ApproveUser)
+  log_activity(True, {'details': f'Poprawnie wygenerowano kod dla {user.get_nick()}'})
+  send_code_by_email(SendMail.sendCode, email, _code)
+
+  login_user(user)
+  log_activity(True, {'details': f'Poprawnie utworzono konto z zaproszenia: {user.get_nick()}'})
+  return Response.success_response(
+    message = f'Proszę potwierdzić konto za pomocą kodu z mail\'a w: {code_exp/60}min'
+  )
 
 @log_if_error
 def signup_user(nick: str, email: str, passwd: str, rep_passwd: str) -> Response:

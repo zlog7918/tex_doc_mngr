@@ -8,7 +8,7 @@ from enum import Enum as PyEnum, auto
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import or_, Enum, Integer, Boolean, Text, DateTime, ForeignKey, UniqueConstraint, CheckConstraint, Index
 
-def __gen_len_code(alphabet: str, len: int) -> str:
+def _gen_len_code(alphabet: str, len: int) -> str:
     return ''.join(random.choice(alphabet) for _ in range(len))
 
 class CodePurposeEnum(PyEnum):
@@ -19,7 +19,7 @@ class CodePurposeEnum(PyEnum):
     InviteUserMail=auto()
     ResetUserPassReq=auto()
     def gen_code(self) -> tuple[str, int]:
-        code=__gen_len_code(self.__ALPHABET, c.CODE_GEN_LEN)
+        code=_gen_len_code(self.__ALPHABET, c.CODE_GEN_LEN)
         if self.value==self.__class__.InviteUser:
             return code, c.TIME_TO_EXPIRE_INVITE
         return code, c.TIME_TO_EXPIRE
