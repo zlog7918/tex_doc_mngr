@@ -1,15 +1,20 @@
 import os
 import time
 from db.db_base import db
+from typing import Awaitable
 from db.seed_db import seed_data
+from models.lang import LangEnum
 from models.usr.User import User
 from flask_login import LoginManager
+from flask.typing import RouteCallable
 from routes.users.users import user_bp
-from flask import Flask, Request as flRequest
+from models.utils import utils as util
+from werkzeug.exceptions import NotFound
 from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
-from models.utils.utils import render_base_template
 from routes.editor.articles import editor_articles_bp
+from werkzeug.routing import RequestRedirect, MapAdapter
+from flask import Flask, Request as flRequest, request, current_app
 from services.user import user_loader, get_curr_user, user_loader_by_nick
 
 app = Flask(__name__)
@@ -52,10 +57,38 @@ def request_loader(request: flRequest):
     user=user_loader_by_nick(nick)
     return user
 
+# async def choose_lang(path: str):
+@app.route('/pl', defaults={'path': ''}, methods=['GET', 'POST'])
+@app.route('/pl/<path:path>', methods=['GET', 'POST'])
+def choose_lang(path: str):
+    util.set_lang_pkg(LangEnum.PL)
+
+    def get_path_from_url(url: str) -> str:
+        _url=url.split('/', maxsplit=3)
+        return f'/{_url[3]}' if len(_url)==4 else '/'
+    def get_func(map: MapAdapter, list: dict[str, RouteCallable], url: str, i: int=0) -> tuple[RouteCallable, dict[str, object]]:
+        if i>=5:
+            raise NotFound()
+        try:
+            func_name, mapping=map.match(url)
+            func=list[func_name]
+            return func, dict(mapping)
+        except RequestRedirect as e:
+            url=get_path_from_url(e.new_url)
+        return get_func(map, list, url, i+1)
+    func, kwargs=get_func(current_app.url_map.bind_to_environ(request), current_app.view_functions, path)
+    ret=func(**kwargs)
+    if isinstance(ret, Awaitable):
+        # return await ret
+        # TODO: perhaps to change with above, but we don't have any Awaitable values for now
+        print(f'\n\nFOUND Awaitable: on path: {path}, with arguments: {request.form.to_dict()}\n\n')
+        raise NotFound()
+    return ret
+
 @app.route('/')
 def index():
     user=get_curr_user()
-    return render_base_template('login_form.html' if user is None else ('logged.html' if user.is_approved() else 'check_approval.html'))
+    return util.render_base_template('login_form.html' if user is None else ('logged.html' if user.is_approved() else 'check_approval.html'))
 
 if __name__=='__main__':
     app.run(debug=True)

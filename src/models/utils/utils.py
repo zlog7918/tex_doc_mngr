@@ -1,9 +1,9 @@
 import sys
-import random
 import os.path
 from . import consts as c
-from flask import render_template
+from flask import render_template, g
 from datetime import datetime,timezone
+from models.lang import LangEnum, LangBase
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):
@@ -15,6 +15,15 @@ def url_last_edit(path: str) -> str:
 
 def render_base_template(name: str, **kwargs) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)
+
+def set_lang_pkg(lang: LangEnum) -> None:
+    g.lang=lang.value
+
+def get_lang_pkg() -> type[LangBase]:
+    if 'lang' not in g:
+        lang=LangEnum.EN.value
+        g.lang=lang
+    return g.lang
 
 def get_upload_folder() -> str:
     return os.getenv('DOC_FILES_DIR', '/var/www/uploads')
