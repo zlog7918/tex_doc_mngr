@@ -56,9 +56,13 @@ def article_details(article_id):
         tab_content = render_base_template("round_tabs/in_review.html", reviews=reviews)
     elif article.status.stat == ArticleStatusEnum.Reviewed:
         grouped_answers = response.data["grouped_answers"]
-        return render_base_template("round_tabs/reviewed.html", grouped_answers=grouped_answers)
+        tab_content = render_base_template("round_tabs/reviewed.html", grouped_answers=grouped_answers)
     elif article.status.stat == ArticleStatusEnum.Rejected:
         return render_base_template("round_tabs/rejected.html")
+    elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
+        return render_base_template("round_tabs/needs_corrections.html", article=article)
+    else:
+        return Response.error_response(message="Not found")
 
     return render_template("article_round_base.html", tab_content=tab_content, article=article, data=data)
 
@@ -71,13 +75,20 @@ def accept_article(article_id):
 
     return ac.set_article_status(article_id, ArticleStatusEnum.Accepted).to_dict()
 
-
-@editor_articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
+@editor_articles_bp.route('/<int:article_id>/request_correction', methods=['POST'])
 @approve_required
-def add_round(article_id):
+def request_article_correction(article_id):
     if not ac.is_editor(article_id):
         return Response.error_response(message = "You are not an editor of this article").to_dict()
-    return ac.add_round(article_id).to_dict()
+
+    return ac.set_article_status(article_id, ArticleStatusEnum.NeedsCorrections).to_dict()
+
+# @editor_articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
+# @approve_required
+# def add_round(article_id):
+#     if not ac.is_editor(article_id):
+#         return Response.error_response(message = "You are not an editor of this article").to_dict()
+#     return ac.add_round(article_id).to_dict()
 
 
 @editor_articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])

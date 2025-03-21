@@ -1,3 +1,4 @@
+from models.article.Round import Round
 from models.usr.User import User
 from flask_sqlalchemy import SQLAlchemy
 from models.usr.Code import CodePurpose, CodePurposeEnum
@@ -63,5 +64,15 @@ def seed_data(db: SQLAlchemy) -> None:
             QuestionSetQuestions(question_set_id=1, question_id=2),
         ]
         db.session.add_all(question_set_questions)
+        
+    if not Round.query.first():
+        rounds = [
+            Round(article_url = 'This is a beginner-friendly guide to Flask.', article_id = 1, round_number=1, q_set_id = 1),
+            Round(article_url = 'Explores RESTful APIs and their best practices.', article_id = 2, round_number=1, q_set_id = 1),
+            Round(article_url = 'Delves into advanced techniques in Flask.', article_id = 3, round_number=1, q_set_id = 1),
+            Round(article_url = 'Further techniques in Flask for experienced users.', article_id = 4, round_number=1, q_set_id = 1),
+            Round(article_url = 'Discusses common pitfalls to avoid in Flask.', article_id = 5, round_number=1, q_set_id = 1),
+        ]
+        db.session.add_all(rounds)
     
     db.session.commit()

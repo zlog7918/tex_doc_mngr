@@ -1,5 +1,7 @@
+from sqlalchemy import and_
+from models.utils.utils import get_function
 from . import user as uq
-from db.db_base import db
+from db.db_base import db, log_err
 from models.usr.User import User
 from flask_login import current_user
 from models.article.Round import Round
@@ -15,7 +17,7 @@ def create_article(title: str, file_url: str, editor_nick: str) -> bool:
         if not editor_id:
             return False
 
-        status = ArticleStatus.query.filter_by(stat=ArticleStatusEnum.Submitted).first()
+        status = ArticleStatus.query.where(ArticleStatus.stat==ArticleStatusEnum.Submitted).first()
         if not status:
             return False
 
@@ -27,7 +29,6 @@ def create_article(title: str, file_url: str, editor_nick: str) -> bool:
             status_id=status.id
         )
         db.session.add(new_article)
-        db.session.commit()
 
         return True
 
@@ -41,9 +42,11 @@ def create_article(title: str, file_url: str, editor_nick: str) -> bool:
 def get_article(article_id: int) -> Article|None:
     return Article.query.where(Article.id==article_id).first()
 
+def get_article_by_title(author_id: int, title: str) -> Article|None:
+    return Article.query.where(and_(Article.author_id == author_id, Article.title == title)).first()
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
-    return Article.query.filter_by(editor_id=editor_id).all()
+    return Article.query.where(Article.editor_id==editor_id).all()
 
 
 def get_available_reviewers(article_id: int) -> dict[int, str]:
@@ -209,17 +212,17 @@ def get_last_round_number(article_id: int) -> int:
         return 0
 
 
-def create_round(article_id: int, round_number: int, deadline_confirm: str = None, deadline_submit: str = None) -> bool:
+def create_round(article_id: int, article_url: str, round_number: int, deadline_confirm: str|None = None, deadline_submit: str|None = None) -> bool:
     try:
         new_round = Round(
             article_id=article_id,
+            article_url=article_url,
             round_number=round_number,
             q_set_id=1, # TODO: should be set later
             deadline_confirm=deadline_confirm,
             deadline_submit=deadline_submit
         )
         db.session.add(new_round)
-        db.session.commit()
         print("created")
         return True
     except Exception as err:
@@ -229,6 +232,24 @@ def create_round(article_id: int, round_number: int, deadline_confirm: str = Non
         db.session.rollback()
         return False
 
+def set_deadlines(article_id: int, deadline_confirm: str|None, deadline_submit: str|None) -> bool:
+    try:
+        article = get_article(article_id)
+        if not article or not article.rounds:
+            return False
+
+        round = article.rounds[-1]
+
+        if deadline_confirm:
+            round.deadline_confirm = deadline_confirm
+        if deadline_submit:
+            round.deadline_submit = deadline_submit
+
+        return True
+    except Exception as e:
+        db.session.rollback()
+        log_err(get_function(), e)
+        return False
 
 def add_reviewer_to_article(article_id: int, reviewer_id: int) -> bool:
     try:

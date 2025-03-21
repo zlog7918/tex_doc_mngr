@@ -95,22 +95,22 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     except Exception as err:
         return Response.error_response(str(err))
     
-def add_round(article_id: int) -> Response:
-    article = aq.get_article(article_id)
-    if not article:
-        return Response.error_response(message = "Article not found")
+# def add_round(article_id: int) -> Response:
+#     article = aq.get_article(article_id)
+#     if not article:
+#         return Response.error_response(message = "Article not found")
 
-    # Sprawdzanie, czy artykuł spełnia wymagane statusy
-    if article.status.stat not in {ArticleStatusEnum.Accepted, ArticleStatusEnum.Reviewed}:
-        return Response.error_response(message = "Round cannot be added")
+#     # Sprawdzanie, czy artykuł spełnia wymagane statusy
+#     if article.status.stat not in {ArticleStatusEnum.Accepted}:
+#         return Response.error_response(message = "Round cannot be added")
 
-    new_round_number = len(article.rounds) + 1
-    result = aq.create_round(article_id=article_id, round_number=new_round_number)
+#     new_round_number = len(article.rounds) + 1
+#     result = aq.create_round(article_id=article_id, round_number=new_round_number)
 
-    if result:
-        return Response.success_response(message=f"Round {new_round_number} added successfully")
-    else:
-        return Response.error_response(message='Round was not created.')
+#     if result:
+#         return Response.success_response(message=f"Round {new_round_number} added successfully")
+#     else:
+#         return Response.error_response(message='Round was not created.')
     
 def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     if not assigned_reviewers:
@@ -118,9 +118,7 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
     
     try:
         assigned_reviewers_ids = [int(rid.strip()) for rid in assigned_reviewers.split(',')]
-        last_round_number = aq.get_last_round_number(article_id)
-        new_round_number = last_round_number + 1 if last_round_number else 1
-        aq.create_round(article_id, new_round_number, deadline_confirm, deadline_submit)
+        aq.set_deadlines(article_id = article_id, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
 
         for reviewer_id in assigned_reviewers_ids:
             aq.add_reviewer_to_article(article_id, reviewer_id)
@@ -172,23 +170,58 @@ def upload_file(title: str, editor: str, tex_path: str) -> Response:
             if not conversion_success:
                 return Response.error_response(message="Error converting LaTeX to PDF")
 
-        # file_url=f"/articles/uploads/{filename}"
         file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf') if filename.endswith('.tex') else filename}"
 
-        if aq.create_article(title, file_url, editor):
-            return Response.success_response(
-                message=f"File {filename} uploaded successfully",
-                data={"pdf_url": file_url}
-            )
-        else:
-            print('Else')
-            db.session.rollback()
-            return Response.error_response(message='Article not created')
+        result = aq.create_article(title, file_url, editor)
+        if result:
+            user = au.get_curr_user_or_err()
+            article = aq.get_article_by_title(int(user.get_id()), title)
+            if article and aq.create_round(int(article.id), file_url, 1):
+                db.session.commit()
+                return Response.success_response(
+                    message=f"File {filename} uploaded successfully",
+                    data={"pdf_url": file_url}
+                )
+
+        print('Else')
+        db.session.rollback()
+        return Response.error_response(message='Article not created')
 
     except Exception as e:
         # TODO: log
         print('Exception')
         db.session.rollback()
+        return Response.error_response(message=f"Server error: {str(e)}")
+    
+def upload_correction(article_id: int, tex_path: str) -> Response:
+    # TODO: check if the function handles all possibilities
+    try:
+        upload_folder=os.path.dirname(tex_path)
+        filename=os.path.basename(tex_path)
+
+        if filename.endswith('.tex'):
+            conversion_success = convert_tex_to_pdf(tex_path, upload_folder)
+            if not conversion_success:
+                return Response.error_response(message="Error converting LaTeX to PDF")
+
+        file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf') if filename.endswith('.tex') else filename}"
+
+        article = aq.get_article(article_id)
+        if article:
+            round_number = len(article.rounds) + 1
+            if aq.create_round(article.id, file_url, round_number):
+                if article.update_status(ArticleStatusEnum.Submitted):
+                    return Response.success_response(
+                        message=f"File {filename} uploaded successfully",
+                        data={"pdf_url": file_url}
+                    )
+
+        db.session.rollback()
+        return Response.error_response(message='Correction not uploaded.')
+
+    except Exception as e:
+        db.session.rollback()
+        log_err(get_function(), e)
         return Response.error_response(message=f"Server error: {str(e)}")
 
 def get_file(folder: str, filename: str) -> Response:

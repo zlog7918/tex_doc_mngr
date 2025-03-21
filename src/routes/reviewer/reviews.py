@@ -24,10 +24,10 @@ def list_reviewer_reviews():
 @approve_required
 def article_details(article_id):
     try:
-        if not ac.is_reviewer(article_id):
+        user=su.get_curr_user_or_err()
+        if not ac.is_reviewer(article_id, int(user.get_id())):
             return Response.error_response(message = "You are not a reviewer of this article").to_dict()
 
-        user=su.get_curr_user_or_err()
         article = aq.get_article(article_id)
         review = rq.get_review(article_id, int(user.get_id()))
         if not review:

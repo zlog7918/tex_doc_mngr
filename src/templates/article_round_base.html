@@ -31,15 +31,15 @@
     <div id="tabs">
         {% for round in article.rounds %}
             <div class="tab {% if loop.last %}active{% endif %}" data-index="{{ loop.index }}" onclick="showTab(this.getAttribute('data-index'))">
-                Round {{ round.id }}
+                Round {{ round.round_number }}
             </div>
         {% endfor %}
     </div>
     <div class="tab-content" id="tab-content">
         {{ tab_content|safe }}
     </div>
-    <button id="add-round" onclick="addRound()">
-        Add Round
+    <button id="needs_correction" onclick="setCorrectionStatus()">
+        Needs Correction
     </button>
     <button id="reject" onclick="rejectArticle()">Reject</button>
 
@@ -55,14 +55,14 @@
 
         }
 
-        function addRound() {
-            fetch(`/editor/articles/{{ article.id }}/add_round`, { method: "POST" })
+        function setCorrectionStatus() {
+            fetch(`/editor/articles/{{ article.id }}/request_correction`, { method: "POST" })
                 .then(response => response.json())
                 .then(data => {
                     if (data['success']) {
                         location.reload();
                     } else {
-                        alert("Unable to add a new round.");
+                        alert("Unable to update the article status.");
                     }
                 });
         }

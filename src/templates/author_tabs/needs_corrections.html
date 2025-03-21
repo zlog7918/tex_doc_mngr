@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Correction</title>
+</head>
+<body>
+    <h1>LaTeX to PDF Converter</h1>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <h2>{{ article.title }}</h1>
+        <label for="file">Choose a LaTeX file (.tex):</label>
+        <input type="file" name="file" id="file" accept=".tex" required>
+        <br><br>
+
+
+        <button type="button" id="previewBtn" style="display: none;">View PDF</button>
+
+
+        <button type="submit" id="sendBtn" style="display: none;">Send</button>
+    </form>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let fileInput = document.getElementById('file');
+            let title = document.querySelector('#uploadForm input[name="title"]');
+            let editor = document.querySelector('#uploadForm input[name="editor"]');
+            let previewBtn = document.getElementById('previewBtn');
+            let sendBtn = document.getElementById('sendBtn');
+            let uploadForm = document.getElementById('uploadForm');
+
+            // Po wybraniu pliku pokaż przyciski
+            fileInput.addEventListener('change', function() {
+                let filename = this.files[0]?.name || "";
+                if (filename.endsWith('.tex')) {
+                    previewBtn.style.display = "inline-block";
+                    sendBtn.style.display = "inline-block";
+                } else {
+                    previewBtn.style.display = "none";
+                    sendBtn.style.display = "none";
+                }
+            });
+
+            // Obsługa podglądu PDF
+            previewBtn.addEventListener("click", async function() {
+                let formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+
+                let response = await fetch("/articles/generate-preview", {
+                    method: "POST",
+                    body: formData
+                });
+
+                let data = await response.json();
+
+                if (data.pdf_url) {
+                    window.open(data.pdf_url, '_blank');
+                } else {
+                    alert("Error: " + (data.error || "Could not generate preview"));
+                }
+            });
+
+            // Obsługa zapisu pliku
+            uploadForm.addEventListener("submit", async function(event) {
+                event.preventDefault();
+                let formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+
+                let response = await fetch("/articles/{{ article.id }}/upload-correction", {
+                    method: "POST",
+                    body: formData
+                });
+
+                let data = await response.json();
+
+                if (data['message']) {
+                    alert("File uploaded successfully!");
+                } else {
+                    alert("Upload failed: " + (data.error || "Unknown error"));
+                }
+            });
+        });
+    </script>
+</body>
+</html>
