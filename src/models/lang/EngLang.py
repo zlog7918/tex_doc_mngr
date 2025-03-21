@@ -1,6 +1,4 @@
-from .BaseLang import BaseLang
+from .LangBase import LangBase
 
-class EngLang(BaseLang):
-    @property
-    def hereSomeNameForTranslatedText(self) -> str:
-        return 'Here is some text'
+class EngLang(LangBase):
+    hereSomeNameForTranslatedText='Here is some text'
