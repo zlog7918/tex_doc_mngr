@@ -1,14 +1,14 @@
 import os
 import subprocess
-from db.db_base import db, log_activity, log_err
-from models.article.Review import Review
 import services.user as au
 import services.article as aq
 import services.review as rs
 from flask import send_from_directory
 from models.utils.Response import Response
+from models.utils.utils import get_function
+from db.db_base import db, log_activity, log_err
+from models.utils.EnvConsts import envConsts as ec
 from models.article.Article import Article, ArticleStatusEnum
-from models.utils.utils import get_function, get_temp_folder, get_upload_folder
 
 def is_editor(article_id: int) -> bool:
     try:
@@ -199,7 +199,7 @@ def get_file(folder: str, filename: str) -> Response:
         return Response.error_response(message="Plik nie istnieje")
 
 def get_uploaded_file(filename: str) -> Response:
-    return get_file(get_upload_folder(), filename)
+    return get_file(ec.getDocFilesDir(), filename)
 
 def generate_preview(tex_path: str) -> Response:
     temp_folder=os.path.dirname(tex_path)
@@ -215,4 +215,4 @@ def generate_preview(tex_path: str) -> Response:
         return Response.error_response(message="Błąd podczas generowania podglądu")
 
 def temp_preview(filename: str) -> Response:
-    return Response.success_response(data = get_file(get_temp_folder(), filename))
+    return Response.success_response(data = get_file(ec.getTempDir(), filename))
