@@ -3,6 +3,7 @@ import os.path
 from . import consts as c
 from flask import render_template, g
 from datetime import datetime,timezone
+from .EnvConsts import envConsts as ec
 from models.lang import LangEnum, LangBase
 
 def url_last_edit(path: str) -> str:
@@ -10,7 +11,7 @@ def url_last_edit(path: str) -> str:
         return f'{path}?t=ERROR'
     if '/..' in path:
         return f'{path}?t=ERROR'
-    path_abs=f'{os.environ.get('APP_DIR')}{path}'
+    path_abs=f'{ec.getAppDir()}{path}'
     return f'{path}?t={int(os.path.getmtime(path_abs))}'
 
 def render_base_template(name: str, **kwargs) -> str:
@@ -24,12 +25,6 @@ def get_lang_pkg() -> type[LangBase]:
         lang=LangEnum.EN.value
         g.lang=lang
     return g.lang
-
-def get_upload_folder() -> str:
-    return os.getenv('DOC_FILES_DIR', '/var/www/uploads')
-
-def get_temp_folder() -> str:
-    return os.getenv('TEMP_FOLDER', '/tmp')
 
 def get_timestamp() -> datetime:
     return datetime.now(timezone.utc)

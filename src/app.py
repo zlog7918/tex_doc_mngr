@@ -1,4 +1,3 @@
-import os
 import time
 from db.db_base import db
 from typing import Awaitable
@@ -12,6 +11,7 @@ from models.utils import utils as util
 from werkzeug.exceptions import NotFound
 from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
+from models.utils.EnvConsts import envConsts as ec
 from routes.editor.articles import editor_articles_bp
 from werkzeug.routing import RequestRedirect, MapAdapter
 from flask import Flask, Request as flRequest, request, current_app
@@ -19,7 +19,7 @@ from services.user import user_loader, get_curr_user, user_loader_by_nick
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}@psql/{os.getenv('POSTGRES_DB')}"
+app.config['SQLALCHEMY_DATABASE_URI'] = ec.getDBString()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 
@@ -36,7 +36,7 @@ with app.app_context():
 login_manager=LoginManager()
 login_manager.init_app(app)
 
-app.secret_key=os.environ.get('FLASK_KEY', 'FLASK_KEY')
+app.secret_key=ec.getFlaskKey()
 
 app.register_blueprint(editor_articles_bp, url_prefix="/editor/articles")
 app.register_blueprint(articles_bp, url_prefix="/articles")
