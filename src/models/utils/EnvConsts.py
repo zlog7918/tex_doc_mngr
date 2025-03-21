@@ -1,9 +1,15 @@
 import os
-from .Singleton import Singleton
 from typing import Any, Self, Callable
 from models.mail.Sender import SenderLoginOpt
 
-class EnvConsts(metaclass=Singleton):
+class _Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
+class EnvConsts(metaclass=_Singleton):
     def __init__(self):
         self.__PEPPER__=self.__getenv_or_exception('PEPPER_VAL')
         for m_fun in self.__mandytory:
@@ -63,4 +69,4 @@ class EnvConsts(metaclass=Singleton):
     def __getenv(self, name: str) -> str|None:
         return os.getenv(name)
 
-envConsts=EnvConsts()     
+envConsts=EnvConsts()
