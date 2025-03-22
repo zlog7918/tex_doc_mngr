@@ -1,4 +1,5 @@
-from db.db_base import db
+from db.db_base import db, log_activity, log_err
+from models.utils.utils import get_function
 from enum import Enum as PyEnum
 from sqlalchemy import ForeignKey, String, Integer, Text, Enum, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -38,13 +39,14 @@ class Article(db.Model):
 
     def update_status(self, new_status: ArticleStatusEnum) -> bool:
         try:
-            status = ArticleStatus.query.filter_by(stat=new_status).first()
+            status = ArticleStatus.query.where(ArticleStatus.stat == new_status).first()
             if status:
                 self.status_id = status.id
-                db.session.commit()
+                log_activity(get_function(), True, {'details': f'Changed article status with id: {self.id} to: {new_status.value}'})
                 return True
+            log_activity(get_function(), False, {'err': f'Article {self.id} status not changed to: {new_status.value} '})
             return False
-        except Exception as err:
-            print("exception:", str(err))
+        except Exception as e:
             db.session.rollback()
+            log_err(get_function(), e)
             return False

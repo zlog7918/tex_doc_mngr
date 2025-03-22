@@ -1,9 +1,9 @@
 from sqlalchemy import and_, select
-from models.utils.utils import get_function
-from . import user as uq
-from db.db_base import db, log_err
 from models.usr.User import User
+from db.db_base import db, log_activity, log_err
 from flask_login import current_user
+from models.utils.utils import get_function
+from models.usr.User import User
 from models.article.Round import Round
 from models.article.Review import Review
 from models.article.Questions import Answer, Question
@@ -13,10 +13,12 @@ def create_article(title: str, file_url: str, editor_id: int) -> bool:
     try:
         user_id = current_user.get_id()
         if not editor_id:
+            log_activity(get_function(), False, {'err': f'Nie znaleziono edytora o nicku: {editor_nick}'})
             return False
 
         status = ArticleStatus.query.filter_by(stat=ArticleStatusEnum.Submitted).first()
         if not status:
+            log_activity(get_function(), False, {'err': 'Brak domyślnego statusu "Submitted" w bazie'})
             return False
 
         new_article = Article(
@@ -29,12 +31,12 @@ def create_article(title: str, file_url: str, editor_id: int) -> bool:
         db.session.add(new_article)
         db.session.commit()
 
+        log_activity(get_function(), True, {'msg': f'Created article "{title}" with id {new_article.id} by user {user_id}'})
         return True
 
     except Exception as e:
-        # TODO: log
-        print(str(e))
         db.session.rollback()
+        log_err(get_function(), e)
         return False
 
 
@@ -44,6 +46,14 @@ def get_article(article_id: int) -> Article|None:
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
     return Article.query.where(Article.editor_id == editor_id).all()
+
+
+def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
+    if article.update_status(new_status):
+        db.session.commit()
+        return True
+    else:
+        return False
 
 
 def get_available_reviewers(article_id: int) -> dict[int, str]:
@@ -79,10 +89,8 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
         # Konwersja wyników na listę słowników
         return { row.id: row.nick for row in reviewers }
 
-    except Exception as err:
-        print("error1: " + str(err))
-        # self.__log_activity(inspect.currentframe().f_code.co_name, False,
-        #                     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+    except Exception as e:
+        log_err(get_function(), e)
         return {}
     
 def get_available_editors() -> dict[int, str]:
@@ -121,10 +129,8 @@ def get_assigned_reviewers(article_id: int) -> dict[int, str]:
         # Konwersja do listy słowników
         return {row.id: row.nick for row in reviewers}
 
-    except Exception as err:
-        print("error2: " + str(err))
-        # self.__log_activity(inspect.currentframe().f_code.co_name, False,
-        #                     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+    except Exception as e:
+        log_err(get_function(), e)
         return {}
 
 
@@ -148,10 +154,8 @@ def get_assigned_reviews(article_id: int) -> list[Review]:
 
         return reviews
 
-    except Exception as err:
-        print("error3: " + str(err))
-        # self.__log_activity(inspect.currentframe().f_code.co_name, False,
-        #                     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+    except Exception as e:
+        log_err(get_function(), e)
         return []
 
 from collections import defaultdict
@@ -184,29 +188,24 @@ def get_answers_as_editor(article_id: int) -> dict[str, list[dict]]:
 
         return grouped_answers
 
-    except Exception as err:
-        print("error4: " + str(err))
-        # self.__log_activity(inspect.currentframe().f_code.co_name, False,
-        #                     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+    except Exception as e:
+        log_err(get_function(), e)
         return {}
 
 # TODO: compare with update_status from controller
 def update_article_status(article_id: int, status: int) -> bool:
     try:
-        article = db.session.get(Article, article_id)
+        article = get_article(article_id)
         if article:
             article.status_id = status
             db.session.commit()
             return True
+        
+        log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
         return False
-    except Exception as err:
-        print("exception:", str(err))
-        # self.__log_activity(
-        #     inspect.currentframe().f_code.co_name,
-        #     False,
-        #     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
-        # )
+    except Exception as e:
         db.session.rollback()
+        log_err(get_function(), e)
         return False
 
 
@@ -220,10 +219,8 @@ def get_last_round_number(article_id: int) -> int:
             .scalar()
         )
         return last_round if last_round is not None else 0
-    except Exception as err:
-        print("Error in get_last_round_number:", err)
-        # self.__log_activity(inspect.currentframe().f_code.co_name, False,
-        #                     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+    except Exception as e:
+        log_err(get_function(), e)
         return 0
 
 
@@ -238,13 +235,10 @@ def create_round(article_id: int, round_number: int, deadline_confirm: str = Non
         )
         db.session.add(new_round)
         db.session.commit()
-        print("created")
         return True
-    except Exception as err:
-        print("create:", str(err))
-        # self.__log_activity(inspect.currentframe().f_code.co_name, False,
-        #                     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
+    except Exception as e:
         db.session.rollback()
+        log_err(get_function(), e)
         return False
 
 
@@ -271,12 +265,7 @@ def add_reviewer_to_article(article_id: int, reviewer_id: int) -> bool:
             print("No round found for the given article_id:", article_id)
             return False
 
-    except Exception as err:
-        print("Assignment error:", str(err))
-        # self.__log_activity(
-        #     inspect.currentframe().f_code.co_name,
-        #     False,
-        #     {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
-        # )
+    except Exception as e:
         db.session.rollback()
+        log_err(get_function(), e)
         return False

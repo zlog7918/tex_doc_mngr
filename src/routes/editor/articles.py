@@ -1,8 +1,9 @@
-import services.article as aq
-from decors import approve_required
+from db.db_base import log_err
+from models.article.Article import ArticleStatusEnum
 from models.utils.Response import Response
+from models.utils.utils import get_function, render_base_template
+from decors import approve_required
 import controllers.article_controller as ac
-from models.utils.utils import render_base_template
 from models.article.Article import ArticleStatusEnum
 from flask import request, redirect, url_for, Blueprint, render_template
 
@@ -24,8 +25,9 @@ Final - artykół jest zakończony, nie wymaga poprawek, wersja końcowa
 def show_articles():
     try:
         articles = ac.get_all_articles_by_editor()
-    except Exception as err:
-        return Response.error_response(message=str(err)).to_dict()
+    except Exception as e:
+        log_err(get_function(), e)
+        return Response.error_response(message=str(e)).to_dict()
     return render_base_template("articles.html", articles=articles)
 
 
@@ -107,52 +109,3 @@ def reject_article(article_id):
     if not result:
         return Response.error_response("Article status not updated")
     return Response.success_response()
-
-
-# @editor_articles_bp.route('/<int:article_id>/update_status', methods=['POST'])
-# @approve_required
-# def update_article_status(article_id):
-#     try:
-#         article = aq.get_article(article_id)
-#         if not article:
-#             return Response.error_response("Article not found")
-
-#         current_status = article.status.stat.stat
-
-#         # Sprawdzenie obecnego statusu i zmiana
-#         if current_status == ArticleStatusEnum.Accepted:
-#             # Ustawienie statusu na "In review"
-#             result = aq.update_article_status(article_id, 3)
-#             if not result:
-#                 return {"error": "Failed to update status to 'In review'"}, 500
-
-#             # Tworzenie nowej rundy recenzji
-#             new_round_id = len(article["rounds"]) + 1
-#             new_round = {"id": new_round_id, "reviews": []}
-#             article["rounds"].append(new_round)
-#             # save_article_rounds(article_id, article["rounds"])
-
-#             return {"message": "Status updated to 'In review' and new review round created"}, 200
-
-#         elif current_status == ArticleStatusEnum.InReview:
-#             # Sprawdzenie liczby przesłanych recenzji
-#             latest_round = article["rounds"][-1] if article["rounds"] else None
-#             if not latest_round:
-#                 return {"error": "No active review round found"}, 400
-
-#             total_reviews = len(latest_round["reviews"])
-#             if total_reviews >= 3:  # Zakładamy, że wymagane są 3 recenzje
-#                 result = aq.update_article_status(article_id, 4)
-#                 if result:
-#                     return {"message": "All reviews submitted. Status updated to 'Reviewed'"}, 200
-#                 else:
-#                     return {"error": "Failed to update status to 'Reviewed'"}, 500
-#             else:
-#                 remaining = 3 - total_reviews
-#                 return {"message": f"Waiting for {remaining} more reviews"}, 200
-
-#         else:
-#             return {"error": "Invalid status for update"}, 400
-
-#     except Exception as err:
-#         return {"error": str(err)}, 500

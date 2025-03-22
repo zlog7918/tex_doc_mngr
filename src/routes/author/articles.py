@@ -6,8 +6,9 @@ from models.utils.Response import Response
 import controllers.article_controller as ac
 from werkzeug.datastructures import FileStorage
 from models.utils.consts import ALLOWED_EXTENSIONS
+from models.utils.EnvConsts import envConsts as ec
 from flask import request, Blueprint, render_template
-from models.utils.utils import get_function, get_temp_folder, get_upload_folder
+from models.utils.utils import get_function
 
 articles_bp = Blueprint("articles", __name__)
 
@@ -54,7 +55,7 @@ def upload_file():
     if not file.filename:
         return Response.error_response(message='No file selected').to_dict()
 
-    tex_path=handle_file(file, get_upload_folder())
+    tex_path=handle_file(file, ec.getDocFilesDir())
     return ac.upload_file(title, editor, tex_path).to_dict()
 
 
@@ -77,7 +78,7 @@ def generate_preview():
     if not file.filename.endswith('.tex'):
         return Response.error_response(message="Nieprawidłowy format pliku").to_dict()
 
-    tex_path=handle_file(file, get_temp_folder())
+    tex_path=handle_file(file, ec.getTempDir())
     response = ac.generate_preview(tex_path)
     if response.success:
         return response.data
