@@ -3,7 +3,8 @@ import random
 import os.path
 from . import consts as c
 from flask import render_template
-from datetime import datetime,timezone
+from tzlocal import get_localzone
+from datetime import datetime,tzinfo
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):
@@ -28,11 +29,11 @@ def generate_code() -> tuple[str, int]:
     code=f"{code:06d}"
     return code, c.TIME_TO_EXPIRE
 
-def unifide_timezone() -> timezone:
-    return timezone.utc
+def unifide_timezone() -> tzinfo:
+    return get_localzone()
 
-def get_timestamp(timezone: timezone=unifide_timezone()) -> datetime:
-    return datetime.today().astimezone(tz=timezone)
+def get_timestamp(tz: tzinfo=unifide_timezone()) -> datetime:
+    return datetime.now(tz)
 
 def get_function(back: int=0) -> str:
     frame=sys._getframe(back+1)

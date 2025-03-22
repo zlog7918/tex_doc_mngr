@@ -10,17 +10,22 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
     lub\
     `git clone https://github.com/zlog7918/tex_doc_mngr.git`
 2. Po sklonowaniu projektu należy utworzyć dwa pliki w głównym folderze zawierające:
+    - `.env.global`
+        ```
+        TZ=<wybrana strefa czasowa wedle której będą działały wszystkie kontenery>
+        ```
+        lista z tz: [link](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones)
     - `.env`
         ```
         APP_MAIN_DIR=<ścieżka w której ma być zawarta mechanika aplikacji>
         ```
-    - `.nginx.env` 
+    - `.env.nginx` 
         ```
         NGINX_OUTER_PORT=<port na który ma być udostępniana usługa http>
         NGINX_HTTPS_OUTER_PORT=<port na który ma być udostępniana usługa https>
         CERT_DIR=<ścieżka w której będą przechowywane certyfikaty ssl do https>
         ```
-    - `.python.env` 
+    - `.env.python` 
         ```
         FLASK_KEY=<sekretny klucz aplikacji flask>
         MAIL_HOST=<adres serwera smtp>
@@ -29,13 +34,13 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
         MAIL_USERNAME=<nick wysyłającego na serwerze email>
         MAIL_PASSWORD=<hasło wysyłającego na serwerze email>
         MAIL_AUTH_TYPE=<typ autoryzacji: ssl|tls|plain|none>
-        DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
-        TEMP_FOLDER=<ścieżka gdzie będą przechowywane tymczasowo pliki latex do pogdlądu jako pdf>
+        DOC_FILES_DIR=[ścieżka w której będą przechowywane dane użytkowników]
+        TEMP_FOLDER=[ścieżka gdzie będą przechowywane tymczasowo pliki latex do pogdlądu jako pdf]
         PEPPER_VAL=<wartość pieprzu dodawanego do haseł>
         ```
         komenda do wygenerowania sekretnego klucza: `python -c 'import os; print(os.urandom(24).hex())'`
         przykładowa komenda do wygenerowania pieprzu: `python -c 'import os; print(os.urandom(12).hex())'`
-    - `.psql.env`
+    - `.env.psql`
         ```
         POSTGRES_DB=<nazwa bazy>
         POSTGRES_USER=<nazwa użytkownika bazy>
