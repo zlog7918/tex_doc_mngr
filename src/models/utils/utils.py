@@ -4,13 +4,14 @@ import os.path
 from . import consts as c
 from flask import render_template
 from datetime import datetime,timezone
+from .EnvConsts import envConsts as ec
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):
         return f'{path}?t=ERROR'
     if '/..' in path:
         return f'{path}?t=ERROR'
-    path_abs=f'{os.environ.get('APP_DIR')}{path}'
+    path_abs=f'{ec.getAppDir()}{path}'
     return f'{path}?t={int(os.path.getmtime(path_abs))}'
 
 def render_base_template(name: str, **kwargs) -> str:
@@ -53,7 +54,7 @@ def validate_pass(passwd: str) -> bool:
         if char.islower():
             is_lower=1
         if char in SpecialSym:
-            is_upper=1
+            is_special=1
         if not (char.islower() or char.isdigit() or char.isupper() or (char in SpecialSym)):
             return False
     if (is_digit+is_lower+is_special+is_upper)<4:

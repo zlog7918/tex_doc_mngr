@@ -38,8 +38,8 @@ def create_scheduler(callable_context: ContextFun) -> BackgroundScheduler:
     scheduler.add_job(set_context(set_reviews_not_reviewed, callable_context), DateTrigger(util.get_timestamp()+timedelta(seconds=5)))
 
     # Uruchamianie codziennie o północy
-    scheduler.add_job(set_context(set_reviews_expired, callable_context), CronTrigger(hour=0, minute=0, second=0))
-    scheduler.add_job(set_context(set_reviews_not_reviewed, callable_context), CronTrigger(hour=0, minute=0, second=0))
+    scheduler.add_job(set_context(set_reviews_expired, callable_context), CronTrigger(hour=0, minute=0, second=0, timezone=util.unifide_timezone()))
+    scheduler.add_job(set_context(set_reviews_not_reviewed, callable_context), CronTrigger(hour=0, minute=0, second=0, timezone=util.unifide_timezone()))
 
     scheduler.add_listener(job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 

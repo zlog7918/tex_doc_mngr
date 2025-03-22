@@ -13,11 +13,11 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
     - `.env`
         ```
         APP_MAIN_DIR=<ścieżka w której ma być zawarta mechanika aplikacji>
+        NGINX_HTTPS_OUTER_PORT=<port na który ma być udostępniana usługa https>
         ```
     - `.nginx.env` 
         ```
         NGINX_OUTER_PORT=<port na który ma być udostępniana usługa http>
-        NGINX_HTTPS_OUTER_PORT=<port na który ma być udostępniana usługa https>
         CERT_DIR=<ścieżka w której będą przechowywane certyfikaty ssl do https>
         ```
     - `.python.env` 
@@ -32,6 +32,7 @@ Celem projektu jest stworzenie systemu do obsługi czasopism naukowych
         DOC_FILES_DIR=<ścieżka w której będą przechowywane dane użytkowników>
         TEMP_FOLDER=<ścieżka gdzie będą przechowywane tymczasowo pliki latex do pogdlądu jako pdf>
         PEPPER_VAL=<wartość pieprzu dodawanego do haseł>
+        SERVER_NAME=<nazwa servera, pod jaką widnieje server>
         ```
         komenda do wygenerowania sekretnego klucza: `python -c 'import os; print(os.urandom(24).hex())'`
         przykładowa komenda do wygenerowania pieprzu: `python -c 'import os; print(os.urandom(12).hex())'`

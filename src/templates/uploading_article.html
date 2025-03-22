@@ -12,7 +12,13 @@
         <label for="file">Choose a LaTeX file (.tex):</label>
         <input type="file" name="file" id="file" accept=".tex" required><br>
         Tytuł: <input type="text" name="title" required><br>
-        Edytor: <input type="text" name="editor" required>
+        Edytor: 
+        <select id="editor" name="editor" required>
+            <option value="" disabled selected>Select an editor</option>
+            {% for editor_id, editor_nick in editors.items() %}
+                <option value="{{ editor_id }}">{{ editor_nick }}</option>
+            {% endfor %}
+        </select>
         <br><br>
 
 
@@ -26,7 +32,7 @@
         document.addEventListener("DOMContentLoaded", function() {
             let fileInput = document.getElementById('file');
             let title = document.querySelector('#uploadForm input[name="title"]');
-            let editor = document.querySelector('#uploadForm input[name="editor"]');
+            let editor = document.getElementById("editor");
             let previewBtn = document.getElementById('previewBtn');
             let sendBtn = document.getElementById('sendBtn');
             let uploadForm = document.getElementById('uploadForm');
@@ -65,10 +71,17 @@
             // Obsługa zapisu pliku
             uploadForm.addEventListener("submit", async function(event) {
                 event.preventDefault();
+
+                let editorId = editor.value;
+                if (!editorId) {
+                    alert("Please select an editor.");
+                    return;
+                }
+
                 let formData = new FormData();
                 formData.append("file", fileInput.files[0]);
                 formData.append("title", title.value);
-                formData.append("editor", editor.value);
+                formData.append("editor", editorId);
 
                 let response = await fetch("/articles/upload", {
                     method: "POST",

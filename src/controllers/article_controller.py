@@ -1,22 +1,85 @@
 import os
 import subprocess
-from db.db_base import db
+from db.db_base import db, log_activity, log_err
+from models.article.Article import Article, ArticleStatusEnum
+from models.article.Review import ReviewStatusEnum
+from models.utils.Response import Response
+from models.utils.utils import get_function
 import services.article as aq
-from models.usr.User import User
-from flask_login import current_user
+import services.user as au
+import services.article as aq
+import services.review as rs
 from flask import send_from_directory
 from models.utils.Response import Response
+from models.utils.utils import get_function
+from db.db_base import db, log_activity, log_err
+from models.utils.EnvConsts import envConsts as ec
 from models.article.Article import Article, ArticleStatusEnum
-from models.utils.utils import get_temp_folder, get_upload_folder
+
+def get_available_editors() -> dict[int, str]:
+    return aq.get_available_editors()
+
+def get_available_reviewers(article_id: int) -> dict[int, str]:
+    return aq.get_available_reviewers(article_id)
+
+def is_valid_editor(editor_id: int) -> Response:
+    user = au.get_curr_user_or_err()
+    if editor_id == user.id:
+        return Response.error_response(message="An author cannot assign themselves as an editor.")
+    elif not au.user_loader(editor_id):
+        return Response.error_response(message="Editor does not exist.")
+    else:
+        return Response.success_response()
+
+def is_editor(article_id: int) -> bool:
+    try:
+        user = au.get_curr_user_or_err()
+        article = aq.get_article(article_id)
+        if not article or not article.editor_id:
+            log_activity(get_function(), False, {'err': f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
+            return False
+        
+        return int(article.editor_id) == int(user.get_id())
+    except Exception as e:
+        log_err(get_function(), e)
+        return False
+
+def is_reviewer(article_id: int, user_id: int) -> bool:
+    try:
+        review = rs.get_review(article_id, user_id)
+
+        if review:
+            return True
+        
+        log_activity(get_function(), False, {'err': f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
+        return False
+    except Exception as e:
+        log_err(get_function(), e)
+        return False
+    
+def is_reviewer_of_review(review_id: int):
+    try:
+        user = au.get_curr_user_or_err()
+        review = rs.get_review_by_id(review_id)
+        if not review:
+            log_activity(get_function(), False, {'err': f'Reviewer {user.get_id()} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}'})
+            return False
+        if int(review.reviewer_id) == int(user.get_id()):
+            return True
+        log_activity(get_function(), False, {'err': f'Reviewer {user.get_id()} usiłował uzyskać dostęp do review o id: {review_id}'})
+        return False
+    except Exception as e:
+        log_err(get_function(), e)
+        return False
 
 def get_all_articles_by_editor() -> list[Article]:
-    user: User=current_user
+    user=au.get_curr_user_or_err()
     return aq.get_all_articles_by_editor_id(int(user.get_id()))
-
 
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
     if not article:
+        log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
         return Response.error_response(message='Nie znaleziono artykułu.')
 
     if article.content.startswith('/'):
@@ -41,24 +104,28 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     try:
         article = aq.get_article(article_id)
         if not article:
+            log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
             return Response.error_response("Article not found")
 
-        result = article.update_status(status)
+        result = aq.set_article_status(article, status)
         if not result:
-            return Response.error_response("Article status not updated")
+            return Response.error_response(f"Article status not updated to {status.value}")
 
         return Response.success_response()
 
-    except Exception as err:
-        return Response.error_response(str(err))
+    except Exception as e:
+        log_err(get_function(), e)
+        return Response.error_response(str(e))
     
 def add_round(article_id: int) -> Response:
     article = aq.get_article(article_id)
     if not article:
+        log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
         return Response.error_response(message = "Article not found")
 
     # Sprawdzanie, czy artykuł spełnia wymagane statusy
     if article.status.stat not in {ArticleStatusEnum.Accepted, ArticleStatusEnum.Reviewed}:
+        log_activity(get_function(), False, {'err': f'Cannot add a new round to the article with id: {article_id} and status: {article.status.stat}'})
         return Response.error_response(message = "Round cannot be added")
 
     new_round_number = len(article.rounds) + 1
@@ -68,13 +135,27 @@ def add_round(article_id: int) -> Response:
         return Response.success_response(message=f"Round {new_round_number} added successfully")
     else:
         return Response.error_response(message='Round was not created.')
-    
+
 def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     if not assigned_reviewers:
         return Response.error_response(message = 'No reviewers assigned')
     
     try:
-        assigned_reviewers_ids = [int(rid.strip()) for rid in assigned_reviewers.split(',')]
+        article = aq.get_article(article_id)
+        if not article:
+            log_activity(get_function(), False, {'err': f'Editor attepted to set reviewers to a non-existing article {article_id}.'})
+            return Response.error_response(message = f"Article {article_id} does not exist")
+
+        assigned_reviewers_ids = [int(rid) for rid in assigned_reviewers]
+
+        if article.editor_id in assigned_reviewers_ids:
+            log_activity(get_function(), False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
+            return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+        
+        if article.author_id in assigned_reviewers_ids:
+            log_activity(get_function(), False, {'err': f'Editor attempted to assign author {article.author_id} to the article {article_id}.'})
+            return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+
         last_round_number = aq.get_last_round_number(article_id)
         new_round_number = last_round_number + 1 if last_round_number else 1
         aq.create_round(article_id, new_round_number, deadline_confirm, deadline_submit)
@@ -84,9 +165,25 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
 
         update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
         if not update_status_result.success:
-            return Response.error_response(message = 'Failed to update article status to 3.')
+            return update_status_result
 
         return Response.success_response()
+    except Exception as e:
+        log_err(get_function(), e)
+        return Response.error_response(str(e))
+    
+def set_review_status(review_id: int, status: ReviewStatusEnum) -> Response:
+    try:
+        review = rs.get_review_by_id(review_id)
+        if not review:
+            return Response.error_response("Review not found")
+
+        result = rs.update_review_status(review_id, status)
+        if not result:
+            return Response.error_response("Review status not updated")
+
+        return Response.success_response()
+
     except Exception as err:
         return Response.error_response(str(err))
 
@@ -103,7 +200,7 @@ def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
         # TODO: log
         return False
 
-def upload_file(title: str, editor: str, tex_path: str) -> Response:
+def upload_file(title: str, editor_id: int, tex_path: str) -> Response:
     # TODO: check if the function handles all possibilities
     try:
         upload_folder=os.path.dirname(tex_path)
@@ -114,16 +211,14 @@ def upload_file(title: str, editor: str, tex_path: str) -> Response:
             if not conversion_success:
                 return Response.error_response(message="Error converting LaTeX to PDF")
 
-        # file_url=f"/articles/uploads/{filename}"
         file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf') if filename.endswith('.tex') else filename}"
 
-        if aq.create_article(title, file_url, editor):
+        if aq.create_article(title, file_url, editor_id):
             return Response.success_response(
                 message=f"File {filename} uploaded successfully",
                 data={"pdf_url": file_url}
             )
         else:
-            print('Else')
             db.session.rollback()
             return Response.error_response(message='Article not created')
 
@@ -141,7 +236,7 @@ def get_file(folder: str, filename: str) -> Response:
         return Response.error_response(message="Plik nie istnieje")
 
 def get_uploaded_file(filename: str) -> Response:
-    return get_file(get_upload_folder(), filename)
+    return get_file(ec.getDocFilesDir(), filename)
 
 def generate_preview(tex_path: str) -> Response:
     temp_folder=os.path.dirname(tex_path)
@@ -157,4 +252,4 @@ def generate_preview(tex_path: str) -> Response:
         return Response.error_response(message="Błąd podczas generowania podglądu")
 
 def temp_preview(filename: str) -> Response:
-    return Response.success_response(data = get_file(get_temp_folder(), filename))
+    return Response.success_response(data = get_file(ec.getTempDir(), filename))

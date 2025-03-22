@@ -1,17 +1,16 @@
 from datetime import datetime, timedelta
 from db.db_base import db, log_activity, log_err
+from models.article import Article
 from models.utils.utils import get_function
 from . import article as aq
 from models.article.Round import Round
 from models.article.Review import Review, ReviewStatus, ReviewStatusEnum
-from models.article.Article import Article
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
-def get_article(article_id: int):
-    return Article.query.get_or_404(article_id)
+def get_review_by_id(review_id: int) -> Review|None:
+    return Review.query.where(Review.id==review_id).first()
 
-
-def get_review(article_id: int, reviewer_id: int) -> Review:
+def get_review(article_id: int, reviewer_id: int) -> Review|None:
     try:
         review = (
             db.session.query(Review)
@@ -22,36 +21,9 @@ def get_review(article_id: int, reviewer_id: int) -> Review:
 
         return review
 
-    except Exception as err:
-        print("error get_review: " + str(err))
-        return {}
-
-
-def get_assigned_reviews(article_id: int) -> list[dict[int, str]]:
-    try:
-        # Pobieramy identyfikator najnowszej rundy dla danego artykułu
-        latest_round_subquery = (
-            db.session.query(Round.id)
-            .filter(Round.article_id == article_id)
-            .order_by(Round.round_number.desc())
-            .limit(1)
-            .subquery()
-        )
-
-        # Pobieramy przypisane recenzje dla danej rundy
-        reviews = (
-            db.session.query(Review)
-            .filter(Review.round_id.in_(latest_round_subquery))
-            .all()
-        )
-
-        print(f"Liczba znalezionych recenzji: {len(reviews)}")
-        # Konwersja wyników na listę obiektów Review
-        return [{"review_id": review.id, "reviewer_id": review.reviewer_id} for review in reviews]
-
-    except Exception as err:
-        print("error6: " + str(err))
-        return []
+    except Exception as e:
+        log_err(get_function(), e)
+        return None
 
 
 def check_reviews_and_update_article_status(review_id: int) -> None:
@@ -66,7 +38,7 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
             return
 
         statuses = (
-            db.session.query(ReviewStatus.status.stat)
+            db.session.query(ReviewStatus.stat)
             .filter(Review.round_id == round_id)
             .all()
         )
@@ -82,16 +54,11 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
             if article_id:
                 aq.update_article_status(article_id, 4)
 
-    except Exception as err:
-        print("exception2:", str(err))
-        # self.__log_activity(
-        #     inspect.currentframe().f_code.co_name,
-        #     False,
-            # {'err': str(err), 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
-        # )
+    except Exception as e:
+        log_err(get_function(), e)
 
 
-def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, ReviewStatusEnum]]:
+def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
     try:
         articles = (
             db.session.query(Article, ReviewStatus.stat)
@@ -106,10 +73,11 @@ def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, ReviewStat
             .all()
         )
 
-        return articles
+        return [(row[0], row[1]) for row in articles]
 
-    except Exception as err:
-        print("error7: " + str(err))
+
+    except Exception as e:
+        log_err(get_function(), e)
         return []
 
 
@@ -119,28 +87,25 @@ def post_review(review: Review) -> bool:
         db.session.add(review)
         db.session.commit()
         return True
-    except Exception as err:
-        print("error8: " + str(err))
-        db.session.rollback()
+    except Exception as e:
+        log_err(get_function(), e)
         return False
 
 
-def update_review_status(review_id: int, status: int) -> bool:
+def update_review_status(review_id: int, status: ReviewStatusEnum) -> bool:
     try:
-        review = db.session.get(Review, review_id)
+        review = get_review_by_id(review_id)
         if review:
-            review.status_id = status
-            db.session.commit()
-            return True
+            result = review.update_status(new_status=status)
+            if result:
+                db.session.commit()
+                return True
+            else:
+                return False
+        log_activity(get_function(), False, {'err': f'Review with id: {review_id} not found'})
         return False
-    except Exception as err:
-        print(f"Error updating review status: {err}")
-        # self.__log_activity(
-        #     inspect.currentframe().f_code.co_name,
-        #     False,
-        #     {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))}
-        # )
-        db.session.rollback()
+    except Exception as e:
+        log_err(get_function(), e)
         return False
 
 
@@ -176,8 +141,8 @@ def get_questions_with_answers(q_set_id: int) -> list[dict[int, str]]:
 
         return result
 
-    except Exception as err:
-        print("error9: " + str(err))
+    except Exception as e:
+        log_err(get_function(), e)
         return []
 
 
@@ -190,9 +155,8 @@ def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
         update_review_status(review_id=review_id, status=4)    # TODO: rollback answer submitting when exception here
         db.session.commit()
         return True
-    except Exception as err:
-        print("error10: " + str(err))
-        db.session.rollback()
+    except Exception as e:
+        log_err(get_function(), e)
         return False
 
 
@@ -208,8 +172,8 @@ def get_questions_by_article(article_id: int) -> list[dict[str, str]]|None:
 
         return [{"id": q.id, "text": q.question, "is_abc": q.is_abc} for q in questions]
 
-    except Exception as err:
-        print(f"Error fetching questions: {err}")
+    except Exception as e:
+        log_err(get_function(), e)
         return None
 
 
@@ -223,8 +187,8 @@ def get_question_answers(question_id: int) -> list[dict[int, str]]:
 
         return [{"id": ans.id, "answer": ans.answer} for ans in answers]
 
-    except Exception as err:
-        print(f"Error fetching answers: {err}")
+    except Exception as e:
+        log_err(get_function(), e)
         return []
     
 def set_expired_status_for_reviews() -> bool:
