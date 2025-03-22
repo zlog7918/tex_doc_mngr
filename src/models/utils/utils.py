@@ -4,7 +4,7 @@ from . import consts as c
 from flask import render_template, g
 from datetime import datetime,timezone
 from .EnvConsts import envConsts as ec
-from models.lang import LangEnum, LangBase
+from models.lang import LangEnum, LangBaseEx
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):
@@ -19,11 +19,9 @@ def render_base_template(name: str, **kwargs) -> str:
 
 def set_lang_pkg(lang: LangEnum) -> None:
     g.lang=lang.value
-
-def get_lang_pkg() -> type[LangBase]:
+def get_lang_pkg() -> type[LangBaseEx]:
     if 'lang' not in g:
-        lang=LangEnum.EN.value
-        g.lang=lang
+        g.lang=LangEnum.en.value
     return g.lang
 
 def get_timestamp() -> datetime:

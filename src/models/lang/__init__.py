@@ -1,10 +1,11 @@
 from .PlLang import PlLang
 from .EngLang import EngLang
 from enum import Enum, member
-from .LangBase import LangBase
+from .ManditoryLangMembers import LangBaseEx
 
+PL: type[LangBaseEx]=PlLang # type: ignore[type_assigment]
+EN: type[LangBaseEx]=EngLang # type: ignore[type_assigment]
 class LangEnum(Enum):
-    PL=member(PlLang)
-    EN=member(EngLang)
+    pl=member(PL)
+    en=member(EN)
 
-# https://stackoverflow.com/questions/71470802/how-do-i-specify-an-enum-type-hint-for-a-flask-route-parameter

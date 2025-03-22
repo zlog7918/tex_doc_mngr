@@ -1,4 +1,5 @@
 from .LangBase import LangBase
 
 class PlLang(LangBase):
-    hereSomeNameForTranslatedText='Tu jest jakiś tekst'
+    hereSomeNameForTranslatedText1='Tu jest jakiś tekst'
+    hereSomeNameForTranslatedText2='Tu jest jakiś tekst2'

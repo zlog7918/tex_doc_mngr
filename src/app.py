@@ -13,11 +13,27 @@ from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
 from models.utils.EnvConsts import envConsts as ec
 from routes.editor.articles import editor_articles_bp
-from werkzeug.routing import RequestRedirect, MapAdapter
 from flask import Flask, Request as flRequest, request, current_app
 from services.user import user_loader, get_curr_user, user_loader_by_nick
+from werkzeug.routing import RequestRedirect, MapAdapter, BaseConverter, ValidationError
+
+class LangEnumConverter(BaseConverter):
+
+    def to_python(self, value: str) -> LangEnum:
+        _map: dict[str, LangEnum]=LangEnum._member_map_ # type: ignore
+        if value not in _map:
+            raise ValidationError()
+        lang_enum=_map[value]
+        return lang_enum
+
+    def to_url(self, value: LangEnum) -> str:
+        try:
+            return value.name
+        except ValueError as err:
+            raise ValidationError()
 
 app = Flask(__name__)
+app.url_map.converters.update({'lang_enum': LangEnumConverter})
 
 app.config['SQLALCHEMY_DATABASE_URI'] = ec.getDBString()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -58,10 +74,10 @@ def request_loader(request: flRequest):
     return user
 
 # async def choose_lang(path: str):
-@app.route('/pl', defaults={'path': ''}, methods=['GET', 'POST'])
-@app.route('/pl/<path:path>', methods=['GET', 'POST'])
-def choose_lang(path: str):
-    util.set_lang_pkg(LangEnum.PL)
+@app.route('/<lang_enum:lang>', defaults={'path': ''}, methods=['GET', 'POST'])
+@app.route('/<lang_enum:lang>/<path:path>', methods=['GET', 'POST'])
+def choose_lang(lang: LangEnum, path: str):
+    util.set_lang_pkg(lang)
 
     def get_path_from_url(url: str) -> str:
         _url=url.split('/', maxsplit=3)
