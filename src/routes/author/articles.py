@@ -1,12 +1,12 @@
 import os
-from flask_login import login_required
+from decors import approve_required
 from werkzeug.utils import secure_filename
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from werkzeug.datastructures import FileStorage
 from models.utils.consts import ALLOWED_EXTENSIONS
+from models.utils.EnvConsts import envConsts as ec
 from flask import request, Blueprint, render_template
-from models.utils.utils import get_temp_folder, get_upload_folder
 
 articles_bp = Blueprint("articles", __name__)
 
@@ -21,13 +21,13 @@ def handle_file(file: FileStorage, folder: str) -> str:
     return tex_path
 
 @articles_bp.route('/upload-form')
-@login_required
+@approve_required
 def upload_form():
     return render_template('uploading_article.html')
 
 
 @articles_bp.route('/upload', methods=['POST'])
-@login_required
+@approve_required
 def upload_file():
     title = request.form.get('title')
     editor = request.form.get('editor')
@@ -38,12 +38,12 @@ def upload_file():
     if not file.filename:
         return Response.error_response(message='No file selected').to_dict()
 
-    tex_path=handle_file(file, get_upload_folder())
+    tex_path=handle_file(file, ec.getDocFilesDir())
     return ac.upload_file(title, editor, tex_path).to_dict()
 
 
 @articles_bp.route('/uploads/<filename>')
-@login_required
+@approve_required
 def uploaded_file(filename):
     ret=ac.get_uploaded_file(filename)
     if ret.success:
@@ -52,7 +52,7 @@ def uploaded_file(filename):
 
 
 @articles_bp.route('/generate-preview', methods=['POST'])
-@login_required
+@approve_required
 def generate_preview():
     if 'file' not in request.files:
         return Response.error_response(message='Nie przesłano pliku').to_dict()
@@ -61,7 +61,7 @@ def generate_preview():
     if not file.filename.endswith('.tex'):
         return Response.error_response(message="Nieprawidłowy format pliku").to_dict()
 
-    tex_path=handle_file(file, get_temp_folder())
+    tex_path=handle_file(file, ec.getTempDir())
     response = ac.generate_preview(tex_path)
     if response.success:
         return response.data
@@ -69,7 +69,7 @@ def generate_preview():
 
 
 @articles_bp.route('/temp-preview/<filename>')
-@login_required
+@approve_required
 def temp_preview(filename):
     ret=ac.temp_preview(filename)
     if isinstance(ret, Response):

@@ -9,9 +9,6 @@ from models.article.Questions import QuestionSet, Answer, Question, QuestionA, Q
 def get_review_by_id(review_id: int) -> Review|None:
     return Review.query.where(Review.id==review_id).first()
 
-def get_article(article_id: int):
-    return Article.query.get_or_404(article_id)
-
 def get_review(article_id: int, reviewer_id: int) -> Review|None:
     try:
         review = (
@@ -26,32 +23,6 @@ def get_review(article_id: int, reviewer_id: int) -> Review|None:
     except Exception as e:
         log_err(get_function(), e)
         return None
-
-
-def get_assigned_reviews(article_id: int) -> list[dict[int, str]]:
-    try:
-        # Pobieramy identyfikator najnowszej rundy dla danego artykułu
-        latest_round_subquery = (
-            db.session.query(Round.id)
-            .filter(Round.article_id == article_id)
-            .order_by(Round.round_number.desc())
-            .limit(1)
-            .subquery()
-        )
-
-        # Pobieramy przypisane recenzje dla danej rundy
-        reviews = (
-            db.session.query(Review)
-            .filter(Review.round_id.in_(latest_round_subquery))
-            .all()
-        )
-
-        # Konwersja wyników na listę obiektów Review
-        return [{"review_id": review.id, "reviewer_id": review.reviewer_id} for review in reviews]
-
-    except Exception as e:
-        log_err(get_function(), e)
-        return []
 
 
 def check_reviews_and_update_article_status(review_id: int) -> None:

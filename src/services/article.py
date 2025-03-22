@@ -2,7 +2,6 @@ from db.db_base import db, log_activity, log_err
 from flask_login import current_user
 from models.utils.utils import get_function
 from . import user as uq
-from db.db_base import db
 from models.usr.User import User
 from models.article.Round import Round
 from models.article.Review import Review
@@ -43,7 +42,7 @@ def create_article(title: str, file_url: str, editor_nick: str) -> bool:
 
 
 def get_article(article_id: int) -> Article|None:
-    return Article.query.get(article_id)
+    return Article.query.where(Article.id==article_id).first()
 
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
@@ -58,7 +57,7 @@ def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
         return False
 
 
-def get_available_reviewers(article_id: int) -> list[dict[int, str]]:
+def get_available_reviewers(article_id: int) -> dict[int, str]:
     try:
         # Pobieramy identyfikator najnowszej rundy dla danego artykułu
         latest_round_subquery = (
@@ -84,14 +83,14 @@ def get_available_reviewers(article_id: int) -> list[dict[int, str]]:
         )
 
         # Konwersja wyników na listę słowników
-        return [{"id": row.id, "nick": row.nick} for row in reviewers]
+        return {row.id: row.nick for row in reviewers}
 
     except Exception as e:
         log_err(get_function(), e)
-        return []
+        return {}
     
 
-def get_assigned_reviewers(article_id: int) -> list[dict[int, str]]:
+def get_assigned_reviewers(article_id: int) -> dict[int, str]:
     try:
         # Pobieramy identyfikator najnowszej rundy dla artykułu
         latest_round_subquery = (
@@ -111,11 +110,11 @@ def get_assigned_reviewers(article_id: int) -> list[dict[int, str]]:
         )
 
         # Konwersja do listy słowników
-        return [{"id": row.id, "nick": row.nick} for row in reviewers]
+        return {row.id: row.nick for row in reviewers}
 
     except Exception as e:
         log_err(get_function(), e)
-        return []
+        return {}
 
 
 def get_assigned_reviews(article_id: int) -> list[Review]:
