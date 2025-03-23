@@ -27,19 +27,19 @@ def article_details(article_id):
     data = response.to_dict()
 # TODO: change templates
     if article.status.stat == ArticleStatusEnum.Submitted:
-        return Response.error_response(message="Not found")
+        return Response.error_response(message="Not found").to_dict()
     elif article.status.stat == ArticleStatusEnum.Accepted:
-        return Response.error_response(message="Not found")
+        return Response.error_response(message="Not found").to_dict()
     elif article.status.stat == ArticleStatusEnum.InReview:
-        return Response.error_response(message="Not found")
+        return Response.error_response(message="Not found").to_dict()
     elif article.status.stat == ArticleStatusEnum.Reviewed:
-        return Response.error_response(message="Not found")
+        return Response.error_response(message="Not found").to_dict()
     elif article.status.stat == ArticleStatusEnum.Rejected:
-        return Response.error_response(message="Not found")
+        return Response.error_response(message="Not found").to_dict()
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
         return render_base_template("author_tabs/needs_corrections.html", article=article)
     else:
-        return Response.error_response(message="Not found")
+        return Response.error_response(message="Not found").to_dict()
 
 def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
