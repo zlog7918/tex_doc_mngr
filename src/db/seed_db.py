@@ -11,6 +11,8 @@ def seed_data(db: SQLAlchemy) -> None:
             User(nick='aaaa', email='a@a.a', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True),
             User(nick='bbbb', email='b@b.b', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True),
             User(nick='cccc', email='c@c.c', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True),
+            User(nick='dddd', email='d@d.d', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True),
+            User(nick='eeee', email='e@e.e', passwd='$5$rounds=535000$GFRsRdCT1wAJynUx$DJJRdHK/wY1LZdj0sA8enCtWGpCkBlYfwSN0PYKvcHD', approved=True),
         ]
         db.session.add_all(users)
     
@@ -29,7 +31,7 @@ def seed_data(db: SQLAlchemy) -> None:
     if not Article.query.first():
         status_id=ArticleStatus.query.where(ArticleStatus.stat==ArticleStatusEnum.Submitted).first().id
         articles = [
-            Article(title='Introduction to Flask', author_id=1, content='This is a beginner-friendly guide to Flask.', status_id=status_id, editor_id=1),
+            Article(title='Introduction to Flask', author_id=1, content='This is a beginner-friendly guide to Flask.', status_id=status_id, editor_id=2),
             Article(title='Understanding REST APIs', author_id=2, content='Explores RESTful APIs and their best practices.', status_id=status_id, editor_id=1),
             Article(title='Advanced Flask Techniques', author_id=3, content='Delves into advanced techniques in Flask.', status_id=status_id, editor_id=1),
             Article(title='Advanced Flask Techniques2', author_id=3, content='Further techniques in Flask for experienced users.', status_id=status_id, editor_id=1),

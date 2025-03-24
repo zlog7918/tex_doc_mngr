@@ -1,7 +1,9 @@
 import os
+from db.db_base import log_err
 from decors import approve_required
 from werkzeug.utils import secure_filename
 from models.utils.Response import Response
+from models.utils.utils import get_function
 import controllers.article_controller as ac
 from werkzeug.datastructures import FileStorage
 from models.utils.consts import ALLOWED_EXTENSIONS
@@ -23,14 +25,29 @@ def handle_file(file: FileStorage, folder: str) -> str:
 @articles_bp.route('/upload-form')
 @approve_required
 def upload_form():
-    return render_template('uploading_article.html')
-
+    editors = ac.get_available_editors()
+    return render_template('uploading_article.html', editors = editors)
 
 @articles_bp.route('/upload', methods=['POST'])
 @approve_required
 def upload_file():
     title = request.form.get('title')
     editor = request.form.get('editor')
+
+    if not title:
+        return Response.error_response(message='Title cannot be empty').to_dict()
+    if not editor:
+        return Response.error_response(message='Editor must be selected').to_dict()
+
+    try:
+        editor = int(editor)
+    except (ValueError, TypeError) as e:
+        log_err(get_function(), e)
+        return Response.error_response(message='Invalid editor ID').to_dict()
+
+    response = ac.is_valid_editor(editor)
+    if not response.success:
+        return response.to_dict()
     if 'file' not in request.files:
         return Response.error_response(message='Nie przesłano pliku').to_dict()
 
