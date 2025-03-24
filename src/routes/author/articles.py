@@ -48,7 +48,7 @@ def upload_form():
     return render_template('uploading_article.html')
 
 
-@articles_bp.route('/upload/', methods=['POST'])
+@articles_bp.route('/upload', methods=['POST'])
 @approve_required
 def upload_file():
     title = request.form.get('title')
