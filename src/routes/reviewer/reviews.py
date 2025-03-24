@@ -25,16 +25,24 @@ def list_reviewer_reviews():
 def article_details(article_id):
     try:
         user=su.get_curr_user_or_err()
-        if not ac.is_reviewer(article_id, int(user.get_id())):
+        user_id=int(user.get_id())
+        if not ac.is_reviewer(article_id, user_id):
             return Response.error_response(message = "You are not a reviewer of this article").to_dict()
 
         article = aq.get_article(article_id)
-        review = rq.get_review(article_id, int(user.get_id()))
+        review = rq.get_review(article_id, user_id)
         if not review:
             return str("review not found"), 500
 
         if review.status == "Pending confirmation":
-            return render_template("review_tabs/pending_confirmation.html", article=article, review_id=review.id)
+            latest_round = aq.get_latest_round(article_id)
+            article_content = ""
+            if article and latest_round:
+                article_content = latest_round.article_content
+                if article_content.startswith('/'):
+                    article_content = f'<br><embed src="{f"/articles/uploads/{article.id}/{latest_round.round_number}/{article_content}"}" width="800" height="500" type="application/pdf">'
+
+            return render_template("review_tabs/pending_confirmation.html", article=article, article_content=article_content, review_id=review.id)
         elif review.status == "Accepted by reviewer":
             questions = rq.get_questions_by_article(article_id)
 

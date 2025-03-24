@@ -1,7 +1,7 @@
 from sqlalchemy import and_
 from models.utils.utils import get_function
 from . import user as uq
-from db.db_base import db, log_err
+from db.db_base import db, log_activity, log_err
 from models.usr.User import User
 from flask_login import current_user
 from models.article.Round import Round
@@ -10,7 +10,7 @@ from models.article.Questions import Answer, Question
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
 
-def create_article(title: str, file_url: str, editor_nick: str) -> bool:
+def create_article(title: str, editor_nick: str) -> bool:
     try:
         user_id = current_user.get_id()
         editor_id = uq.get_user_id(editor_nick)
@@ -25,7 +25,6 @@ def create_article(title: str, file_url: str, editor_nick: str) -> bool:
             title=title,
             author_id=int(user_id),
             editor_id=editor_id,
-            content=file_url,
             status_id=status.id
         )
         db.session.add(new_article)
@@ -48,6 +47,8 @@ def get_article_by_title(author_id: int, title: str) -> Article|None:
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
     return Article.query.where(Article.editor_id==editor_id).all()
 
+def get_latest_round(article_id: int) -> Round | None:
+    return Round.query.filter_by(article_id=article_id).order_by(Round.round_number.desc()).first()
 
 def get_available_reviewers(article_id: int) -> dict[int, str]:
     try:
@@ -212,11 +213,11 @@ def get_last_round_number(article_id: int) -> int:
         return 0
 
 
-def create_round(article_id: int, article_url: str, round_number: int, deadline_confirm: str|None = None, deadline_submit: str|None = None) -> bool:
+def create_round(article_id: int, article_content: str, round_number: int, deadline_confirm: str|None = None, deadline_submit: str|None = None) -> bool:
     try:
         new_round = Round(
             article_id=article_id,
-            article_url=article_url,
+            article_content=article_content,
             round_number=round_number,
             q_set_id=1, # TODO: should be set later
             deadline_confirm=deadline_confirm,
@@ -238,7 +239,11 @@ def set_deadlines(article_id: int, deadline_confirm: str|None, deadline_submit: 
         if not article or not article.rounds:
             return False
 
-        round = article.rounds[-1]
+        round = get_latest_round(article_id)
+
+        if not round:
+            log_activity(get_function(), False, {'err':f'Did not set deadlines because of not finding latest round.'})
+            return False
 
         if deadline_confirm:
             round.deadline_confirm = deadline_confirm

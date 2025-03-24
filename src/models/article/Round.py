@@ -6,7 +6,7 @@ class Round(db.Model):
     __tablename__ = 'rounds'
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    article_url: Mapped[str] = mapped_column(Text, nullable=False)
+    article_content: Mapped[str] = mapped_column(Text, nullable=False)
     article_id: Mapped[int] = mapped_column(ForeignKey('articles.id'), nullable=False)
     round_number: Mapped[int] = mapped_column(Integer, nullable=False)
     q_set_id: Mapped[int] = mapped_column(ForeignKey('question_set.id'), nullable=False)

@@ -41,11 +41,12 @@ def article_details(article_id):
         return response.to_dict()
 
     article = response.data["article"]
+    article_content = response.data["article_content"]
 
     data = response.to_dict()
 # TODO: change templates
     if article.status.stat == ArticleStatusEnum.Submitted:
-        return render_base_template("article_submitted.html", article=article)
+        return render_base_template("article_submitted.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.Accepted:
         reviewers = response.data["reviewers"]
         assigned_reviewers = response.data["assigned_reviewers"]
@@ -56,7 +57,7 @@ def article_details(article_id):
         tab_content = render_base_template("round_tabs/in_review.html", reviews=reviews)
     elif article.status.stat == ArticleStatusEnum.Reviewed:
         grouped_answers = response.data["grouped_answers"]
-        tab_content = render_base_template("round_tabs/reviewed.html", grouped_answers=grouped_answers)
+        tab_content = render_base_template("round_tabs/reviewed.html", article=article, grouped_answers=grouped_answers)
     elif article.status.stat == ArticleStatusEnum.Rejected:
         return render_base_template("round_tabs/rejected.html")
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:

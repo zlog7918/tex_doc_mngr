@@ -28,7 +28,6 @@ class Article(db.Model):
     author_id: Mapped[int] = mapped_column(ForeignKey('usr.id'), nullable=False)
     editor_id: Mapped[int] = mapped_column(ForeignKey('usr.id'), nullable=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    content: Mapped[str] = mapped_column(Text, nullable=False)
     status_id: Mapped[int] = mapped_column(ForeignKey('article_status.id'), nullable=False)
     
     author = relationship('User', foreign_keys=[author_id])

@@ -36,7 +36,7 @@
         {% for round in article.rounds %}
             <div class="tab {% if loop.last %}active{% endif %}" 
                  data-index="{{ loop.index0 }}" 
-                 data-url="{{ round.article_url }}"
+                 data-url="{{ round.article_content }}"
                  data-last="{% if loop.last %}true{% else %}false{% endif %}"
                  onclick="showTab(this)">
                 Round {{ round.round_number }}

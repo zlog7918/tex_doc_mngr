@@ -2,6 +2,8 @@ import os
 import subprocess
 from db.db_base import db, log_activity, log_err
 from models.article.Review import Review
+from werkzeug.utils import secure_filename
+from werkzeug.datastructures import FileStorage
 import services.user as au
 import services.article as aq
 import services.review as rs
@@ -59,13 +61,16 @@ def get_all_articles_by_editor() -> list[Article]:
 
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
-    if not article:
+    latest_round = aq.get_latest_round(article_id)
+    if not article or not latest_round:
         return Response.error_response(message='Nie znaleziono artykułu.')
 
-    if article.content.startswith('/'):
-        article.content = f'<br><embed src="{article.content}" width="800" height="500" type="application/pdf">'
+    article_content = latest_round.article_content
+    if article_content.startswith('/'):
+        article_content = f'<br><embed src="{f"/articles/uploads/{article.id}/{latest_round.round_number}/{article_content}"}" width="800" height="500" type="application/pdf">'
+        print(article_content)
 
-    data = {"article": article}
+    data = {"article": article, "article_content": article_content}
 
     if article.status.stat == ArticleStatusEnum.Accepted:
         data["reviewers"] = aq.get_available_reviewers(article.id)
@@ -94,23 +99,6 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
 
     except Exception as err:
         return Response.error_response(str(err))
-    
-# def add_round(article_id: int) -> Response:
-#     article = aq.get_article(article_id)
-#     if not article:
-#         return Response.error_response(message = "Article not found")
-
-#     # Sprawdzanie, czy artykuł spełnia wymagane statusy
-#     if article.status.stat not in {ArticleStatusEnum.Accepted}:
-#         return Response.error_response(message = "Round cannot be added")
-
-#     new_round_number = len(article.rounds) + 1
-#     result = aq.create_round(article_id=article_id, round_number=new_round_number)
-
-#     if result:
-#         return Response.success_response(message=f"Round {new_round_number} added successfully")
-#     else:
-#         return Response.error_response(message='Round was not created.')
     
 def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     if not assigned_reviewers:
@@ -159,31 +147,40 @@ def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
         # TODO: log
         return False
 
-def upload_file(title: str, editor: str, tex_path: str) -> Response:
+def handle_file(file: FileStorage, folder: str) -> str:
+    os.makedirs(folder, exist_ok=True)
+    filename = secure_filename(file.filename)
+    tex_path = os.path.join(folder, filename)
+    file.save(tex_path)
+    return tex_path
+
+def upload_file(title: str, editor: str, file: FileStorage) -> Response:
     # TODO: check if the function handles all possibilities
     try:
-        upload_folder=os.path.dirname(tex_path)
-        filename=os.path.basename(tex_path)
-        # Konwersja LaTeX do PDF
-        if filename.endswith('.tex'):
-            conversion_success = convert_tex_to_pdf(tex_path, upload_folder)
-            if not conversion_success:
-                return Response.error_response(message="Error converting LaTeX to PDF")
+        upload_folder=get_upload_folder()
 
-        file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf') if filename.endswith('.tex') else filename}"
-
-        result = aq.create_article(title, file_url, editor)
+        result = aq.create_article(title, editor)
         if result:
             user = au.get_curr_user_or_err()
             article = aq.get_article_by_title(int(user.get_id()), title)
-            if article and aq.create_round(int(article.id), file_url, 1):
-                db.session.commit()
-                return Response.success_response(
-                    message=f"File {filename} uploaded successfully",
-                    data={"pdf_url": file_url}
-                )
+            if article:
+                file_url = f"{upload_folder}/{article.id}/1/"
+                tex_path=handle_file(file, file_url)
+                filename=os.path.basename(tex_path)
+                # Konwersja LaTeX do PDF
+                if filename.endswith('.tex'):
+                    conversion_success = convert_tex_to_pdf(tex_path, file_url)
+                    if not conversion_success:
+                        return Response.error_response(message="Error converting LaTeX to PDF")
 
-        print('Else')
+                filename=f'/{filename.replace('.tex', '.pdf')}'
+                if aq.create_round(int(article.id), filename, 1):
+                    db.session.commit()
+                    return Response.success_response(
+                        message=f"File {filename} uploaded successfully",
+                        data={"pdf_url": file_url}
+                    )
+
         db.session.rollback()
         return Response.error_response(message='Article not created')
 
@@ -193,23 +190,26 @@ def upload_file(title: str, editor: str, tex_path: str) -> Response:
         db.session.rollback()
         return Response.error_response(message=f"Server error: {str(e)}")
     
-def upload_correction(article_id: int, tex_path: str) -> Response:
+def upload_correction(article_id: int, file: FileStorage) -> Response:
     # TODO: check if the function handles all possibilities
     try:
-        upload_folder=os.path.dirname(tex_path)
-        filename=os.path.basename(tex_path)
-
-        if filename.endswith('.tex'):
-            conversion_success = convert_tex_to_pdf(tex_path, upload_folder)
-            if not conversion_success:
-                return Response.error_response(message="Error converting LaTeX to PDF")
-
-        file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf') if filename.endswith('.tex') else filename}"
-
+        upload_folder=get_upload_folder()
+        
         article = aq.get_article(article_id)
+
         if article:
             round_number = len(article.rounds) + 1
-            if aq.create_round(article.id, file_url, round_number):
+            file_url = f"{upload_folder}/{article.id}/{round_number}/"
+            tex_path=handle_file(file, file_url)
+            filename=os.path.basename(tex_path)
+            # Konwersja LaTeX do PDF
+            if filename.endswith('.tex'):
+                conversion_success = convert_tex_to_pdf(tex_path, file_url)
+                if not conversion_success:
+                    return Response.error_response(message="Error converting LaTeX to PDF")
+                    
+            filename=f'/{filename.replace('.tex', '.pdf')}'
+            if aq.create_round(article.id, filename, round_number):
                 if article.update_status(ArticleStatusEnum.Submitted):
                     return Response.success_response(
                         message=f"File {filename} uploaded successfully",
@@ -234,7 +234,8 @@ def get_file(folder: str, filename: str) -> Response:
 def get_uploaded_file(filename: str) -> Response:
     return get_file(get_upload_folder(), filename)
 
-def generate_preview(tex_path: str) -> Response:
+def generate_preview(file: FileStorage) -> Response:
+    tex_path=handle_file(file, get_temp_folder())
     temp_folder=os.path.dirname(tex_path)
     filename=os.path.basename(tex_path)
     try:

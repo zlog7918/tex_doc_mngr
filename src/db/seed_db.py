@@ -30,11 +30,11 @@ def seed_data(db: SQLAlchemy) -> None:
     if not Article.query.first():
         status_id=ArticleStatus.query.where(ArticleStatus.stat==ArticleStatusEnum.Submitted).first().id
         articles = [
-            Article(title='Introduction to Flask', author_id=1, content='This is a beginner-friendly guide to Flask.', status_id=status_id, editor_id=1),
-            Article(title='Understanding REST APIs', author_id=2, content='Explores RESTful APIs and their best practices.', status_id=status_id, editor_id=1),
-            Article(title='Advanced Flask Techniques', author_id=3, content='Delves into advanced techniques in Flask.', status_id=status_id, editor_id=1),
-            Article(title='Advanced Flask Techniques2', author_id=3, content='Further techniques in Flask for experienced users.', status_id=status_id, editor_id=1),
-            Article(title='Common Pitfalls', author_id=2, content='Discusses common pitfalls to avoid in Flask.', status_id=status_id, editor_id=1),
+            Article(title='Introduction to Flask', author_id=1, status_id=status_id, editor_id=1),
+            Article(title='Understanding REST APIs', author_id=2, status_id=status_id, editor_id=1),
+            Article(title='Advanced Flask Techniques', author_id=3, status_id=status_id, editor_id=1),
+            Article(title='Advanced Flask Techniques2', author_id=3, status_id=status_id, editor_id=1),
+            Article(title='Common Pitfalls', author_id=2, status_id=status_id, editor_id=1),
         ]
         db.session.add_all(articles)
     
@@ -67,11 +67,11 @@ def seed_data(db: SQLAlchemy) -> None:
         
     if not Round.query.first():
         rounds = [
-            Round(article_url = 'This is a beginner-friendly guide to Flask.', article_id = 1, round_number=1, q_set_id = 1),
-            Round(article_url = 'Explores RESTful APIs and their best practices.', article_id = 2, round_number=1, q_set_id = 1),
-            Round(article_url = 'Delves into advanced techniques in Flask.', article_id = 3, round_number=1, q_set_id = 1),
-            Round(article_url = 'Further techniques in Flask for experienced users.', article_id = 4, round_number=1, q_set_id = 1),
-            Round(article_url = 'Discusses common pitfalls to avoid in Flask.', article_id = 5, round_number=1, q_set_id = 1),
+            Round(article_content = 'This is a beginner-friendly guide to Flask.', article_id = 1, round_number=1, q_set_id = 1),
+            Round(article_content = 'Explores RESTful APIs and their best practices.', article_id = 2, round_number=1, q_set_id = 1),
+            Round(article_content = 'Delves into advanced techniques in Flask.', article_id = 3, round_number=1, q_set_id = 1),
+            Round(article_content = 'Further techniques in Flask for experienced users.', article_id = 4, round_number=1, q_set_id = 1),
+            Round(article_content = 'Discusses common pitfalls to avoid in Flask.', article_id = 5, round_number=1, q_set_id = 1),
         ]
         db.session.add_all(rounds)
     
