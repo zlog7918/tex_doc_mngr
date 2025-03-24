@@ -21,6 +21,19 @@ def get_available_editors() -> dict[int, str]:
 def get_available_reviewers(article_id: int) -> dict[int, str]:
     return aq.get_available_reviewers(article_id)
 
+def is_author(article_id: int) -> bool:
+    try:
+        user = au.get_curr_user_or_err()
+        article = aq.get_article(article_id)
+        if not article:
+            log_activity(get_function(), False, {'err': f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
+            return False
+        
+        return int(article.author_id) == int(user.get_id())
+    except Exception as e:
+        log_err(get_function(), e)
+        return False
+
 def is_valid_editor(editor_id: int) -> Response:
     user = au.get_curr_user_or_err()
     if editor_id == user.id:
@@ -74,6 +87,10 @@ def is_reviewer_of_review(review_id: int):
 def get_all_articles_by_editor() -> list[Article]:
     user=au.get_curr_user_or_err()
     return aq.get_all_articles_by_editor_id(int(user.get_id()))
+
+def get_my_articles() -> list[Article]:
+    user=au.get_curr_user_or_err()
+    return aq.get_my_articles(int(user.get_id()))
 
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)

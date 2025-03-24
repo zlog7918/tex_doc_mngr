@@ -43,6 +43,8 @@ def create_article(title: str, file_url: str, editor_id: int) -> bool:
 def get_article(article_id: int) -> Article|None:
     return Article.query.where(Article.id==article_id).first()
 
+def get_my_articles(author_id: int) -> list[Article]:
+    return Article.query.where(Article.author_id == author_id).all()
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
     return Article.query.where(Article.editor_id == editor_id).all()

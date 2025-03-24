@@ -2,15 +2,59 @@ import os
 from db.db_base import log_err
 from decors import approve_required
 from werkzeug.utils import secure_filename
+from models.article.Article import ArticleStatusEnum
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from werkzeug.datastructures import FileStorage
 from models.utils.consts import ALLOWED_EXTENSIONS
 from models.utils.EnvConsts import envConsts as ec
 from flask import request, Blueprint, render_template
-from models.utils.utils import get_function
+from models.utils.utils import get_function, render_base_template
 
 articles_bp = Blueprint("articles", __name__)
+
+@articles_bp.route('/')
+@approve_required
+def show_articles():
+    try:
+        articles = ac.get_my_articles()
+    except Exception as e:
+        log_err(get_function(), e)
+        return Response.error_response(message=str(e)).to_dict()
+    return render_base_template("my_articles.html", articles=articles)
+
+@articles_bp.route('/<int:article_id>')
+@approve_required
+def article_details(article_id):
+    if not ac.is_author(article_id):
+        return Response.error_response(message = "You are not an author of this article").to_dict()
+
+    response = ac.get_article_data(article_id)
+
+    if not response.success:
+        return response.to_dict()
+
+    article = response.data["article"]
+
+    data = response.to_dict()
+
+    if article.status.stat == ArticleStatusEnum.Submitted:
+        tab_content = render_base_template("author_tabs/default_tab.html", article=article)
+    elif article.status.stat == ArticleStatusEnum.Accepted:
+        tab_content = render_base_template("author_tabs/default_tab.html", article=article)
+    elif article.status.stat == ArticleStatusEnum.InReview:
+        tab_content = render_base_template("author_tabs/default_tab.html", article=article)
+    elif article.status.stat == ArticleStatusEnum.Reviewed:
+        tab_content = render_base_template("author_tabs/default_tab.html", article=article)
+    elif article.status.stat == ArticleStatusEnum.Rejected:
+        tab_content = render_base_template("author_tabs/default_tab.html", article=article)
+    elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
+        tab_content = render_base_template("author_tabs/needs_corrections.html", article=article)
+    else:
+        return Response.error_response(message="Not found").to_dict()
+    return render_template("article_round_base.html", tab_content=tab_content, article=article, data=data)
+
+
 
 def allowed_file(filename: str) -> bool:
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

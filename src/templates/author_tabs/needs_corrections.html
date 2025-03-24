@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Correction</title>
+</head>
+<body>
+    <h1>LaTeX to PDF Converter</h1>
+
+    <form id="uploadForm" enctype="multipart/form-data">
+        <h2>{{ article.title }}</h1>
+        <label for="file">Choose a LaTeX file (.tex):</label>
+        <input type="file" name="file" id="file" accept=".tex" required>
+        <br><br>
+
+
+        <button type="button" id="previewBtn" style="display: none;">View PDF</button>
+
+
+        <button type="submit" id="sendBtn" style="display: none;">Send</button>
+    </form>
+</body>
+</html>
