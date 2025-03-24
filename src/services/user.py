@@ -1,7 +1,8 @@
-from sqlalchemy import or_
+import pickle as pkl
 from db.db_base import db
-from models.usr.User import User
 from flask_login import current_user
+from models.usr.User import User, User_params
+from typing import Callable, ParamSpec, TypeVarTuple
 from models.utils.MessageException import MessageException
 
 def get_user(id: int) -> User|None:
@@ -53,6 +54,12 @@ def approve_user(user: User) -> None:
     except Exception as e:
         raise MessageException.from_exception(e, 'Konto nie zostało potwierdzone')
 
+def delete_user(user: User) -> None:
+    try:
+        db.session.delete(user)
+    except Exception as e:
+        raise MessageException.from_exception(e, 'Konto nie zostało potwierdzone')
+
 def change_user_pass(user: User, passwd: str) -> bool:
     try:
         if user.ch_pass(passwd):
@@ -61,10 +68,38 @@ def change_user_pass(user: User, passwd: str) -> bool:
         return False
     except Exception as e:
         raise MessageException.from_exception(e, 'Hasło nie zostało zmienione')
-    
+
+TVT=TypeVarTuple('TVT')
+def map_args(user: User, args: tuple[*TVT]) -> tuple[*TVT]:
+    l: list=[]
+    for v in args:
+        if isinstance(v, User_params):
+            if v==User_params.self:
+                v=user
+            elif v==User_params.id:
+                v=user.id
+            elif v==User_params.nick:
+                v=user.nick
+            elif v==User_params.email:
+                v=user.email
+        l.append(v)
+    return tuple(l)
+
+P=ParamSpec('P')
+def exec_funcs(do: Callable[P, object], *args: P.args, **kwargs: P.kwargs) -> None:
+    try:
+        do(*args, **kwargs)
+    except Exception as e:
+        raise MessageException.from_exception(e, 'Nie wykonano funkcji')
+
 def set_user_nick(user: User, nick: str) -> None:
     try:
         user.nick=nick
+        if user.do_after_cr is not None:
+            todo: list[tuple[Callable[..., object], tuple[object, ...]]]=pkl.loads(user.do_after_cr)
+            for do, args in todo:
+                exec_funcs(do, *map_args(user, args))
+            user.do_after_cr=None
         db.session.flush()
     except Exception as e:
         raise MessageException.from_exception(e, 'Konto nie zostało utworzone')

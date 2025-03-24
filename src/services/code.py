@@ -63,10 +63,17 @@ def gen_code(user: User, purpose: CodePurposeEnum) -> tuple[Code, int]:
         raise MessageException.from_exception(e, message)
     raise MessageException(message)
 
-def check_code(user: User, code_str: str, purpose: CodePurposeEnum) -> bool:
+def deactivate_code(code: Code) -> None:
+    try:
+        code.deactivate()
+        db.session.flush()
+    except Exception as e:
+        raise MessageException.from_exception(e, 'Nie można deaktywować kodu')
+
+def check_code(user: User, code_str: str, purpose: CodePurposeEnum, deactivate: bool=True) -> Code|None:
     try:
         _purpose=__get_purpose_or_err(purpose)
-        _code=Code.query.where(
+        code=Code.query.where(
             and_(
                 Code.usr_id==user.id
                 ,Code.purpose_id==_purpose.id
@@ -75,11 +82,27 @@ def check_code(user: User, code_str: str, purpose: CodePurposeEnum) -> bool:
                 ,Code.code_exp>util.get_timestamp()
             )
         ).first()
-        if _code is None:
-            return False
-        code: Code=_code
-        code.deactivate()
-        db.session.flush()
-        return True
+        if code is None:
+            return None
+        if deactivate:
+            deactivate_code(code)
+        return code
+    except Exception as e:
+        raise MessageException.from_exception(e, 'Nie można potwierdzić kodu')
+
+def active_codes(user: User, purpose: CodePurposeEnum) -> list[Code]|None:
+    try:
+        _purpose=__get_purpose_or_err(purpose)
+        codes=Code.query.where(
+            and_(
+                Code.usr_id==user.id
+                ,Code.purpose_id==_purpose.id
+                ,Code.is_active==True
+                ,Code.code_exp>util.get_timestamp()
+            )
+        ).all()
+        if codes is None:
+            return None
+        return codes
     except Exception as e:
         raise MessageException.from_exception(e, 'Nie można potwierdzić kodu')

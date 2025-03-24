@@ -1,10 +1,11 @@
 import os
 from db.db_base import db
+from enum import Enum, auto
 from flask_login import UserMixin
 from passlib.hash import sha256_crypt
 from ..utils.utils import validate_pass
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import or_, Integer, Boolean, Text, CheckConstraint
+from sqlalchemy import or_, Integer, Boolean, Text, CheckConstraint, LargeBinary
 
 class User(db.Model, UserMixin):
     __tablename__ = 'usr'
@@ -14,6 +15,7 @@ class User(db.Model, UserMixin):
     nick: Mapped[str|None] = mapped_column(Text, nullable=True, unique=True)
     email: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
     passwd: Mapped[str] = mapped_column(Text, nullable=False)
+    do_after_cr: Mapped[bytes|None] = mapped_column(LargeBinary, nullable=True)
     approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     __table_args__ = (
@@ -21,6 +23,10 @@ class User(db.Model, UserMixin):
             nick!=None,
             approved==False,
         ), name='usr_invited_is_not_approved'),
+        CheckConstraint(or_(
+            nick==None,
+            do_after_cr==None,
+        ), name='usr_created_has_nothing_in_after_created'),
     )
     def get_id(self) -> str:
         return f"{self.id}"
@@ -46,3 +52,9 @@ class User(db.Model, UserMixin):
             return False
         self.passwd=sha256_crypt.hash(self.__pass(passwd))
         return True
+    
+class User_params(Enum):
+    self=auto()
+    id=auto()
+    nick=auto()
+    email=auto()

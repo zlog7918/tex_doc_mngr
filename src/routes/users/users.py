@@ -1,4 +1,6 @@
+from typing import Callable
 from flask_login import login_required
+from models.usr.User import User_params
 import controllers.user_controller as uc
 from flask import Blueprint, redirect, request
 from models.utils import decors as decor, utils as util
@@ -70,6 +72,12 @@ def pass_reset_request():
     ))
     return uc.pass_reset_new_pass(email, code, *t).to_dict()
 
+# TODO: after check, delete this func
+def cos(nick):
+    return (lambda: f'udało się odpalić funkcję[{nick}] po stworzeniu')()
+def cos2(nick):
+    return print(cos(nick))
+
 @user_bp.route('/pass_reset/<email>/<code>', methods=['GET', 'POST'])
 def pass_reset(email: str, code: str):
     ret=uc.pass_reset(email, code)
@@ -78,6 +86,7 @@ def pass_reset(email: str, code: str):
     # return util.render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
 
+# TODO: after check, delete this func
 @user_bp.route('/create_inv', methods=['POST'])
 @decor.approve_required
 @decor.handle_form_not_filled
@@ -85,7 +94,11 @@ def create_invitation():
     email,=util.get_from_form(request.form, (
         'email',
     ))
-    return uc.invite_user(email).to_dict()
+    funcs: list[tuple[Callable[..., object], tuple[object, ...]]]=[(cos, (User_params.nick,))]
+    funcs.append((cos2, (User_params.nick,)))
+    # Warning: lambda downwards can not be added, becouse pickle will not be able to stringify it
+    # funcs.append(lambda: print(cos()))
+    return uc.invite_user(email, do_after_create=funcs).to_dict()
 
 # TODO: after check, delete this func
 @user_bp.route('/create_inv_form')

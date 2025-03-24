@@ -1,4 +1,5 @@
 import re
+import pickle as pkl
 import email_validator as emailV
 from models.usr.User import User
 from models.utils import utils as util
@@ -9,8 +10,8 @@ from models.usr.Code import CodePurposeEnum
 from services import user as su, code as sc
 from models.utils.decors import log_if_error
 from flask_login import login_user, logout_user
-from typing import Callable, ParamSpec, Concatenate
 from models.utils.MessageException import MessageException
+from typing import Callable, ParamSpec, Concatenate, TypeVar, TypeVarTuple
 
 P=ParamSpec('P')
 
@@ -71,11 +72,14 @@ def send_code_by_email(send_func: Callable[Concatenate[SendMail, str, P], None],
     raise MessageException.from_exception(e, 'Nie udało sie wysłać e-maila')
       
 
-def create_user(nick: str|None, email: str, passwd: str) -> None:
+def create_user(nick: str|None, email: str, passwd: str, do_after_create: bytes|None=None) -> None:
+  if nick is not None:
+    do_after_create=None
   user = User(**util.get_kwargs_for(User, {
     User.nick: nick,
     User.email: email,
     User.passwd: passwd,
+    User.do_after_cr: do_after_create,
   }))
   su.add_user(user)
 
@@ -86,27 +90,29 @@ def validate_email(email: str) -> str:
   except emailV.EmailNotValidError as e:
     raise MessageException('E-mail nie przeszedł weryfikacji')
 
+T_ret=TypeVar('T_ret')
+TVT=TypeVarTuple('TVT')
 @log_if_error
-def invite_user(email: str, message: str|None=None, do_after_create: list[Callable[[], object]]=[]) -> Response:
+def invite_user(email: str, message: str|None=None, do_after_create: list[tuple[Callable[P, T_ret], tuple[*TVT]]]=[]) -> Response:
+  message='Dana osoba będzie mogła przyjąć zaproszenie za pomocą kodu z mail\'a'
   email=validate_email(email)
-  if su.get_user_by_email(email) is not None:
-    raise MessageException('Użytkownik o podanym e-mailu już istnieje')
+  user=su.get_user_by_email(email)
+  if user is not None:
+    if sc.active_codes(user, CodePurposeEnum.InviteUserMail) is not None:
+      return Response.success_response(data=message)
+    su.delete_user(user)
 
-  create_user(None, email, '')
+  do=pkl.dumps(do_after_create)
+  create_user(None, email, '', do)
   user=su.get_user_by_email(email)
   if user is None:
-    raise MessageException('Użytkownik nie został stworzony')
+    raise MessageException('Użytkownik nie został zaproszony')
   
   code, code_exp=sc.gen_code(user, CodePurposeEnum.InviteUserMail)
   send_code_by_email(SendMail.sendInvite, email, code, message)
-
-  for do in do_after_create:
-    do()
   
   log_activity(True, {'details': f'Poprawnie stworzono konto: [{email}]'})
-  return Response.success_response(
-    message=f'Dana osoba będzie mogłą przyjąć zaproszenie za pomocą kodu z mail\'a w ciągu: {code_exp}dni'
-  )
+  return Response.success_response(data=message)
 
 @log_if_error
 def accept_invite(email: str, code: str) -> Response:
@@ -117,10 +123,11 @@ def accept_invite(email: str, code: str) -> Response:
     raise MessageException(message)
   if user.get_nick()!='':
     raise MessageException(message)
-  if sc.check_code(user, code, CodePurposeEnum.InviteUserMail):
-    _code, _=sc.gen_code(user, CodePurposeEnum.InviteUser)
-    return Response.success_response(data=_code.code)
-  raise MessageException(message)
+  
+  if sc.check_code(user, code, CodePurposeEnum.InviteUserMail, False) is None:
+    raise MessageException(message)
+  _code, _=sc.gen_code(user, CodePurposeEnum.InviteUser)
+  return Response.success_response(data=_code.code)
 
 @log_if_error
 def accept_invite_cr_user(email: str, code: str, nick: str, passwd: str, rep_passwd: str) -> Response:
@@ -133,14 +140,18 @@ def accept_invite_cr_user(email: str, code: str, nick: str, passwd: str, rep_pas
     raise MessageException(message)
   if user.get_nick()!='':
     raise MessageException(message)
-  if not sc.check_code(user, code, CodePurposeEnum.InviteUser):
+  if sc.check_code(user, code, CodePurposeEnum.InviteUser) is None:
     raise MessageException(message)
+  _codes=sc.active_codes(user, CodePurposeEnum.InviteUserMail)
   
   su.set_user_nick(user, nick)
   if not su.change_user_pass(user, passwd):
     _code, _=sc.gen_code(user, CodePurposeEnum.InviteUser)
     return Response.error_response(message='Hasło nie spełnia wymogów lub użytkownik o podanym nick\'u już istnieje', data=_code.code)
   
+  if _codes is not None:
+    for _code in _codes:
+      sc.deactivate_code(_code)
   _code, code_exp=sc.gen_code(user, CodePurposeEnum.ApproveUser)
   log_activity(True, {'details': f'Poprawnie wygenerowano kod dla {user.get_nick()}'})
   send_code_by_email(SendMail.sendCode, email, _code)
@@ -193,14 +204,14 @@ def approve(email: str, code: str) -> Response:
     raise MessageException('Konto nie wymaga potwierdzenia')
   if user.is_approved():
     raise MessageException('Konto nie wymaga potwierdzenia')
-  if sc.check_code(user, code, CodePurposeEnum.ApproveUser):
-    su.approve_user(user)
-    log_activity(True, {'details': f'Poprawnie potwierdzono konto: {user.get_nick()}'})
-    return Response.success_response()
-  raise MessageException(
-    'Konto nie zostało potwierdzone',
-    Exception(f'Wprowadzono nie prawidłowy kod dla: {user.get_nick()}')
-  )
+  if sc.check_code(user, code, CodePurposeEnum.ApproveUser) is None:
+    raise MessageException(
+      'Konto nie zostało potwierdzone',
+      Exception(f'Wprowadzono nie prawidłowy kod dla: {user.get_nick()}')
+    )
+  su.approve_user(user)
+  log_activity(True, {'details': f'Poprawnie potwierdzono konto: {user.get_nick()}'})
+  return Response.success_response()
 
 @log_if_error
 def change_password(passwd: str, new_passwd: str, rep_passwd: str) -> Response:
@@ -240,10 +251,10 @@ def pass_reset(email: str, code: str) -> Response:
       message,
       Exception(f'Próba zmiany hasła konta o nieistniejącym email: {email}')
     )
-  if sc.check_code(user, code, CodePurposeEnum.ResetUserPassReq):
-    _code, _=sc.gen_code(user, CodePurposeEnum.ResetUserPass)
-    return Response.success_response(data=_code.code)
-  raise MessageException(message)
+  if sc.check_code(user, code, CodePurposeEnum.ResetUserPassReq) is None:
+    raise MessageException(message)
+  _code, _=sc.gen_code(user, CodePurposeEnum.ResetUserPass)
+  return Response.success_response(data=_code.code)
 
 @log_if_error
 def pass_reset_new_pass(email: str, code: str, passwd: str, rep_passwd: str) -> Response:
@@ -256,10 +267,10 @@ def pass_reset_new_pass(email: str, code: str, passwd: str, rep_passwd: str) -> 
       message,
       Exception(f'Próba zmiany hasła konta o nieistniejącym email: {email}')
     )
-  if sc.check_code(user, code, CodePurposeEnum.ResetUserPass):
-    if su.change_user_pass(user, passwd):
-      log_activity(True, {'details': f'Poprawnie zmieniono hasło konta: {user.get_nick()}'})
-      return Response.success_response()
-    _code, _=sc.gen_code(user, CodePurposeEnum.ResetUserPass)
-    return Response.error_response(message='Hasło nie spełnia wymogów', data=_code.code)
-  raise MessageException(message)
+  if sc.check_code(user, code, CodePurposeEnum.ResetUserPass) is None:
+    raise MessageException(message)
+  if su.change_user_pass(user, passwd):
+    log_activity(True, {'details': f'Poprawnie zmieniono hasło konta: {user.get_nick()}'})
+    return Response.success_response()
+  _code, _=sc.gen_code(user, CodePurposeEnum.ResetUserPass)
+  return Response.error_response(message='Hasło nie spełnia wymogów', data=_code.code)
