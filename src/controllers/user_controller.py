@@ -33,7 +33,7 @@ def login(nick: str, passwd: str) -> Response:
   if user is None:
     raise MessageException(
       message,
-      Exception('Nie prawidłowy login')
+      Exception('Nieprawidłowy login')
     )
   if not user.verify_pass(passwd):
     raise MessageException(
@@ -110,7 +110,7 @@ def invite_user(email: str, message: str|None=None, do_after_create: list[Callab
 
 @log_if_error
 def accept_invite(email: str, code: str) -> Response:
-  message='Nie prawidłowy kod'
+  message='Nieprawidłowy kod'
   email=validate_email(email)
   user=su.get_user_by_email(email)
   if user is None:
@@ -124,7 +124,7 @@ def accept_invite(email: str, code: str) -> Response:
 
 @log_if_error
 def accept_invite_cr_user(email: str, code: str, nick: str, passwd: str, rep_passwd: str) -> Response:
-  message='Nie prawidłowy kod'
+  message='Nieprawidłowy kod'
   validate_nick(nick)
   validate_passwords(passwd, rep_passwd)
   email=validate_email(email)
@@ -232,7 +232,7 @@ def request_pass_reset(email: str) -> Response:
 
 @log_if_error
 def pass_reset(email: str, code: str) -> Response:
-  message='Nie prawidłowy kod'
+  message='Nieprawidłowy kod'
   email=validate_email(email)
   user=su.get_user_by_email(email)
   if user is None:
@@ -247,7 +247,7 @@ def pass_reset(email: str, code: str) -> Response:
 
 @log_if_error
 def pass_reset_new_pass(email: str, code: str, passwd: str, rep_passwd: str) -> Response:
-  message='Nie prawidłowy kod'
+  message='Nieprawidłowy kod'
   validate_passwords(passwd, rep_passwd)
   email=validate_email(email)
   user=su.get_user_by_email(email)
