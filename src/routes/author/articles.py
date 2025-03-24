@@ -12,7 +12,7 @@ articles_bp = Blueprint("articles", __name__)
 @articles_bp.route('/<int:article_id>')
 @approve_required
 def article_details(article_id):
-    if not ac.is_editor(article_id):
+    if not ac.is_author(article_id):
         return Response.error_response(message = "You are not an editor of this article").to_dict()
 
     response = ac.get_article_data(article_id)

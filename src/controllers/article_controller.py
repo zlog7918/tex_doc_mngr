@@ -12,6 +12,20 @@ from models.utils.Response import Response
 from models.article.Article import Article, ArticleStatusEnum
 from models.utils.utils import get_function, get_temp_folder, get_upload_folder
 
+def is_author(article_id: int) -> bool:
+    try:
+        user = au.get_curr_user_or_err()
+        article = aq.get_article(article_id)
+        if not article:
+            log_activity(get_function(), False, {'err': f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
+            return False
+        
+        return int(article.author_id) == int(user.get_id())
+    except Exception as e:
+        print(e)
+        log_err(get_function(), e)
+        return False
+
 def is_editor(article_id: int) -> bool:
     try:
         user = au.get_curr_user_or_err()
