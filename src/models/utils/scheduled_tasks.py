@@ -38,13 +38,13 @@ def create_scheduler(callable_context: ContextFun) -> BackgroundScheduler:
     scheduler.add_job(set_context(set_reviews_not_reviewed, callable_context), DateTrigger(util.get_timestamp()+timedelta(seconds=5)))
 
     # Uruchamianie codziennie o północy
-    scheduler.add_job(set_context(set_reviews_expired, callable_context), CronTrigger(hour=0, minute=0, second=0, timezone=util.unifide_timezone()))
-    scheduler.add_job(set_context(set_reviews_not_reviewed, callable_context), CronTrigger(hour=0, minute=0, second=0, timezone=util.unifide_timezone()))
+    scheduler.add_job(set_context(set_reviews_expired, callable_context), CronTrigger(hour=0, minute=0, second=0, timezone=util.unified_timezone()))
+    scheduler.add_job(set_context(set_reviews_not_reviewed, callable_context), CronTrigger(hour=0, minute=0, second=0, timezone=util.unified_timezone()))
 
     scheduler.add_listener(job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
     date=util.get_timestamp()+timedelta(seconds=2)
-    if datetime(year=date.year, month=date.month, day=date.day, tzinfo=util.unifide_timezone())<=date and date<=datetime(year=date.year, month=date.month, day=date.day, second=2, tzinfo=util.unifide_timezone()):
+    if datetime(year=date.year, month=date.month, day=date.day, tzinfo=util.unified_timezone())<=date and date<=datetime(year=date.year, month=date.month, day=date.day, second=2, tzinfo=util.unified_timezone()):
         time.sleep(2)
     scheduler.start()
 

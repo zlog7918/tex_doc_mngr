@@ -31,10 +31,10 @@ def generate_code() -> tuple[str, int]:
     code=f"{code:06d}"
     return code, c.TIME_TO_EXPIRE
 
-def unifide_timezone() -> tzinfo:
+def unified_timezone() -> tzinfo:
     return get_localzone()
 
-def get_timestamp(tz: tzinfo=unifide_timezone()) -> datetime:
+def get_timestamp(tz: tzinfo=unified_timezone()) -> datetime:
     return datetime.now(tz)
 
 def get_function(back: int=0) -> str:
