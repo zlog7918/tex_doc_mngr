@@ -58,7 +58,7 @@ def delete_user(user: User) -> None:
     try:
         db.session.delete(user)
     except Exception as e:
-        raise MessageException.from_exception(e, 'Konto nie zostało potwierdzone')
+        raise MessageException.from_exception(e, 'Konto nie zostało usunięte')
 
 def change_user_pass(user: User, passwd: str) -> bool:
     try:
