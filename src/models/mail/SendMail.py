@@ -3,23 +3,18 @@ import html
 from models.usr.Code import Code
 from .Sender import Sender, SenderLoginOpt
 from models.utils.MessageException import MessageException
+from models.utils.utils import get_function
+from models.utils.EnvConsts import envConsts as ec
 
 def _get_link(url: str) -> str:
-    port=int(os.getenv('NGINX_HTTPS_OUTER_PORT', '443'))
-    return f'https://{os.getenv('SERVER_NAME', 'SERVER_NAME')}{'' if port==443 else f':{port}'}/{url}'
+    port=ec.getHttpsPort()
+    return f'https://{ec.getServerName()}{'' if port==443 else f':{port}'}/{url}'
 
 class SendMail:
     __ERROR_MESSAGE='Błąd przy wysyłaniu mail\'a'
     def __init__(self):
-        (host, port, addr, usr, passwd, auth_type)=(
-            os.environ.get('MAIL_HOST')
-            ,os.environ.get('MAIL_PORT')
-            ,os.environ.get('MAIL_ADDRESS')
-            ,os.environ.get('MAIL_USERNAME')
-            ,os.environ.get('MAIL_PASSWORD')
-            ,os.environ.get('MAIL_AUTH_TYPE')
-        )
-        self.__sender=Sender(host, port, addr, usr, passwd, SenderLoginOpt(auth_type))
+        (host, port, addr, usr, passwd, auth_type)=ec.getMailData()
+        self.__sender=Sender(host, port, addr, usr, passwd, auth_type)
 
     def sendInvite(self, reciever: str, code: Code, message: str|None=None) -> None:
         link=_get_link(f'user/accept_inv/{reciever}/{code.code}')

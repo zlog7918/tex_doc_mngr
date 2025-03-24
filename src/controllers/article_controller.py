@@ -7,10 +7,23 @@ import services.article as aq
 from flask import send_from_directory
 from models.utils.Response import Response
 from models.utils.decors import log_if_error
-from db.db_base import db, log_activity, log_err
+from db.db_base import log_activity, log_err
+from models.utils.EnvConsts import envConsts as ec
 from models.utils.MessageException import MessageException
 from models.article.Article import Article, ArticleStatusEnum
-from models.utils.utils import get_temp_folder, get_upload_folder
+
+
+def get_available_editors() -> dict[int, str]:
+    return aq.get_available_editors()
+
+def is_valid_editor(editor_id: int) -> Response:
+    user = au.get_curr_user_or_err()
+    if editor_id == user.id:
+        return Response.error_response(message="An author cannot assign themselves as an editor.")
+    elif not au.get_user(editor_id):
+        return Response.error_response(message="Editor does not exist.")
+    else:
+        return Response.success_response()
 
 def is_editor(article_id: int) -> bool:
     try:
@@ -36,7 +49,6 @@ def is_reviewer(article_id: int, user_id: int) -> bool:
         log_activity(False, {'err': f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
         return False
     except Exception as e:
-        print("error: " + str(e))
         log_err(e)
         return False
     
@@ -63,7 +75,7 @@ def get_all_articles_by_editor() -> list[Article]:
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
     if article is None:
-        raise MessageException('Nie znaleziono artykułu')
+        raise MessageException('Nie znaleziono artykułu', Exception(f'Article with id: {article_id} not found'))
 
     if article.content.startswith('/'):
         article.content = f'<br><embed src="{article.content}" width="800" height="500" type="application/pdf">'
@@ -106,13 +118,27 @@ def add_round(article_id: int) -> Response:
     return Response.success_response(message=f'Round {new_round_number} added successfully')
 
 @log_if_error
-def assign_reviewers(article_id: int, assigned_reviewers: str, deadline_confirm: str, deadline_submit: str) -> Response:
+def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     if not assigned_reviewers:
         raise MessageException('No reviewers assigned')
+    
+    article = aq.get_article(article_id)
+    if not article:
+        log_activity(False, {'err': f'Editor attepted to set reviewers to a non-existing article {article_id}.'})
+        return Response.error_response(message = f"Article {article_id} does not exist")
 
-    assigned_reviewers_ids = [int(rid.strip()) for rid in assigned_reviewers.split(',')]
+    assigned_reviewers_ids = [int(rid) for rid in assigned_reviewers]
+
+    if article.editor_id in assigned_reviewers_ids:
+        log_activity(False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
+        return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+    
+    if article.author_id in assigned_reviewers_ids:
+        log_activity(False, {'err': f'Editor attempted to assign author {article.author_id} to the article {article_id}.'})
+        return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+
     last_round_number = aq.get_last_round_number(article_id)
-    new_round_number = last_round_number + 1
+    new_round_number = last_round_number + 1 if last_round_number else 1
     aq.create_round(article_id, new_round_number, deadline_confirm, deadline_submit)
 
     for reviewer_id in assigned_reviewers_ids:
@@ -148,7 +174,7 @@ def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
         raise MessageException(str(e))
 
 @log_if_error
-def upload_file(title: str, editor: str, tex_path: str) -> Response:
+def upload_file(title: str, editor_id: int, tex_path: str) -> Response:
     # TODO: check if the function handles all possibilities
     upload_folder=os.path.dirname(tex_path)
     filename=os.path.basename(tex_path)
@@ -161,7 +187,7 @@ def upload_file(title: str, editor: str, tex_path: str) -> Response:
     # file_url=f"/articles/uploads/{filename}"
     file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf') if filename.endswith('.tex') else filename}"
 
-    aq.create_article(title, file_url, editor)
+    aq.create_article(title, file_url, editor_id)
     return Response.success_response(
         message=f"File {filename} uploaded successfully",
         data={"pdf_url": file_url}
@@ -176,7 +202,7 @@ def __get_file(folder: str, filename: str) -> Response:
 
 @log_if_error
 def get_uploaded_file(filename: str) -> Response:
-    return __get_file.__wrapped__(get_upload_folder(), filename)
+    return __get_file.__wrapped__(ec.getDocFilesDir(), filename)
 
 @log_if_error
 def generate_preview(tex_path: str) -> Response:
@@ -189,4 +215,4 @@ def generate_preview(tex_path: str) -> Response:
 
 @log_if_error
 def temp_preview(filename: str) -> Response:
-    return __get_file.__wrapped__(get_temp_folder(), filename)
+    return __get_file.__wrapped__(ec.getTempDir(), filename)

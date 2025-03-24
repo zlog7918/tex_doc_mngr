@@ -4,8 +4,8 @@ if TYPE_CHECKING:
 from db.db_base import db
 from enum import Enum as PyEnum
 from models.usr.User import User
-from sqlalchemy import ForeignKey, String, Integer, Text, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, String, Integer, Text, Enum, CheckConstraint
 
 class ArticleStatusEnum(PyEnum):
     Submitted='Submitted'
@@ -37,6 +37,11 @@ class Article(db.Model):
     status: Mapped[ArticleStatus] = relationship(foreign_keys=[status_id])
 
     rounds: Mapped[list["Round"]] = relationship(back_populates='article')
+    
+    __table_args__ = (
+        CheckConstraint(author_id != editor_id, name='check_author_not_editor'),
+    )
 
     def update_status(self, new_status: ArticleStatus) -> None:
         self.status_id = new_status.id
+

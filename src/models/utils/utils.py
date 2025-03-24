@@ -4,6 +4,7 @@ import traceback
 from . import consts as c
 from flask import render_template
 from datetime import datetime,timezone
+from .EnvConsts import envConsts as ec
 from .FormNotFilledException import FormNotFilledException
 from werkzeug.datastructures.structures import ImmutableMultiDict
 
@@ -12,7 +13,7 @@ def url_last_edit(path: str) -> str:
         return f'{path}?t=ERROR'
     if '/..' in path:
         return f'{path}?t=ERROR'
-    path_abs=f'{os.environ.get('APP_DIR')}{path}'
+    path_abs=f'{ec.getAppDir()}{path}'
     return f'{path}?t={int(os.path.getmtime(path_abs))}'
 
 def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> tuple[str, ...]:
@@ -32,12 +33,6 @@ def get_kwargs_for(t: type, d: dict[object, object]) -> dict[str, object]:
 
 def get_traceback(err: Exception) -> str:
     return ''.join(traceback.format_tb(err.__traceback__))
-
-def get_upload_folder() -> str:
-    return os.getenv('DOC_FILES_DIR', '/var/www/uploads')
-
-def get_temp_folder() -> str:
-    return os.getenv('TEMP_FOLDER', '/tmp')
 
 def get_timestamp() -> datetime:
     return datetime.now(timezone.utc)

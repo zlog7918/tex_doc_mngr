@@ -1,15 +1,15 @@
-import os
 from db.db_base import db
 from enum import Enum, auto
 from flask_login import UserMixin
 from passlib.hash import sha256_crypt
-from ..utils.utils import validate_pass
+from models.utils.utils import validate_pass
 from sqlalchemy.orm import Mapped, mapped_column
+from models.utils.EnvConsts import envConsts as ec
 from sqlalchemy import or_, Integer, Boolean, Text, CheckConstraint, LargeBinary
 
 class User(db.Model, UserMixin):
     __tablename__ = 'usr'
-    __PEPPER__=bytes.fromhex(os.getenv('PEPPER_VAL'))
+    __PEPPER__=bytes.fromhex(ec.getPepper())
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     nick: Mapped[str|None] = mapped_column(Text, nullable=True, unique=True)

@@ -1,6 +1,7 @@
-from . import user as uq
 from db.db_base import db
+from services import user as uq
 from models.usr.User import User
+from sqlalchemy import and_, select
 from models.article.Round import Round
 from models.utils import utils as util
 from models.article.Review import Review
@@ -14,10 +15,9 @@ def __get_status_or_err(status: ArticleStatusEnum) -> ArticleStatus:
         raise ValueError(f'Podany status artykułu: {status.name} nie istnieje w bazie danych')
     return _status
 
-def create_article(title: str, file_url: str, editor_nick: str) -> None:
+def create_article(title: str, file_url: str, editor_id: int) -> None:
     try:
         user_id = uq.get_curr_user_or_err().get_id()
-        editor_id = uq.get_user_id(editor_nick)
         status = __get_status_or_err(ArticleStatusEnum.Submitted)
 
         new_article = Article(**util.get_kwargs_for(Article, {
@@ -37,12 +37,24 @@ def get_article(article_id: int) -> Article|None:
 
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
-    return Article.query.filter_by(editor_id=editor_id).all()
+    return Article.query.where(Article.editor_id == editor_id).all()
+
+
+def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
+    new_stat=__get_status_or_err(new_status)
+    if article.update_status(new_stat):
+        db.session.commit()
+        return True
+    else:
+        return False
 
 
 def get_available_reviewers(article_id: int) -> dict[int, str]:
     try:
-        # Pobieramy identyfikator najnowszej rundy dla danego artykułu
+        user_id = uq.get_curr_user_or_err().get_id()
+        article = Article.query.where(Article.id == article_id).first()
+        author_id = article.author_id if article else None
+
         latest_round_subquery = (
             db.session.query(Round.id)
             .filter(Round.article_id == article_id)
@@ -51,26 +63,40 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
             .subquery()
         )
 
-        # Pobieramy identyfikatory recenzentów, którzy są już przypisani do tej rundy
         assigned_reviewers_subquery = (
             db.session.query(Review.reviewer_id)
-            .filter(Review.round_id.in_(latest_round_subquery))
+            .filter(Review.round_id.in_(select(latest_round_subquery)))
             .subquery()
         )
 
-        # Pobieramy użytkowników, którzy NIE są przypisani do tej rundy
         reviewers = (
             db.session.query(User.id, User.nick)
-            .filter(~User.id.in_(assigned_reviewers_subquery))
+            .where(and_(
+                ~User.id.in_(select(assigned_reviewers_subquery)),
+                User.id != user_id,
+                User.id != author_id
+            ))
             .all()
         )
 
         # Konwersja wyników na listę słowników
-        return {row.id: row.nick for row in reviewers}
+        return { row.id: row.nick for row in reviewers }
 
     except Exception as err:
         raise MessageException.from_exception(err, 'Error while: finding available reviewers')
     
+def get_available_editors() -> dict[int, str]:
+    try:
+        editors = (
+            db.session.query(User.id, User.nick)
+            .filter(User.id != int(uq.get_curr_user_or_err().get_id()))
+            .all()
+        )
+
+        return {row.id: row.nick for row in editors} 
+
+    except Exception as e:
+        return {}
 
 def get_assigned_reviewers(article_id: int) -> dict[int, str]:
     try:
@@ -87,7 +113,7 @@ def get_assigned_reviewers(article_id: int) -> dict[int, str]:
         reviewers = (
             db.session.query(User.id, User.nick)
             .join(Review, Review.reviewer_id == User.id)
-            .filter(Review.round_id.in_(latest_round_subquery))
+            .filter(Review.round_id.in_(select(latest_round_subquery)))
             .all()
         )
 
@@ -112,7 +138,7 @@ def get_assigned_reviews(article_id: int) -> list[Review]:
         # Pobieramy recenzje przypisane do tej rundy
         reviews = (
             db.session.query(Review)
-            .filter(Review.round_id.in_(latest_round_subquery))
+            .filter(Review.round_id.in_(select(latest_round_subquery)))
             .all()
         )
 

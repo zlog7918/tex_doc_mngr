@@ -1,6 +1,7 @@
 import services.user as su
 import services.review as rq
 import services.article as aq
+from db.db_base import log_activity
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from models.utils.decors import approve_required
@@ -28,11 +29,15 @@ def article_details(article_id: int):
         if not ac.is_reviewer(article_id, int(user.get_id())):
             return Response.error_response(message = "You are not a reviewer of this article").to_dict()
 
-        user=su.get_curr_user_or_err()
         article = aq.get_article(article_id)
-        review = rq.get_review(article_id, int(user.get_id()))
+        if not article:
+            log_activity(False, {'err': f'Article with id: {article_id} not found'})
+            return Response.error_response(message = 'Article not found').to_dict()
+        reviewer_id = int(user.get_id())
+        review = rq.get_review(article_id, reviewer_id)
         if not review:
-            return str("review not found"), 500
+            log_activity(False, {'err': f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found'})
+            return Response.error_response(message = 'Review not found').to_dict()
 
         if review.status == "Pending confirmation":
             return render_template("review_tabs/pending_confirmation.html", article=article, review_id=review.id)
