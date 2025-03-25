@@ -80,12 +80,12 @@
 
     <div class="main-content">
         <div class="top-bar">
-            <a href="{{ url_for('articles.show_articles') }}" class="back-btn">Wróć do listy</a>
+            <a href="{{ url_for('editor_articles.show_articles') }}" class="back-btn">Wróć do listy</a>
         </div>
 
         <h1>{{ article.title }}</h1>
-        <p class="article-info"><strong>Autor:</strong> {{ article.author }}</p>
-        <p class="article-info"><strong>Treść:</strong> {{ article.content }}</p>
+        <p class="article-info"><strong>Autor:</strong> {{ article.author.get_nick }}</p>
+        <p class="article-info"><strong>Treść:</strong> {{ article.content|safe }}</p>
 
         <div class="action-buttons">
             <button class="accept-btn" onclick="acceptArticle()">Zaakceptuj</button>
@@ -95,7 +95,7 @@
 
     <script>
         function acceptArticle() {
-            fetch(`/articles/{{ article.id }}/accept`, {
+            fetch(`/editor/articles/{{ article.id }}/accept`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
