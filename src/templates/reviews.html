@@ -75,7 +75,7 @@
                 {% for article, review_id in articles %}
                     <tr>
                         <td>{{ article.title }}</td>
-                        <td>{{ article.author_id.get_nick }}</td>
+                        <td>{{ article.author_id.nick }}</td>
                         <td><a href="{{ url_for('review.article_details', article_id=article.id) }}" class="details-btn">View Details</a></td>
                     </tr>
                 {% endfor %}

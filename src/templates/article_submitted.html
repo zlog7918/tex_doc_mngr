@@ -84,7 +84,7 @@
         </div>
 
         <h1>{{ article.title }}</h1>
-        <p class="article-info"><strong>Autor:</strong> {{ article.author.get_nick }}</p>
+        <p class="article-info"><strong>Autor:</strong> {{ article.author.nick }}</p>
         <p class="article-info"><strong>Treść:</strong> {{ article.content|safe }}</p>
 
         <div class="action-buttons">
