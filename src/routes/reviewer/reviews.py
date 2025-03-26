@@ -1,12 +1,12 @@
-from db.db_base import log_activity
-import services.user as su
-import services.review as rq
-import services.article as aq
-from decors import approve_required
+from ...services import user as su
+from ...services import review as rq
+from ...services import article as aq
+from ...decors import approve_required
+from ...db.db_base import log_activity
+from ...models.utils.utils import get_function
+from ...models.utils.Response import Response
+from ...controllers import article_controller as ac
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from models.utils.Response import Response
-from models.utils.utils import get_function
-import controllers.article_controller as ac
 
 review_bp = Blueprint("review", __name__)
 

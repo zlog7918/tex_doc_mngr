@@ -1,6 +1,6 @@
 import os
 from typing import Any, Self, Callable
-from models.mail.Sender import SenderLoginOpt
+from ..mail.Sender import SenderLoginOpt
 
 class _Singleton(type):
     _instances = {}

@@ -1,4 +1,4 @@
-from db.db_base import db
+from ...db.db_base import db
 from flask_login import UserMixin
 from passlib.hash import sha256_crypt
 from ..utils.utils import validate_pass

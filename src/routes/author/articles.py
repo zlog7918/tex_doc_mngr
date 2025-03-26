@@ -1,14 +1,14 @@
 import os
-from db.db_base import log_err
-from decors import approve_required
+from ...db.db_base import log_err
+from ...decors import approve_required
 from werkzeug.utils import secure_filename
-from models.utils.Response import Response
-import controllers.article_controller as ac
+from ...models.utils.Response import Response
+from ...models.utils.utils import get_function
 from werkzeug.datastructures import FileStorage
-from models.utils.consts import ALLOWED_EXTENSIONS
-from models.utils.EnvConsts import envConsts as ec
+from ...controllers import article_controller as ac
+from ...models.utils.consts import ALLOWED_EXTENSIONS
+from ...models.utils.EnvConsts import envConsts as ec
 from flask import request, Blueprint, render_template
-from models.utils.utils import get_function
 
 articles_bp = Blueprint("articles", __name__)
 

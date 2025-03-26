@@ -1,19 +1,14 @@
 import os
 import subprocess
-from db.db_base import db, log_activity, log_err
-from models.article.Article import Article, ArticleStatusEnum
-from models.utils.Response import Response
-from models.utils.utils import get_function
-import services.article as aq
-import services.user as au
-import services.article as aq
-import services.review as rs
+from ..services import user as au
+from ..services import review as rs
+from ..services import article as aq
 from flask import send_from_directory
-from models.utils.Response import Response
-from models.utils.utils import get_function
-from db.db_base import db, log_activity, log_err
-from models.utils.EnvConsts import envConsts as ec
-from models.article.Article import Article, ArticleStatusEnum
+from ..models.utils.Response import Response
+from ..models.utils.utils import get_function
+from ..db.db_base import db, log_activity, log_err
+from ..models.utils.EnvConsts import envConsts as ec
+from ..models.article.Article import Article, ArticleStatusEnum
 
 def get_available_editors() -> dict[int, str]:
     return aq.get_available_editors()

@@ -1,5 +1,4 @@
 import sys
-import random
 import os.path
 from . import consts as c
 from flask import render_template

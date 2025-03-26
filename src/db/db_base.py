@@ -2,7 +2,7 @@ import json
 import traceback
 from flask import request
 from flask_sqlalchemy import SQLAlchemy
-from models.utils.utils import get_timestamp
+from ..models.utils.utils import get_timestamp
 from sqlalchemy import MetaData, Integer, Boolean, Text, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -30,9 +30,13 @@ class Log(db.Model):
 
 
 def log_activity(action: str, is_success: bool, log: dict) -> None:
+    try:
+        ip=request.environ['REMOTE_ADDR']
+    except Exception:
+        ip='local'
     db.session.add(
         Log(
-            ip=request.environ['REMOTE_ADDR']
+            ip=ip
             ,is_success=is_success
             ,action=action
             ,timest=get_timestamp()

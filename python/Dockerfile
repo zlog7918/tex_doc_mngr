@@ -19,9 +19,10 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
 
-WORKDIR ${APP_DIR}
 COPY ./requirements.txt ${APP_MAIN_DIR}/
 RUN python3 -m venv ${APP_VENV_DIR} && . ${APP_VENV_DIR}/bin/activate && python3 -m pip --no-cache-dir install -r ${APP_MAIN_DIR}/requirements.txt
 
 COPY ./app.ini ${APP_MAIN_DIR}/
+COPY ./app.py ${APP_DIR}/
+WORKDIR ${APP_DIR}
 CMD ["sh", "-c", "\"${APP_VENV_DIR}/bin/uwsgi\" --uid py_flask --ini \"${APP_MAIN_DIR}/app.ini\" --virtualenv \"${APP_VENV_DIR}/\""]

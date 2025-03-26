@@ -1,0 +1,9 @@
+flask
+passlib
+requests
+# psycopg2-binary
+sqlalchemy
+Flask-Login
+Flask-Migrate
+email-validator
+Flask-SQLAlchemy

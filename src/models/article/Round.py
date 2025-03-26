@@ -1,4 +1,4 @@
-from db.db_base import db
+from ...db.db_base import db
 from sqlalchemy import ForeignKey, Integer, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

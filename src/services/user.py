@@ -1,8 +1,8 @@
 from sqlalchemy import or_
-from models.usr.User import User
-from db.db_base import db, log_err
+from ..models.usr.User import User
 from flask_login import current_user
-from models.utils.utils import get_function
+from ..db.db_base import db, log_err
+from ..models.utils.utils import get_function
 
 def user_loader(id: int) -> User|None:
     return User.query.where(User.id==id).first()

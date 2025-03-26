@@ -1,8 +1,8 @@
-from db.db_base import db, log_activity, log_err
-from models.utils.utils import get_function
 from enum import Enum as PyEnum
-from sqlalchemy import ForeignKey, String, Integer, Text, Enum, CheckConstraint
+from ...models.utils.utils import get_function
+from ...db.db_base import db, log_activity, log_err
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, String, Integer, Text, Enum, CheckConstraint
 
 class ArticleStatusEnum(PyEnum):
     Submitted='Submitted'

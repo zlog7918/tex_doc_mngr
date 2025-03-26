@@ -1,10 +1,9 @@
-from db.db_base import log_err
-from models.article.Article import ArticleStatusEnum
-from models.utils.Response import Response
-from models.utils.utils import get_function, render_base_template
-from decors import approve_required
-import controllers.article_controller as ac
-from models.article.Article import ArticleStatusEnum
+from ...db.db_base import log_err
+from ...decors import approve_required
+from ...models.utils.Response import Response
+from ...controllers import article_controller as ac
+from ...models.utils.utils import get_function, render_base_template
+from ...models.article.Article import ArticleStatusEnum
 from flask import request, redirect, url_for, Blueprint, render_template
 
 editor_articles_bp = Blueprint("editor_articles", __name__)

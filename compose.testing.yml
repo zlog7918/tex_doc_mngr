@@ -1,0 +1,22 @@
+name: tdm-test
+include:
+  # - path: nginx/docker-compose.yml
+  #   project_directory: .
+  #   env_file:
+  #     - ./.env
+  #     - ./.nginx.env
+  # - path: python/docker-compose.yml
+  #   project_directory: .
+  #   env_file:
+  #     - ./.env
+  #     - ./.python.env
+  - path: test_python/docker-compose.yml
+    project_directory: .
+    env_file:
+      - ./.env
+      - ./.python.env
+  # - path: psql/docker-compose.yml
+  #   project_directory: .
+  #   env_file:
+  #     - ./.psql.env
+  # - path: ./compose.commons.yml

@@ -1,13 +1,12 @@
+from ..models.usr.User import User
 from sqlalchemy import and_, select
-from models.usr.User import User
-from db.db_base import db, log_activity, log_err
 from flask_login import current_user
-from models.utils.utils import get_function
-from models.usr.User import User
-from models.article.Round import Round
-from models.article.Review import Review
-from models.article.Questions import Answer, Question
-from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
+from ..models.article.Round import Round
+from ..models.article.Review import Review
+from ..models.utils.utils import get_function
+from ..db.db_base import db, log_activity, log_err
+from ..models.article.Questions import Answer, Question
+from ..models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
 def create_article(title: str, file_url: str, editor_id: int) -> bool:
     try:

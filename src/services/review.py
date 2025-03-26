@@ -1,10 +1,10 @@
-from models.utils.utils import get_function
-from db.db_base import db, log_activity, log_err
 from . import article as aq
-from models.article.Round import Round
-from models.article.Review import Review
-from models.article.Article import Article
-from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
+from ..models.article.Round import Round
+from ..models.article.Review import Review
+from ..models.article.Article import Article
+from ..models.utils.utils import get_function
+from ..db.db_base import db, log_err, log_activity
+from ..models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 def get_review_by_id(review_id: int) -> Review|None:
     return Review.query.where(Review.id==review_id).first()

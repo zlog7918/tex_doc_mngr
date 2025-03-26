@@ -1,14 +1,14 @@
 import re
 from typing import Callable
 import email_validator as emailV
-from models.usr.User import User
-from models.mail.SendMail import SendMail
-from models.utils.Response import Response
-from models.utils.utils import get_function
-from services import user as su, code as sc
-from db.db_base import log_activity, log_err
-from models.usr.Code import Code, CodePurposeEnum
-from flask_login import login_user, logout_user, current_user
+from ..models.usr.User import User
+from ..models.mail.SendMail import SendMail
+from ..models.utils.Response import Response
+from ..models.utils.utils import get_function
+from ..services import user as su, code as sc
+from ..db.db_base import log_activity, log_err
+from flask_login import login_user, logout_user
+from ..models.usr.Code import Code, CodePurposeEnum
 
 def validate_nick(nick: str) -> None:
   ret_mess='Nick nie spełnia wymagań'

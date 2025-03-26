@@ -1,9 +1,8 @@
-import os
-from db.db_base import log_err
-from models.usr.Code import Code
-from .Sender import Sender, SenderLoginOpt
-from models.utils.utils import get_function
-from models.utils.EnvConsts import envConsts as ec
+from .Sender import Sender
+from ..usr.Code import Code
+from ...db.db_base import log_err
+from ..utils.utils import get_function
+from ..utils.EnvConsts import envConsts as ec
 
 class SendMail:
     def __init__(self):

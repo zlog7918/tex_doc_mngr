@@ -1,8 +1,8 @@
 from flask_login import login_required
-import controllers.user_controller as uc
-from models.utils.Response import Response
+from ...models.utils.Response import Response
 from flask import Blueprint, redirect, request
-from models.utils.utils import render_base_template
+from ...controllers import user_controller as uc
+from ...models.utils.utils import render_base_template
 
 user_bp = Blueprint('user', __name__)
 
