@@ -1,58 +1,119 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ article.title }}</title>
+{% extends "base.html" %}
+
+{% block title %} {{ article.title }} {% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
     <style>
+        .main-content {
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: black;
+            margin-bottom: 10px;
+        }
+
+        .article-meta {
+            font-size: 18px;
+            color: #2d1053;
+            margin-bottom: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #5a3d90;
+            margin-bottom: 15px;
+        }
+
         .tab {
-            display: inline-block;
-            margin-right: 5px;
-            padding: 10px;
-            background-color: #ddd;
+            padding: 12px 20px;
+            background: #f4f4f4;
             cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+            border-radius: 10px 10px 0 0;
+            margin-right: 5px;
         }
+
         .tab.active {
-            background-color: #aaa;
+            background: #5a3d90;
+            color: white;
         }
+
+        .tab:hover {
+            background: #dcdcdc;
+        }
+
         .tab-content {
-            margin-top: 20px;
-            border: 1px solid #ccc;
-            padding: 10px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            background: white;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
         }
-        button {
+
+        .actions {
             margin-top: 20px;
         }
+
+        .btn {
+            background: #5a3d90;
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            background: #4a1e87;
+        }
+
+        .btn-danger {
+            background: #c0392b;
+        }
+
+        .btn-danger:hover {
+            background: #a93226;
+        }
+
     </style>
-</head>
-<body>
-    <h1>{{ article.title }}</h1>
-    <p><strong>Author:</strong> {{ article.author.nick }}</p>
-    <div id="tabs">
-        {% for round in article.rounds %}
-            <div class="tab {% if loop.last %}active{% endif %}" data-index="{{ loop.index }}" onclick="showTab(this.getAttribute('data-index'))">
-                Round {{ round.id }}
-            </div>
-        {% endfor %}
+
+    <div class="main-content">
+        <h1>{{ article.title }}</h1>
+        <p class="article-meta"><strong>Autor:</strong> {{ article.author.nick }}</p>
+
+        <div class="tabs">
+            {% for round in article.rounds %}
+                <div class="tab {% if loop.last %}active{% endif %}" data-index="{{ loop.index }}" onclick="showTab(this.getAttribute('data-index'))">
+                    Runda {{ round.id }}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="tab-content" id="tab-content">
+            {{ tab_content|safe }}
+        </div>
+
+        <div class="actions">
+            <button id="add-round" class="btn" onclick="addRound()">Dodaj Rundę</button>
+            <button id="reject" class="btn btn-danger" onclick="rejectArticle()">Odrzuć Artykuł</button>
+        </div>
     </div>
-    <div class="tab-content" id="tab-content">
-        {{ tab_content|safe }}
-    </div>
-    <button id="add-round" onclick="addRound()">
-        Add Round
-    </button>
-    <button id="reject" onclick="rejectArticle()">Reject</button>
 
     <script>
         function showTab(index) {
-            // Zmiana aktywnej zakładki
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelector(`.tab:nth-child(${index})`).classList.add('active');
-
-            const addRoundButton = document.getElementById('add-round');
-            addRoundButton.style.display = 'none';
-            
-
         }
 
         function addRound() {
@@ -62,7 +123,7 @@
                     if (data['success']) {
                         location.reload();
                     } else {
-                        alert("Unable to add a new round.");
+                        alert("Nie udało się dodać nowej rundy.");
                     }
                 });
         }
@@ -72,13 +133,13 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data['success']) {
-                        alert("Article has been rejected.");
+                        alert("Artykuł został odrzucony.");
                         location.reload();
                     } else {
-                        alert("Unable to reject the article.");
+                        alert("Nie udało się odrzucić artykułu.");
                     }
                 });
         }
     </script>
-</body>
-</html>
+
+{% endblock %}
