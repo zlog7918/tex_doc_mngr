@@ -1,13 +1,11 @@
 import os
-import subprocess
-import tempfile
 import tarfile
 import zipfile
-from werkzeug.utils import secure_filename
-from werkzeug.datastructures import FileStorage
+import subprocess
 from flask import send_from_directory
+from werkzeug.utils import secure_filename
 from models.utils.Response import Response
-from models.utils.utils import get_temp_folder, get_upload_folder
+from werkzeug.datastructures import FileStorage
 
 class LatexService:
     @staticmethod
@@ -44,14 +42,6 @@ class LatexService:
         if os.path.exists(file_path):
             return Response.success_response(send_from_directory(folder, filename))
         return Response.error_response(message="Plik nie istnieje")
-
-    @staticmethod
-    def get_uploaded_file(filename: str) -> Response:
-        return LatexService.get_file(get_upload_folder(), filename)
-
-    @staticmethod
-    def get_temp_preview(filename: str) -> Response:
-        return LatexService.get_file(get_temp_folder(), filename)
 
     @staticmethod
     def save_file(file: FileStorage, folder: str) -> str:
