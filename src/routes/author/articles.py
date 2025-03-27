@@ -5,8 +5,9 @@ from models.utils.Response import Response
 import controllers.article_controller as ac
 from werkzeug.datastructures import FileStorage
 from models.utils.consts import ALLOWED_EXTENSIONS
-from flask import request, Blueprint, render_template
+from flask import request, Blueprint, render_template, jsonify
 from models.utils.utils import get_temp_folder, get_upload_folder
+from latex.latex_service import LatexService
 
 articles_bp = Blueprint("articles", __name__)
 
@@ -31,15 +32,43 @@ def upload_form():
 def upload_file():
     title = request.form.get('title')
     editor = request.form.get('editor')
-    if 'file' not in request.files:
-        return Response.error_response(message='Nie przesłano pliku').to_dict()
 
-    file = request.files['file']
-    if not file.filename:
-        return Response.error_response(message='No file selected').to_dict()
+    if not title:
+        return Response.error_response(message='Tytuł nie może być pusty').to_dict()
+    if not editor:
+        return Response.error_response(message='Edytor musi być wybrany').to_dict()
 
-    tex_path=handle_file(file, get_upload_folder())
-    return ac.upload_file(title, editor, tex_path).to_dict()
+    if 'files' not in request.files:
+        return Response.error_response(message='Nie przesłano plików').to_dict()
+
+    files = request.files.getlist('files')
+    if not files or all(not f.filename for f in files):
+        return Response.error_response(message='Nie wybrano żadnych plików').to_dict()
+
+    upload_folder = get_upload_folder()
+    os.makedirs(upload_folder, exist_ok=True)
+
+    tex_file_path = None
+    allowed_archives = ('.zip', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2')
+
+    for file in files:
+        filename = file.filename.lower()
+
+        if filename.endswith(allowed_archives):
+            extracted_tex = LatexService.extract_archive_and_find_tex(file, upload_folder)
+            if extracted_tex:
+                tex_file_path = extracted_tex
+        else:
+            saved_path = LatexService.save_file(file, upload_folder)
+            if saved_path.endswith(".tex"):
+                tex_file_path = saved_path
+
+    if not tex_file_path:
+        return Response.error_response(message='Nie znaleziono pliku .tex').to_dict()
+
+    result = ac.upload_file(title, editor, tex_file_path)
+    return result.to_dict()
+
 
 
 @articles_bp.route('/uploads/<filename>')
@@ -54,24 +83,51 @@ def uploaded_file(filename):
 @articles_bp.route('/generate-preview', methods=['POST'])
 @approve_required
 def generate_preview():
-    if 'file' not in request.files:
-        return Response.error_response(message='Nie przesłano pliku').to_dict()
+    if 'files' not in request.files:
+        return Response.error_response(message='Nie przesłano plików').to_dict()
 
-    file = request.files['file']
-    if not file.filename.endswith('.tex'):
-        return Response.error_response(message="Nieprawidłowy format pliku").to_dict()
+    files = request.files.getlist('files')
+    if not files or all(not f.filename for f in files):
+        return Response.error_response(message='Nie wybrano żadnych plików').to_dict()
 
-    tex_path=handle_file(file, get_temp_folder())
-    response = ac.generate_preview(tex_path)
-    if response.success:
-        return response.data
-    return response.to_dict()
+    temp_folder = get_temp_folder()
+    os.makedirs(temp_folder, exist_ok=True)
+
+    archive_extensions = ('.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2')
+    tex_path = None
+
+    for file in files:
+        filename = file.filename.lower()
+
+        if filename.endswith(archive_extensions):
+            extracted_tex = LatexService.extract_archive_and_find_tex(file, temp_folder)
+            if extracted_tex:
+                tex_path = extracted_tex
+
+        elif filename.endswith('.tex'):
+            saved_path = LatexService.save_file(file, temp_folder)
+            if saved_path.endswith(".tex"):
+                tex_path = saved_path
+
+        else:
+            LatexService.save_file(file, temp_folder)
+
+    if not tex_path:
+        return Response.error_response(message="Nie znaleziono pliku .tex").to_dict()
+
+    response = LatexService.generate_preview(tex_path)
+    return response.data if response.success else response.to_dict()
+
+
 
 
 @articles_bp.route('/temp-preview/<filename>')
 @approve_required
 def temp_preview(filename):
-    ret=ac.temp_preview(filename)
-    if isinstance(ret, Response):
-        return ret.to_dict()
-    return ret
+    response = LatexService.get_temp_preview(filename)
+
+    if not response.success:
+        return jsonify(response.to_dict()), 400
+
+    return response.data
+
