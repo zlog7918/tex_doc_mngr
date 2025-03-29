@@ -211,7 +211,7 @@ def upload_correction(article_id: int, file: FileStorage) -> Response:
         
         article = aq.get_article(article_id)
 
-        if article:
+        if article and is_author(article_id):
             if article.status.stat != ArticleStatusEnum.NeedsCorrections:
                 return Response.error_response(message='Correction had already been uploaded.')
 
