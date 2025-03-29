@@ -1,3 +1,4 @@
+from sqlalchemy import and_, desc
 from db.db_base import db, log_err
 from models.utils.utils import get_function
 from . import article as aq
@@ -14,7 +15,8 @@ def get_review(article_id: int, reviewer_id: int) -> Review|None:
         review = (
             db.session.query(Review)
             .join(Round, Review.round_id == Round.id)
-            .filter(Round.article_id == article_id, Review.reviewer_id == reviewer_id)
+            .where(and_(Round.article_id == article_id, Review.reviewer_id == reviewer_id))
+            .order_by(desc(Round.round_number))
             .first()
         )
 
