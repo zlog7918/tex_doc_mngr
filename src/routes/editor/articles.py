@@ -84,13 +84,6 @@ def request_article_correction(article_id):
 
     return ac.set_article_status(article_id, ArticleStatusEnum.NeedsCorrections).to_dict()
 
-# @editor_articles_bp.route('/<int:article_id>/add_round', methods=['POST'])
-# @approve_required
-# def add_round(article_id):
-#     if not ac.is_editor(article_id):
-#         return Response.error_response(message = "You are not an editor of this article").to_dict()
-#     return ac.add_round(article_id).to_dict()
-
 
 @editor_articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
 @approve_required

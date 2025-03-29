@@ -215,6 +215,13 @@ def get_last_round_number(article_id: int) -> int:
 
 def create_round(article_id: int, article_content: str, round_number: int, deadline_confirm: str|None = None, deadline_submit: str|None = None) -> bool:
     try:
+        article = get_article(article_id)
+        if not article:
+            return False
+        
+        if article.status.stat != ArticleStatusEnum.NeedsCorrections and not (article.status.stat == ArticleStatusEnum.Submitted and round_number == 1):
+            return False
+        
         new_round = Round(
             article_id=article_id,
             article_content=article_content,

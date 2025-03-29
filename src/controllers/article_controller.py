@@ -212,6 +212,9 @@ def upload_correction(article_id: int, file: FileStorage) -> Response:
         article = aq.get_article(article_id)
 
         if article:
+            if article.status.stat != ArticleStatusEnum.NeedsCorrections:
+                return Response.error_response(message='Correction had already been uploaded.')
+
             round_number = len(article.rounds) + 1
             file_url = f"{upload_folder}/{article.id}/{round_number}/"
             tex_path=handle_file(file, file_url)
