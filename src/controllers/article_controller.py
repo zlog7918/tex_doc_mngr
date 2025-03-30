@@ -82,7 +82,6 @@ def get_article_data(article_id: int) -> Response:
     article_content = latest_round.article_content
     if article_content.startswith('/'):
         article_content = f'<br><embed src="{f"/articles/uploads/{article.id}/{latest_round.round_number}/{article_content}"}" width="800" height="500" type="application/pdf">'
-        print(article_content)
 
     data = {"article": article, "article_content": article_content}
 
@@ -262,8 +261,8 @@ def generate_preview(file: FileStorage) -> Response:
         else:
             return Response.error_response(message="Błąd generowania PDF")
     except subprocess.CalledProcessError as e:
-        # TODO: log
+        log_err(get_function(), e)
         return Response.error_response(message="Błąd podczas generowania podglądu")
 
 def temp_preview(filename: str) -> Response:
-    return Response.success_response(data = get_file(get_temp_folder(), filename))
+    return get_file(get_temp_folder(), filename)

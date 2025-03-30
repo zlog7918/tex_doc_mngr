@@ -1,10 +1,11 @@
+from io import BytesIO
 import os
 from decors import approve_required
 from models.article.Article import ArticleStatusEnum
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from models.utils.consts import ALLOWED_EXTENSIONS
-from flask import request, Blueprint, render_template
+from flask import request, Blueprint, render_template, send_file
 from models.utils.utils import render_base_template
 
 articles_bp = Blueprint("articles", __name__)
@@ -105,5 +106,5 @@ def generate_preview():
 def temp_preview(filename):
     ret=ac.temp_preview(filename)
     if isinstance(ret, Response):
-        return ret.to_dict()
+        return ret.data
     return ret

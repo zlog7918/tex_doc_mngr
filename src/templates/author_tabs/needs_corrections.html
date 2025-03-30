@@ -47,18 +47,18 @@
                 let formData = new FormData();
                 formData.append("file", fileInput.files[0]);
 
-                let response = await fetch("/articles/generate-preview", {
+                fetch("/articles/generate-preview", {
                     method: "POST",
                     body: formData
-                });
-
-                let data = await response.json();
-
-                if (data.pdf_url) {
-                    window.open(data.pdf_url, '_blank');
-                } else {
-                    alert("Error: " + (data.error || "Could not generate preview"));
-                }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data["pdf_url"]) {
+                        window.open(data["pdf_url"], '_blank');
+                    } else {
+                        alert("Error: " + (data.error || "Could not generate preview"));
+                    }
+                })
             });
 
             // Obsługa zapisu pliku
