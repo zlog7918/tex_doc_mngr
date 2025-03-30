@@ -107,5 +107,5 @@ def reject_article(article_id):
 
     result = ac.set_article_status(article_id, ArticleStatusEnum.Rejected)
     if not result:
-        return Response.error_response("Article status not updated")
-    return Response.success_response()
+        return Response.error_response("Article status not updated").to_dict()
+    return Response.success_response().to_dict()

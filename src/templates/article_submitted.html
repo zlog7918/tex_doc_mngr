@@ -113,8 +113,21 @@
         }
 
         function rejectArticle() {
-            alert('Article Rejected!');
-            window.location.reload();
+            fetch(`/editor/articles/{{ article.id }}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Failed to reject article: ' + error.message);
+                window.location.reload();
+            });
         }
     </script>
 {% endblock %}

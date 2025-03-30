@@ -45,7 +45,15 @@ def get_article(article_id: int) -> Article|None:
 
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
-    return Article.query.where(Article.editor_id == editor_id).all()
+    return (
+        Article.query
+        .join(ArticleStatus)
+        .where(and_(
+            Article.editor_id == editor_id,
+            ArticleStatus.stat != ArticleStatusEnum.Rejected
+        ))
+        .all()
+    )
 
 
 def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
