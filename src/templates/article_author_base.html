@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }}</title>
+    <style>
+        .tab {
+            display: inline-block;
+            margin-right: 5px;
+            padding: 10px;
+            background-color: #ddd;
+            cursor: pointer;
+        }
+        .tab.active {
+            background-color: #aaa;
+        }
+        .tab-content {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+        button {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ article.title }}</h1>
+    <p><strong>Author:</strong> {{ article.author.nick }}</p>
+    <div id="tabs">
+        {% for round in article.rounds %}
+            <div class="tab {% if loop.last %}active{% endif %}" data-index="{{ loop.index }}" onclick="showTab(this.getAttribute('data-index'))">
+                Round {{ round.id }}
+            </div>
+        {% endfor %}
+    </div>
+    <div class="tab-content" id="tab-content">
+        {{ tab_content|safe }}
+    </div>
+
+    <script>
+        function showTab(index) {
+            // Zmiana aktywnej zakładki
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.tab:nth-child(${index})`).classList.add('active');
+
+            const addRoundButton = document.getElementById('add-round');
+            addRoundButton.style.display = 'none';
+            
+
+        }
+
+        function addRound() {
+            fetch(`/editor/articles/{{ article.id }}/add_round`, { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data['success']) {
+                        location.reload();
+                    } else {
+                        alert("Unable to add a new round.");
+                    }
+                });
+        }
+
+        function rejectArticle() {
+            fetch(`/editor/articles/{{ article.id }}/reject`, { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data['success']) {
+                        alert("Article has been rejected.");
+                        location.reload();
+                    } else {
+                        alert("Unable to reject the article.");
+                    }
+                });
+        }
+    </script>
+</body>
+</html>

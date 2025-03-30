@@ -52,7 +52,7 @@ def article_details(article_id):
         tab_content = render_base_template("author_tabs/needs_corrections.html", article=article)
     else:
         return Response.error_response(message="Not found").to_dict()
-    return render_template("article_round_base.html", tab_content=tab_content, article=article, data=data)
+    return render_template("article_author_base.html", tab_content=tab_content, article=article, data=data)
 
 
 
