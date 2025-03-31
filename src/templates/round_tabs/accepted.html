@@ -1,4 +1,38 @@
 <style>
+    .reviewer-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #e0e0e0;
+        padding: 5px 10px;
+        margin-bottom: 5px;
+        border-radius: 5px;
+    }
+
+    .reviewer-name {
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+    }
+
+    .remove-reviewer {
+        background: red;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 30px;
+    }
+
+    .remove-reviewer:hover {
+        background: darkred;
+    }
+
     .reviewers-section {
         background: #f9f9f9;
         padding: 20px;
@@ -44,11 +78,6 @@
         font-style: italic;
     }
 
-    .reviewers-section input[type="datetime-local"].placeholder {
-        color: rgba(0, 0, 0, 0.5);
-        font-style: italic;
-    }
-
     .reviewers-section button {
         background: #5a3d90;
         color: white;
@@ -57,7 +86,6 @@
         border-radius: 5px;
         cursor: pointer;
         transition: 0.3s;
-        margin-top: 10px;
     }
 
     .reviewers-section button:hover {
@@ -68,13 +96,6 @@
         list-style: none;
         padding: 0;
         margin-top: 5px;
-    }
-
-    #assignedReviewers li {
-        background: #e0e0e0;
-        padding: 5px 10px;
-        margin-bottom: 5px;
-        border-radius: 5px;
     }
 
     .deadline-row {
@@ -108,11 +129,11 @@
         <div class="deadline-row">
             <div>
                 <label for="deadline_confirm">Deadline potwierdzenia:</label>
-                <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" class="placeholder" required>
+                <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required>
             </div>
             <div>
                 <label for="deadline_submit">Deadline oddania recenzji:</label>
-                <input type="datetime-local" id="deadline_submit" name="deadline_submit" class="placeholder" required>
+                <input type="datetime-local" id="deadline_submit" name="deadline_submit" required>
             </div>
         </div>
 
@@ -125,8 +146,9 @@
         const reviewerSelect = document.getElementById("reviewer");
         const assignedReviewersList = document.getElementById("assignedReviewers");
         const noReviewersItem = document.getElementById("noReviewers");
-        const dateInputs = document.querySelectorAll('input[type="datetime-local"]');
         const form = document.querySelector("form");
+        const deadlineConfirmInput = document.getElementById("deadline_confirm");
+        const deadlineSubmitInput = document.getElementById("deadline_submit"); // Dodano zmienną dla deadline_submit
 
         function updateReviewerStyle() {
             reviewerSelect.style.color = reviewerSelect.value ? "black" : "rgba(0, 0, 0, 0.5)";
@@ -145,7 +167,6 @@
                 return;
             }
 
-            // Sprawdzenie, czy recenzent już istnieje
             const existingItems = assignedReviewersList.querySelectorAll('li');
             for (let item of existingItems) {
                 if (item.getAttribute('data-id') === selectedReviewerId) {
@@ -154,34 +175,52 @@
                 }
             }
 
-            // Usunięcie "Nie przypisano recenzentów", jeśli istnieje
             if (noReviewersItem) {
                 noReviewersItem.remove();
             }
 
-            // Dodanie recenzenta do listy
             const newReviewerItem = document.createElement('li');
-            newReviewerItem.textContent = selectedReviewerName;
+            newReviewerItem.classList.add("reviewer-item");
             newReviewerItem.setAttribute('data-id', selectedReviewerId);
+
+            const reviewerNameSpan = document.createElement('span');
+            reviewerNameSpan.textContent = selectedReviewerName;
+            reviewerNameSpan.classList.add("reviewer-name");
+
+            const removeButton = document.createElement("button");
+            removeButton.textContent = "Usuń";
+            removeButton.classList.add("remove-reviewer");
+            removeButton.addEventListener("click", function () {
+                newReviewerItem.remove();
+                hiddenInput.remove();
+
+                const option = document.createElement("option");
+                option.value = selectedReviewerId;
+                option.textContent = selectedReviewerName;
+                reviewerSelect.appendChild(option);
+
+                if (assignedReviewersList.children.length === 0) {
+                    assignedReviewersList.appendChild(noReviewersItem);
+                }
+            });
+
+            newReviewerItem.appendChild(reviewerNameSpan);
+            newReviewerItem.appendChild(removeButton);
             assignedReviewersList.appendChild(newReviewerItem);
 
-            // Dodanie ukrytego inputa do formularza
             const hiddenInput = document.createElement('input');
             hiddenInput.type = 'hidden';
             hiddenInput.name = 'assigned_reviewers[]';
             hiddenInput.value = selectedReviewerId;
-            form.appendChild(hiddenInput); // Upewniamy się, że jest w formularzu, a nie liście
+            form.appendChild(hiddenInput);
 
-            // Reset selecta
+            reviewerSelect.querySelector(`option[value="${selectedReviewerId}"]`).remove();
             reviewerSelect.value = "";
             updateReviewerStyle();
         });
 
         function validateForm() {
-            console.log("Sprawdzam przypisanych recenzentów...");
             const assignedReviewers = document.querySelectorAll('input[name="assigned_reviewers[]"]');
-            console.log("Liczba recenzentów:", assignedReviewers.length);
-
             if (assignedReviewers.length === 0) {
                 alert("Musisz dodać co najmniej jednego recenzenta.");
                 return false;
@@ -195,11 +234,28 @@
             }
         });
 
-        dateInputs.forEach(input => {
-            input.addEventListener("input", function () {
-                this.style.color = this.value ? "black" : "rgba(0, 0, 0, 0.5)";
-                this.style.fontStyle = this.value ? "normal" : "italic";
-            });
+        function setMinDate() {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+
+            const minDate = tomorrow.toISOString().slice(0, 16); // Format 'YYYY-MM-DDTHH:mm'
+
+            // Ustawienie minimalnej daty na odpowiednie pola
+            deadlineConfirmInput.min = minDate;
+            deadlineSubmitInput.min = minDate; // Dodano ustawienie minDate dla deadline_submit
+        }
+
+        setMinDate();
+
+        // Zdarzenie na polu deadlineConfirmInput, by od razu "straciło" focus po zmianie daty
+        deadlineConfirmInput.addEventListener("change", function () {
+            this.blur();
+        });
+
+        // Zdarzenie na polu deadlineSubmitInput, by od razu "straciło" focus po zmianie daty
+        deadlineSubmitInput.addEventListener("change", function () {
+            this.blur();
         });
     });
 </script>
