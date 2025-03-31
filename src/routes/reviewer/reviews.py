@@ -1,10 +1,12 @@
+from db.db_base import log_activity
 import services.user as su
 import services.review as rq
 import services.article as aq
 from decors import approve_required
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-import controllers.article_controller as ac
 from models.utils.Response import Response
+import controllers.article_controller as ac
+from models.utils.utils import get_function
 
 review_bp = Blueprint("review", __name__)
 
@@ -30,9 +32,14 @@ def article_details(article_id):
             return Response.error_response(message = "You are not a reviewer of this article").to_dict()
 
         article = aq.get_article(article_id)
+        if not article:
+            log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
+            return Response.error_response(message = 'Article not found').to_dict()
+
         review = rq.get_review(article_id, user_id)
         if not review:
-            return str("review not found"), 500
+            log_activity(get_function(), False, {'err': f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found'})
+            return Response.error_response(message = 'Review not found').to_dict()
 
         if review.status == "Pending confirmation":
             latest_round = aq.get_latest_round(article_id)

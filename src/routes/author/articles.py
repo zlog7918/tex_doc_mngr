@@ -1,12 +1,13 @@
 from io import BytesIO
 import os
+from db.db_base import log_err
 from decors import approve_required
 from models.article.Article import ArticleStatusEnum
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from models.utils.consts import ALLOWED_EXTENSIONS
 from flask import request, Blueprint, render_template, send_file
-from models.utils.utils import render_base_template
+from models.utils.utils import get_function, render_base_template
 
 articles_bp = Blueprint("articles", __name__)
 
@@ -46,22 +47,36 @@ def allowed_file(filename: str) -> bool:
 @articles_bp.route('/upload-form')
 @approve_required
 def upload_form():
-    return render_template('uploading_article.html')
-
+    editors = ac.get_available_editors()
+    return render_template('uploading_article.html', editors = editors)
 
 @articles_bp.route('/upload', methods=['POST'])
 @approve_required
 def upload_file():
     title = request.form.get('title')
     editor = request.form.get('editor')
-    if 'file' not in request.files:
-        return Response.error_response(message='Nie przesłano pliku').to_dict()
 
-    file = request.files['file']
-    if not file.filename:
-        return Response.error_response(message='No file selected').to_dict()
+    if not title:
+        return Response.error_response(message='Title cannot be empty').to_dict()
+    if not editor:
+        return Response.error_response(message='Editor must be selected').to_dict()
 
-    return ac.upload_file(title, editor, file).to_dict()
+    try:
+        editor = int(editor)
+        response = ac.is_valid_editor(editor)
+        if not response.success:
+            return response.to_dict()
+        if 'file' not in request.files:
+            return Response.error_response(message='Nie przesłano pliku').to_dict()
+
+        file = request.files['file']
+        if not file.filename:
+            return Response.error_response(message='No file selected').to_dict()
+
+        return ac.upload_file(title, editor, file).to_dict()
+    except (ValueError, TypeError) as e:
+        log_err(get_function(), e)
+        return Response.error_response(message='Invalid editor ID').to_dict()
 
 @articles_bp.route('/<int:article_id>/upload-correction', methods=['POST'])
 @approve_required
