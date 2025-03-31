@@ -1,12 +1,12 @@
-from typing import List
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .Round import Round
+from db.db_base import db
 from enum import Enum as PyEnum
-from db.db_base import db, log_activity, log_err
-from models.utils.utils import get_function
-from enum import Enum as PyEnum
-from sqlalchemy import ForeignKey, String, Integer, Text, Enum, CheckConstraint, UniqueConstraint
+from models.usr.User import User
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import ForeignKey, String, Integer, Enum, CheckConstraint, UniqueConstraint
 
-from models.article.Round import Round
 
 class ArticleStatusEnum(PyEnum):
     Submitted = 'Submitted'
@@ -27,32 +27,21 @@ class Article(db.Model):
     __tablename__ = 'articles'
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    author_id: Mapped[int] = mapped_column(ForeignKey('usr.id'), nullable=False)
-    editor_id: Mapped[int] = mapped_column(ForeignKey('usr.id'), nullable=True)
+    author_id: Mapped[int] = mapped_column(ForeignKey(User.id), nullable=False)
+    editor_id: Mapped[int] = mapped_column(ForeignKey(User.id), nullable=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
-    status_id: Mapped[int] = mapped_column(ForeignKey('article_status.id'), nullable=False)
+    status_id: Mapped[int] = mapped_column(ForeignKey(ArticleStatus.id), nullable=False)
     
-    author = relationship('User', foreign_keys=[author_id])
-    editor = relationship('User', foreign_keys=[editor_id])
-    status = relationship('ArticleStatus', backref='articles')
-    rounds: Mapped[List[Round]] = relationship('Round', back_populates='article', cascade="all, delete-orphan")
-
-    __table_args__ = (UniqueConstraint(author_id, title),)
+    author: Mapped[User] = relationship(foreign_keys=[author_id])
+    editor: Mapped[User] = relationship(foreign_keys=[editor_id])
+    status: Mapped[ArticleStatus] = relationship(foreign_keys=[status_id])
+    rounds: Mapped[list["Round"]] = relationship("Round", back_populates='article', cascade="all, delete-orphan")
 
     __table_args__ = (
-        CheckConstraint(author_id != editor_id, name='check_author_not_editor'),
+        UniqueConstraint('author_id', 'title', name='uq_author_title'),
+        CheckConstraint('author_id != editor_id', name='check_author_not_editor'),
     )
 
-    def update_status(self, new_status: ArticleStatusEnum) -> bool:
-        try:
-            status = ArticleStatus.query.where(ArticleStatus.stat == new_status).first()
-            if status:
-                self.status_id = status.id
-                log_activity(get_function(), True, {'details': f'Changed article status with id: {self.id} to: {new_status.value}'})
-                return True
-            log_activity(get_function(), False, {'err': f'Article {self.id} status not changed to: {new_status.value} '})
-            return False
-        except Exception as e:
-            db.session.rollback()
-            log_err(get_function(), e)
-            return False
+    def update_status(self, new_status: ArticleStatus) -> None:
+        self.status_id = new_status.id
+
