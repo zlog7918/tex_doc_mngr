@@ -1,32 +1,123 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Article</title>
-</head>
-<body>
-    <h1>LaTeX to PDF Converter</h1>
+{% extends "base.html" %}
 
-    <form id="uploadForm" enctype="multipart/form-data">
-        <label for="file">Choose a LaTeX file (.tex):</label>
-        <input type="file" name="file" id="file" accept=".tex" required><br>
-        Tytuł: <input type="text" name="title" required><br>
-        Edytor: 
-        <select id="editor" name="editor" required>
-            <option value="" disabled selected>Select an editor</option>
-            {% for editor_id, editor_nick in editors.items() %}
-                <option value="{{ editor_id }}">{{ editor_nick }}</option>
-            {% endfor %}
-        </select>
-        <br><br>
+{% block title %}Dodaj Artykuł{% endblock %}
 
+{% block body %}
+    {% include 'toolbar.html' %}
 
-        <button type="button" id="previewBtn" style="display: none;">View PDF</button>
+    <style>
+        .main-content {
+            padding: 30px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+        }
 
+        h1 {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2d1053;
+            margin-bottom: 20px;
+            text-align: center;
+        }
 
-        <button type="submit" id="sendBtn" style="display: none;">Send</button>
-    </form>
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            font-size: 18px;
+            color: #2d1053;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .form-actions {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: #5a3d90;
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            background: #4a1e87;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px;
+            }
+
+            .form-group {
+                margin-bottom: 15px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+            }
+        }
+    </style>
+
+    <div class="main-content">
+        <h1>Dodaj Artykuł</h1>
+
+        <form id="uploadForm" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group">
+                <label for="file">Wybierz plik LaTeX (.tex):</label>
+                <input type="file" name="file" id="file" accept=".tex" required>
+            </div>
+
+            <div class="form-group">
+                <label for="title">Tytuł:</label>
+                <input type="text" name="title" id="title" required>
+            </div>
+
+            <div class="form-group">
+                <label for="editor">Edytor:</label>
+                <select id="editor" name="editor" required>
+                    <option value="" disabled selected>Wybierz edytora</option>
+                    {% for editor_id, editor_nick in editors.items() %}
+                        <option value="{{ editor_id }}">{{ editor_nick }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" id="previewBtn" class="btn" style="display: none;">Podgląd PDF</button>
+                <button type="submit" id="sendBtn" class="btn" style="display: none;">Wyślij</button>
+            </div>
+        </form>
+    </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -37,7 +128,6 @@
             let sendBtn = document.getElementById('sendBtn');
             let uploadForm = document.getElementById('uploadForm');
 
-            // Po wybraniu pliku pokaż przyciski
             fileInput.addEventListener('change', function() {
                 let filename = this.files[0]?.name || "";
                 if (filename.endsWith('.tex')) {
@@ -49,7 +139,6 @@
                 }
             });
 
-            // Obsługa podglądu PDF
             previewBtn.addEventListener("click", async function() {
                 let formData = new FormData();
                 formData.append("file", fileInput.files[0]);
@@ -64,17 +153,16 @@
                 if (data.pdf_url) {
                     window.open(data.pdf_url, '_blank');
                 } else {
-                    alert("Error: " + (data.error || "Could not generate preview"));
+                    alert("Błąd: " + (data.error || "Nie udało się wygenerować podglądu"));
                 }
             });
 
-            // Obsługa zapisu pliku
             uploadForm.addEventListener("submit", async function(event) {
                 event.preventDefault();
 
                 let editorId = editor.value;
                 if (!editorId) {
-                    alert("Please select an editor.");
+                    alert("Proszę wybrać edytora.");
                     return;
                 }
 
@@ -91,12 +179,12 @@
                 let data = await response.json();
 
                 if (data['message']) {
-                    alert("File uploaded successfully!");
+                    alert("Plik został pomyślnie załadowany!");
+                    window.location.reload();
                 } else {
-                    alert("Upload failed: " + (data.error || "Unknown error"));
+                    alert("Wystąpił problem: " + (data.error || "Nieznany błąd"));
                 }
             });
         });
     </script>
-</body>
-</html>
+{% endblock %}

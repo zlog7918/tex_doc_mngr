@@ -1,132 +1,52 @@
 {% extends "base.html" %}
 
 {% block body %}
-    <div class="container">
-        <h1>Cześć, zalogowałeś się</h1>
+    {% include 'toolbar.html' %}
 
-        <div class="actions">
-            <button id="logout-btn" class="secondary-btn">Wyloguj</button>
-            <button id="toggle-change-password" class="primary-btn">Zmień hasło</button>
+    <div class="content">
+        <h1>Cześć, udało Ci się zalogować!</h1>
+        <p>Witaj w swoim panelu użytkownika. Poniżej znajdziesz informacje o dostępnych funkcjach:</p>
+
+        <div class="guide">
+            <h2>Jak poruszać się po stronie?</h2>
+            <ul>
+                <li>Na górze strony znajdziesz <strong>pasek narzędzi</strong>, w którym możesz zmienić język strony. (funkcja obecnie w fazie testów - nie działa)</li>
+                <li>W sekcji <strong>User</strong> masz możliwość zmiany hasła lub wylogowania się.</li>
+                <li>Po lewej stronie znajdziesz <strong>menu nawigacyjne</strong>, które pozwala przechodzić do różnych podstron.</li>
+            </ul>
         </div>
-
-        <form id="change-password-form" class="hidden">
-            <div class="form-group">
-                <label>Stare hasło:</label>
-                <input type="password" name="passwd" required>
-            </div>
-
-            <div class="form-group">
-                <label>Nowe hasło:</label>
-                <input type="password" name="new_passwd" required>
-            </div>
-
-            <div class="form-group">
-                <label>Powtórz nowe hasło:</label>
-                <input type="password" name="rep_passwd" required>
-            </div>
-
-            <button type="button" id="change-password-btn" class="primary-btn">Zmień hasło</button>
-        </form>
     </div>
 
     <style>
-        .container {
+        /* Zapewnienie, że toolbar nie jest centrowany */
+        .content {
+            max-width: 100%;
+            padding: 40px;
             text-align: center;
-            padding: 20px;
-            max-width: 400px;
-            margin: auto;
         }
 
-        .actions {
-            margin: 20px 0;
-        }
-
-        .primary-btn, .secondary-btn {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-
-        .primary-btn {
-            background: #5a3d90;
-            color: white;
-        }
-
-        .secondary-btn {
-            background: #2d1053;
-            color: white;
-        }
-
-        .primary-btn:hover, .secondary-btn:hover {
-            opacity: 0.9;
-        }
-
-        form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: white;
-            padding: 20px;
+        .guide {
+            max-width: 80%;
+            margin: 20px auto;
+            background: #f8f8f8;
+            padding: 30px;
             border-radius: 10px;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            margin-top: 20px;
-        }
-
-        .form-group {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        label {
-            font-weight: bold;
-        }
-
-        input {
-            width: 80%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
             text-align: left;
+            font-size: 20px;
         }
 
-        .hidden {
-            display: none;
+        .guide h2 {
+            font-size: 24px;
+            color: #5a3d90;
+        }
+
+        .guide ul {
+            padding-left: 30px;
+        }
+
+        .guide li {
+            margin-bottom: 15px;
         }
     </style>
-
-    <script>
-        document.getElementById("logout-btn").addEventListener("click", function () {
-            ajax_json_call('/user/logout').then(response => {
-                if (response.success)
-                    window.location.reload();
-                else
-                    alert(`Err: ${response.message}`);
-            }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
-        });
-
-        document.getElementById("toggle-change-password").addEventListener("click", function () {
-            let form = document.getElementById("change-password-form");
-            form.classList.toggle("hidden");
-        });
-
-        document.getElementById("change-password-btn").addEventListener("click", function () {
-            let form = document.getElementById("change-password-form");
-            ajax_json_call('/user/ch_pass', null, form).then(data => {
-                if (data['success']) {
-                    alert(`Poprawnie zmieniono hasło`);
-                    window.location.reload();
-                } else {
-                    alert(`Err: ${data['message']}`);
-                }
-            }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
-        });
-    </script>
 {% endblock %}
