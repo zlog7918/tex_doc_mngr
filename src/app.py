@@ -1,5 +1,6 @@
 import time
 from db.db_base import db
+from services import user as su
 from db.seed_db import seed_data
 from models.usr.User import User
 from flask_login import LoginManager
@@ -10,7 +11,6 @@ from routes.author.articles import articles_bp
 from models.utils.EnvConsts import envConsts as ec
 from models.utils.utils import render_base_template
 from routes.editor.articles import editor_articles_bp
-from services.user import user_loader, get_curr_user, user_loader_by_nick
 
 app = Flask(__name__)
 
@@ -42,19 +42,19 @@ app.register_blueprint(user_bp, url_prefix="/user")
 def ul(id: str|None) -> User|None:
     if id is None:
         return None
-    return user_loader(int(id))
+    return su.get_user(int(id))
 
 @login_manager.request_loader
 def request_loader(request: flRequest):
     nick=request.form.get('nick')
     if nick is None:
         return None
-    user=user_loader_by_nick(nick)
+    user=su.get_user_by_nick(nick)
     return user
 
 @app.route('/')
 def index():
-    user=get_curr_user()
+    user=su.get_curr_user()
     return render_base_template('login_form.html' if user is None else ('logged.html' if user.is_approved() else 'check_approval.html'))
 
 if __name__=='__main__':

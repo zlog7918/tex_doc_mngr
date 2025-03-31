@@ -1,19 +1,21 @@
+from typing import Callable
 from flask_login import login_required
+from models.usr.User import User_params
 import controllers.user_controller as uc
-from models.utils.Response import Response
 from flask import Blueprint, redirect, request
-from models.utils.utils import render_base_template
+from models.utils import decors as decor, utils as util
+from models.utils.FormNotFilledException import FormNotFilledException
 
 user_bp = Blueprint('user', __name__)
 
-
 @user_bp.route('/login', methods=['POST'])
+@decor.handle_form_not_filled
 def login():
-    nick = request.form.get('nick')
-    passwd = request.form.get('passwd')
-    if (nick is None) or (passwd is None):
-        return Response.error_response(message='Nie pełny formularz').to_dict()
-    return uc.login(nick, passwd).to_dict()
+    t=util.get_from_form(request.form, (
+        'nick',
+        'passwd'
+    ))
+    return uc.login(*t).to_dict()
 
 
 @user_bp.route('/logout', methods=['GET', 'POST'])
@@ -22,14 +24,15 @@ def logout():
 
 
 @user_bp.route('/signup', methods=['POST'])
+@decor.handle_form_not_filled
 def signup():
-    nick = request.form.get('nick')
-    email = request.form.get('email')
-    passwd = request.form.get('passwd')
-    rep_passwd = request.form.get('rep_passwd')
-    if (nick is None) or (email is None) or (passwd is None) or (rep_passwd is None):
-        return Response.error_response(message='Nie pełny formularz').to_dict()
-    return uc.signup_user(nick, email, passwd, rep_passwd).to_dict()
+    t=util.get_from_form(request.form, (
+        'nick',
+        'email',
+        'passwd',
+        'rep_passwd',
+    ))
+    return uc.signup_user(*t).to_dict()
 
 
 @user_bp.route('/approve/<email>/<code>', methods=['GET', 'POST'])
@@ -37,41 +40,66 @@ def approve(email: str, code: str):
     ret=uc.approve(email, code)
     if ret.success:
         return redirect('/')
-    # return render_base_template('error.html', err=ret.to_dict())
+    # return util.render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
 
 @user_bp.route('/ch_pass', methods=['POST'])
 @login_required
+@decor.handle_form_not_filled
 def ch_pass():
-    passwd = request.form.get('passwd')
-    new_passwd = request.form.get('new_passwd')
-    rep_passwd = request.form.get('rep_passwd')
-    if (passwd is None) or (new_passwd is None) or (rep_passwd is None):
-        return Response.error_response(message='Nie pełny formularz').to_dict()
-    return uc.change_password(passwd, new_passwd, rep_passwd).to_dict()
+    t=util.get_from_form(request.form, (
+        'passwd',
+        'new_passwd',
+        'rep_passwd',
+    ))
+    return uc.change_password(*t).to_dict()
 
 @user_bp.route('/pass_reset', methods=['POST'])
+@decor.handle_form_not_filled
 def pass_reset_request():
-    email=request.form.get('email')
-    code=request.form.get('code')
-    if email is None:
-        return Response.error_response(message='Nie pełny formularz').to_dict()
-    if code is None:
+    email,=util.get_from_form(request.form, (
+        'email',
+    ))
+    try:
+        code,=util.get_from_form(request.form, (
+            'code',
+        ))
+    except FormNotFilledException as e:
         return uc.request_pass_reset(email).to_dict()
-    passwd = request.form.get('passwd')
-    rep_passwd = request.form.get('rep_passwd')
-    if (passwd is None) or (rep_passwd is None):
-        return Response.error_response(message='Nie pełny formularz').to_dict()
-    return uc.pass_reset_new_pass(email, code, passwd, rep_passwd).to_dict()
+    t=util.get_from_form(request.form, (
+        'passwd',
+        'rep_passwd',
+    ))
+    return uc.pass_reset_new_pass(email, code, *t).to_dict()
 
 @user_bp.route('/pass_reset/<email>/<code>', methods=['GET', 'POST'])
 def pass_reset(email: str, code: str):
     ret=uc.pass_reset(email, code)
     if ret.success:
-        return render_base_template('pass_reset.html', email=email, code=ret.data)
-    # return render_base_template('error.html', err=ret.to_dict())
+        return util.render_base_template('pass_reset.html', email=email, code=ret.data)
+    # return util.render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
+
+@user_bp.route('/accept_inv/<email>/<code>', methods=['GET', 'POST'])
+def accept_invitation(email: str, code: str):
+    ret=uc.accept_invite(email, code)
+    if ret.success:
+        return util.render_base_template('cr_user.html', email=email, code=ret.data)
+    # return util.render_base_template('error.html', err=ret.to_dict())
+    return ret.to_dict()
+
+@user_bp.route('/accept_inv', methods=['POST'])
+@decor.handle_form_not_filled
+def accept_invitation_cr_user():
+    t=util.get_from_form(request.form, (
+        'email',
+        'code',
+        'nick',
+        'passwd',
+        'rep_passwd',
+    ))
+    return uc.accept_invite_cr_user(*t).to_dict()
 
 @user_bp.route('/pass_reset_form')
 def pass_reset_form():
-    return render_base_template('request_pass_change.html')
+    return util.render_base_template('request_pass_change.html')
