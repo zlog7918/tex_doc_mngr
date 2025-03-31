@@ -122,67 +122,84 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-    const reviewerSelect = document.getElementById("reviewer");
-    const assignedReviewersList = document.getElementById("assignedReviewers");
-    const noReviewersItem = document.getElementById("noReviewers");
-    const dateInputs = document.querySelectorAll('input[type="datetime-local"]');
+        const reviewerSelect = document.getElementById("reviewer");
+        const assignedReviewersList = document.getElementById("assignedReviewers");
+        const noReviewersItem = document.getElementById("noReviewers");
+        const dateInputs = document.querySelectorAll('input[type="datetime-local"]');
+        const form = document.querySelector("form");
 
-    function updateReviewerStyle() {
-        reviewerSelect.style.color = reviewerSelect.value ? "black" : "rgba(0, 0, 0, 0.5)";
-        reviewerSelect.style.fontStyle = reviewerSelect.value ? "normal" : "italic";
-    }
-
-    reviewerSelect.addEventListener("change", updateReviewerStyle);
-    updateReviewerStyle();
-
-    document.getElementById('addReviewer').addEventListener('click', function () {
-        const selectedReviewerId = reviewerSelect.value;
-        const selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
-
-        if (!selectedReviewerId) {
-            alert('Proszę wybrać recenzenta.');
-            return;
+        function updateReviewerStyle() {
+            reviewerSelect.style.color = reviewerSelect.value ? "black" : "rgba(0, 0, 0, 0.5)";
+            reviewerSelect.style.fontStyle = reviewerSelect.value ? "normal" : "italic";
         }
 
-        const existingItems = assignedReviewersList.querySelectorAll('li');
-        for (let item of existingItems) {
-            if (item.getAttribute('data-id') === selectedReviewerId) {
-                alert('Recenzent już został dodany.');
+        reviewerSelect.addEventListener("change", updateReviewerStyle);
+        updateReviewerStyle();
+
+        document.getElementById('addReviewer').addEventListener('click', function () {
+            const selectedReviewerId = reviewerSelect.value;
+            const selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
+
+            if (!selectedReviewerId) {
+                alert('Proszę wybrać recenzenta.');
                 return;
             }
+
+            // Sprawdzenie, czy recenzent już istnieje
+            const existingItems = assignedReviewersList.querySelectorAll('li');
+            for (let item of existingItems) {
+                if (item.getAttribute('data-id') === selectedReviewerId) {
+                    alert('Recenzent już został dodany.');
+                    return;
+                }
+            }
+
+            // Usunięcie "Nie przypisano recenzentów", jeśli istnieje
+            if (noReviewersItem) {
+                noReviewersItem.remove();
+            }
+
+            // Dodanie recenzenta do listy
+            const newReviewerItem = document.createElement('li');
+            newReviewerItem.textContent = selectedReviewerName;
+            newReviewerItem.setAttribute('data-id', selectedReviewerId);
+            assignedReviewersList.appendChild(newReviewerItem);
+
+            // Dodanie ukrytego inputa do formularza
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'assigned_reviewers[]';
+            hiddenInput.value = selectedReviewerId;
+            form.appendChild(hiddenInput); // Upewniamy się, że jest w formularzu, a nie liście
+
+            // Reset selecta
+            reviewerSelect.value = "";
+            updateReviewerStyle();
+        });
+
+        function validateForm() {
+            console.log("Sprawdzam przypisanych recenzentów...");
+            const assignedReviewers = document.querySelectorAll('input[name="assigned_reviewers[]"]');
+            console.log("Liczba recenzentów:", assignedReviewers.length);
+
+            if (assignedReviewers.length === 0) {
+                alert("Musisz dodać co najmniej jednego recenzenta.");
+                return false;
+            }
+            return true;
         }
 
-        if (noReviewersItem) noReviewersItem.remove();
+        form.addEventListener("submit", function (event) {
+            if (!validateForm()) {
+                event.preventDefault();
+            }
+        });
 
-        const newReviewerItem = document.createElement('li');
-        newReviewerItem.textContent = selectedReviewerName;
-        newReviewerItem.setAttribute('data-id', selectedReviewerId);
-        assignedReviewersList.appendChild(newReviewerItem);
-
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'assigned_reviewers[]';
-        hiddenInput.value = selectedReviewerId;
-        assignedReviewersList.appendChild(hiddenInput);
-
-        reviewerSelect.value = "";
-        updateReviewerStyle();
-    });
-
-    function validateForm() {
-        const assignedReviewers = document.querySelectorAll('#assignedReviewers li');
-        if (assignedReviewers.length === 1 && assignedReviewers[0].id === "noReviewers") {
-            alert("Musisz dodać co najmniej jednego recenzenta.");
-            return false;
-        }
-        return true;
-    }
-
-    dateInputs.forEach(input => {
-        input.addEventListener("input", function () {
-            this.style.color = this.value ? "black" : "rgba(0, 0, 0, 0.5)";
-            this.style.fontStyle = this.value ? "normal" : "italic";
+        dateInputs.forEach(input => {
+            input.addEventListener("input", function () {
+                this.style.color = this.value ? "black" : "rgba(0, 0, 0, 0.5)";
+                this.style.fontStyle = this.value ? "normal" : "italic";
+            });
         });
     });
-});
 </script>
