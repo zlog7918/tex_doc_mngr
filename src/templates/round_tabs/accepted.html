@@ -1,48 +1,158 @@
-<div>
-    <h2>Assign Reviewers</h2>
-    <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post">
-        <label for="reviewer">Select a reviewer:</label>
-        <select id="reviewer" name="reviewer" required>
+<style>
+    .reviewers-section {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 10px;
+        border: 1px solid #ddd;
+        margin-top: 30px;
+    }
+
+    .reviewers-section h2, .reviewers-section h3 {
+        color: #2d1053;
+        margin-bottom: 10px;
+    }
+
+    .reviewers-section label {
+        display: block;
+        margin: 10px 0 5px;
+        font-weight: bold;
+    }
+
+    .reviewers-section select,
+    .reviewers-section input[type="datetime-local"] {
+        padding: 6px 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        box-sizing: border-box;
+        font-size: 14px;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .reviewers-section select {
+        color: rgba(0, 0, 0, 0.5);
+        font-style: italic;
+    }
+
+    .reviewers-section select option {
+        color: black;
+        font-style: normal;
+    }
+
+    .reviewers-section select option:first-child {
+        color: rgba(0, 0, 0, 0.5);
+        font-style: italic;
+    }
+
+    .reviewers-section input[type="datetime-local"].placeholder {
+        color: rgba(0, 0, 0, 0.5);
+        font-style: italic;
+    }
+
+    .reviewers-section button {
+        background: #5a3d90;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+        margin-top: 10px;
+    }
+
+    .reviewers-section button:hover {
+        background: #4a1e87;
+    }
+
+    #assignedReviewers {
+        list-style: none;
+        padding: 0;
+        margin-top: 5px;
+    }
+
+    #assignedReviewers li {
+        background: #e0e0e0;
+        padding: 5px 10px;
+        margin-bottom: 5px;
+        border-radius: 5px;
+    }
+
+    .deadline-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 15px;
+    }
+
+    .deadline-row > div {
+        flex: 1;
+        min-width: 200px;
+    }
+</style>
+
+<div class="reviewers-section">
+    <h2>Przypisz recenzentów</h2>
+    <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post" onsubmit="return validateForm()">
+        <label for="reviewer">Wybierz recenzenta:</label>
+        <select id="reviewer" name="reviewer">
+            <option value="" disabled selected>Wybierz recenzenta</option>
             {% for reviewer_id, reviewer_nick in reviewers.items() %}
                 <option value="{{ reviewer_id }}">{{ reviewer_nick }}</option>
             {% endfor %}
         </select>
-        <button type="button" id="addReviewer">Add Reviewer</button>
+        <button type="button" id="addReviewer">Dodaj recenzenta</button>
 
-        <h3>Assigned Reviewers:</h3>
-        <ul id="assignedReviewers"></ul>
+        <h3>Przypisani recenzenci:</h3>
+        <ul id="assignedReviewers"><li id="noReviewers">Nie przypisano recenzentów</li></ul>
 
-        <div id="assignedReviewersInput" name="assigned_reviewers[]">
+        <div class="deadline-row">
+            <div>
+                <label for="deadline_confirm">Deadline potwierdzenia:</label>
+                <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" class="placeholder" required>
+            </div>
+            <div>
+                <label for="deadline_submit">Deadline oddania recenzji:</label>
+                <input type="datetime-local" id="deadline_submit" name="deadline_submit" class="placeholder" required>
+            </div>
+        </div>
 
-        <label for="deadline_confirm">Confirmation Deadline:</label>
-        <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required>
-
-        <label for="deadline_submit">Submission Deadline:</label>
-        <input type="datetime-local" id="deadline_submit" name="deadline_submit" required>
-
-        <button type="submit">Save</button>
+        <button type="submit">Zapisz</button>
     </form>
-
 </div>
+
 <script>
+    document.addEventListener("DOMContentLoaded", function () {
+    const reviewerSelect = document.getElementById("reviewer");
+    const assignedReviewersList = document.getElementById("assignedReviewers");
+    const noReviewersItem = document.getElementById("noReviewers");
+    const dateInputs = document.querySelectorAll('input[type="datetime-local"]');
+
+    function updateReviewerStyle() {
+        reviewerSelect.style.color = reviewerSelect.value ? "black" : "rgba(0, 0, 0, 0.5)";
+        reviewerSelect.style.fontStyle = reviewerSelect.value ? "normal" : "italic";
+    }
+
+    reviewerSelect.addEventListener("change", updateReviewerStyle);
+    updateReviewerStyle();
+
     document.getElementById('addReviewer').addEventListener('click', function () {
-        const reviewerSelect = document.getElementById('reviewer');
         const selectedReviewerId = reviewerSelect.value;
         const selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
-        const assignedReviewersList = document.getElementById('assignedReviewers');
 
         if (!selectedReviewerId) {
-            alert('Please select a reviewer.');
+            alert('Proszę wybrać recenzenta.');
             return;
         }
 
         const existingItems = assignedReviewersList.querySelectorAll('li');
         for (let item of existingItems) {
             if (item.getAttribute('data-id') === selectedReviewerId) {
-                alert('Reviewer already added.');
+                alert('Recenzent już został dodany.');
                 return;
             }
         }
+
+        if (noReviewersItem) noReviewersItem.remove();
 
         const newReviewerItem = document.createElement('li');
         newReviewerItem.textContent = selectedReviewerName;
@@ -54,5 +164,25 @@
         hiddenInput.name = 'assigned_reviewers[]';
         hiddenInput.value = selectedReviewerId;
         assignedReviewersList.appendChild(hiddenInput);
+
+        reviewerSelect.value = "";
+        updateReviewerStyle();
     });
+
+    function validateForm() {
+        const assignedReviewers = document.querySelectorAll('#assignedReviewers li');
+        if (assignedReviewers.length === 1 && assignedReviewers[0].id === "noReviewers") {
+            alert("Musisz dodać co najmniej jednego recenzenta.");
+            return false;
+        }
+        return true;
+    }
+
+    dateInputs.forEach(input => {
+        input.addEventListener("input", function () {
+            this.style.color = this.value ? "black" : "rgba(0, 0, 0, 0.5)";
+            this.style.fontStyle = this.value ? "normal" : "italic";
+        });
+    });
+});
 </script>

@@ -1,70 +1,148 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ article.title }}</title>
+{% extends "base.html" %}
+
+{% block title %}Podgląd Artykułu{% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
     <style>
+        .main-content {
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: bold;
+            color: black;
+            margin-bottom: 5px;
+        }
+
+        .article-info {
+            font-size: 18px;
+            color: #2d1053;
+            margin-bottom: 5px;
+        }
+
+        /* Tabs */
+        #tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
         .tab {
-            display: inline-block;
-            margin-right: 5px;
-            padding: 10px;
-            background-color: #ddd;
+            padding: 8px 16px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
             cursor: pointer;
-        }
-        .tab.active {
-            background-color: #aaa;
-        }
-        .tab-content {
-            margin-top: 20px;
+            transition: 0.3s;
+            font-size: 14px;
             border: 1px solid #ccc;
-            padding: 10px;
         }
-        button {
-            margin-top: 20px;
+
+        .tab:hover {
+            background-color: #d5d5d5;
+        }
+
+        .tab.active {
+            background: #5a3d90;
+            color: white;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            margin-top: 25px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .add-btn {
+            background: #5a3d90;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .back-btn {
+            background: #5a3d90;
+            color: white;
+            padding: 6px;
+            border: none;
+            font-size: 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .add-btn:hover, .back-btn:hover {
+            background: #4a1e87;
+        }
+
+        .reject-btn {
+            background: #a8a8a8;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .reject-btn:hover {
+            background: #8c8c8c;
+        }
+
+        @media (max-width: 600px) {
+            .top-bar, .action-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
         }
     </style>
-</head>
-<body>
-    <h1>{{ article.title }}</h1>
-    <p><strong>Author:</strong> {{ article.author.nick }}</p>
-    <div id="tabs">
-        {% for round in article.rounds %}
-            <div class="tab {% if loop.last %}active{% endif %}" data-index="{{ loop.index }}" onclick="showTab(this.getAttribute('data-index'))">
-                Round {{ round.id }}
-            </div>
-        {% endfor %}
+
+    <div class="main-content">
+
+        <div class="top-bar">
+            <button class="back-btn" onclick="location.href='/editor/articles'">
+                Wróć do listy
+            </button>
+        </div>
+
+        <h1>{{ article.title }}</h1>
+        <p class="article-info"><strong>Autor:</strong> {{ article.author.nick }}</p>
+
+        <div id="tabs">
+            {% for round in article.rounds %}
+                <div class="tab {% if loop.last %}active{% endif %}" data-index="{{ loop.index }}" onclick="showTab(this.getAttribute('data-index'))">
+                    Round {{ round.id }}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="tab-content" id="tab-content">
+            {{ tab_content|safe }}
+        </div>
     </div>
-    <div class="tab-content" id="tab-content">
-        {{ tab_content|safe }}
-    </div>
-    <button id="add-round" onclick="addRound()">
-        Add Round
-    </button>
-    <button id="reject" onclick="rejectArticle()">Reject</button>
 
     <script>
         function showTab(index) {
-            // Zmiana aktywnej zakładki
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelector(`.tab:nth-child(${index})`).classList.add('active');
-
-            const addRoundButton = document.getElementById('add-round');
-            addRoundButton.style.display = 'none';
-            
-
-        }
-
-        function addRound() {
-            fetch(`/editor/articles/{{ article.id }}/add_round`, { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    if (data['success']) {
-                        location.reload();
-                    } else {
-                        alert("Unable to add a new round.");
-                    }
-                });
         }
 
         function rejectArticle() {
@@ -73,12 +151,12 @@
                 .then(data => {
                     if (data['success']) {
                         alert("Article has been rejected.");
-                        location.reload();
+                        window.location.reload();
                     } else {
                         alert("Unable to reject the article.");
                     }
                 });
         }
     </script>
-</body>
-</html>
+
+{% endblock %}
