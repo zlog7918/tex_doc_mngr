@@ -38,10 +38,6 @@
     <div class="tab-content" id="tab-content">
         {{ tab_content|safe }}
     </div>
-    <button id="add-round" onclick="addRound()">
-        Add Round
-    </button>
-    <button id="reject" onclick="rejectArticle()">Reject</button>
 
     <script>
         function showTab(index) {
@@ -51,33 +47,6 @@
 
             const addRoundButton = document.getElementById('add-round');
             addRoundButton.style.display = 'none';
-            
-
-        }
-
-        function addRound() {
-            fetch(`/editor/articles/{{ article.id }}/add_round`, { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    if (data['success']) {
-                        location.reload();
-                    } else {
-                        alert("Unable to add a new round.");
-                    }
-                });
-        }
-
-        function rejectArticle() {
-            fetch(`/editor/articles/{{ article.id }}/reject`, { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    if (data['success']) {
-                        alert("Article has been rejected.");
-                        location.reload();
-                    } else {
-                        alert("Unable to reject the article.");
-                    }
-                });
         }
     </script>
 </body>

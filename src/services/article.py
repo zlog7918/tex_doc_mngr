@@ -56,6 +56,15 @@ def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
     )
 
 
+def is_article_rejected(article_id: int) -> bool:
+    article_status = (
+        db.session.query(ArticleStatus.stat)
+        .join(Article, Article.status_id == ArticleStatus.id)
+        .where(Article.id == article_id)
+        .scalar()
+    )
+    return article_status == ArticleStatusEnum.Rejected
+
 def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
     if article.update_status(new_status):
         db.session.commit()

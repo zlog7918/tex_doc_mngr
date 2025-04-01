@@ -1,4 +1,5 @@
 from db.db_base import log_activity
+from models.article.Article import ArticleStatusEnum
 import services.user as su
 import services.review as rq
 import services.article as aq
@@ -39,6 +40,9 @@ def article_details(article_id):
         if not review:
             log_activity(get_function(), False, {'err': f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found'})
             return Response.error_response(message = 'Review not found').to_dict()
+
+        if article.status.stat == ArticleStatusEnum.Rejected:
+            return render_template("round_tabs/rejected.html")
 
         if review.status == "Pending confirmation":
             return render_template("review_tabs/pending_confirmation.html", article=article, review_id=review.id)

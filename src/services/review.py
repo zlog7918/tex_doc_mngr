@@ -1,9 +1,10 @@
+from sqlalchemy import and_
 from models.utils.utils import get_function
 from db.db_base import db, log_activity, log_err
 from . import article as aq
 from models.article.Round import Round
 from models.article.Review import Review
-from models.article.Article import Article
+from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 def get_review_by_id(review_id: int) -> Review|None:
@@ -14,7 +15,7 @@ def get_review(article_id: int, reviewer_id: int) -> Review|None:
         review = (
             db.session.query(Review)
             .join(Round, Review.round_id == Round.id)
-            .filter(Round.article_id == article_id, Review.reviewer_id == reviewer_id)
+            .where(and_(Review.id == article_id, Review.reviewer_id == reviewer_id))
             .first()
         )
 
@@ -63,7 +64,12 @@ def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
             db.session.query(Article, Review.status)
             .join(Round, Round.article_id == Article.id)
             .join(Review, Review.round_id == Round.id)
-            .filter(Review.reviewer_id == reviewer_id, Review.status.in_(['Pending confirmation', 'Accepted by reviewer']))
+            .join(ArticleStatus, ArticleStatus.id == Article.status_id)
+            .where(and_(
+                Review.reviewer_id == reviewer_id,
+                Review.status.in_(['Pending confirmation', 'Accepted by reviewer']),
+                ArticleStatus.stat != ArticleStatusEnum.Rejected
+            ))
             .all()
         )
 
@@ -90,6 +96,10 @@ def update_review_status(review_id: int, status: str) -> bool:
     try:
         review = get_review_by_id(review_id)
         if review:
+            if review.status in ("Reviewed", "Not reviewed", "Rejected by reviewer") or aq.is_article_rejected(review.round.article_id):
+                log_activity(get_function(), False, {'err': f'Attempt to access review: {review_id} which should be unavailable'})
+                return False
+
             review.status = status
             db.session.commit()
             return True

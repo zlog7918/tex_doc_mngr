@@ -37,7 +37,7 @@ def is_editor(article_id: int) -> bool:
         if not article or not article.editor_id:
             log_activity(get_function(), False, {'err': f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
             return False
-        
+
         return int(article.editor_id) == int(user.get_id())
     except Exception as e:
         log_err(get_function(), e)
@@ -183,8 +183,8 @@ def set_review_status(review_id: int, status: str) -> Response:
 
         return Response.success_response()
 
-    except Exception as err:
-        return Response.error_response(str(err))
+    except Exception as e:
+        return Response.error_response(str(e))
 
 def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
     try:
