@@ -4,7 +4,6 @@ from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from typing import Any
 import services.user as au
-import services.review as rs
 import services.article as aq
 from flask import send_from_directory
 from models.utils.Response import Response
@@ -12,7 +11,7 @@ from models.utils.decors import log_if_error
 from db.db_base import db, log_activity, log_err
 from models.utils.EnvConsts import envConsts as ec
 from models.utils.MessageException import MessageException
-from models.article.Article import Article, ArticleStatusEnum
+from models.article.Article import ArticleStatusEnum
 
 
 def get_available_editors() -> dict[int, str]:
@@ -52,34 +51,6 @@ def is_editor(article_id: int) -> bool:
         return int(article.editor_id) == int(user.get_id())
     except Exception as e:
         print(e)
-        log_err(e)
-        return False
-
-def is_reviewer(article_id: int, user_id: int) -> bool:
-    try:
-        review = rs.get_review(article_id, user_id)
-
-        if review:
-            return True
-        
-        log_activity(False, {'err': f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
-        return False
-    except Exception as e:
-        log_err(e)
-        return False
-    
-def is_reviewer_of_review(review_id: int) -> bool:
-    try:
-        user = au.get_curr_user_or_err()
-        review = rs.get_review_by_id(review_id)
-        if not review:
-            log_activity(False, {'err': f'Reviewer {user.get_id()} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}'})
-            return False
-        if int(review.reviewer_id) == int(user.get_id()):
-            return True
-        log_activity(False, {'err': f'Reviewer {user.get_id()} usiłował uzyskać dostęp do review o id: {review_id}'})
-        return False
-    except Exception as e:
         log_err(e)
         return False
 
@@ -182,18 +153,6 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
     update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
     if not update_status_result.success:
         raise MessageException(f'Failed to update article status to {ArticleStatusEnum.InReview.value}.')
-    return Response.success_response()
-
-@log_if_error
-def set_review_status(review_id: int, status: str) -> Response:
-    review = rs.get_review_by_id(review_id)
-    if review is None:
-        raise MessageException('Review not found')
-
-    result = rs.update_review_status(review_id, status)
-    if not result:
-        raise MessageException('Review status not updated')
-
     return Response.success_response()
 
 def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:

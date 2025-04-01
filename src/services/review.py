@@ -61,21 +61,15 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
 
 
 def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
-    try:
-        articles = (
-            db.session.query(Article, Review.status)
-            .join(Round, Round.article_id == Article.id)
-            .join(Review, Review.round_id == Round.id)
-            .filter(Review.reviewer_id == reviewer_id, Review.status.in_(['Pending confirmation', 'Accepted by reviewer']))
-            .all()
-        )
+    articles = (
+        db.session.query(Article, Review.status)
+        .join(Round, Round.article_id == Article.id)
+        .join(Review, Review.round_id == Round.id)
+        .filter(Review.reviewer_id == reviewer_id, Review.status.in_(['Pending confirmation', 'Accepted by reviewer']))
+        .all()
+    )
 
-        return [(row[0], row[1]) for row in articles]
-
-
-    except Exception as e:
-        log_err(e)
-        return []
+    return [(row[0], row[1]) for row in articles]
 
 
 def post_review(review: Review) -> bool:
