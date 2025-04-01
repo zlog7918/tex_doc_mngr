@@ -83,10 +83,10 @@ def upload_correction(article_id: int):
     return ac.upload_correction(article_id, file).to_dict()
 
 
-@articles_bp.route('/uploads/<filename>')
+@articles_bp.route('/uploads/<int:article_id>/<int:round_num>/<filename>')
 @decor.approve_required
-def uploaded_file(filename: str):
-    ret=ac.get_uploaded_file(filename)
+def uploaded_file(filename, article_id: int, round_num: int):
+    ret=ac.get_uploaded_file(f"{article_id}/{round_num}/{filename}")
     if ret.success:
         return ret.data
     return ret.to_dict()
