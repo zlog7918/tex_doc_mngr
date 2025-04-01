@@ -83,11 +83,24 @@ def is_reviewer_of_review(review_id: int) -> bool:
         log_err(e)
         return False
 
-def get_all_articles_by_editor() -> list[Article]:
-    user=au.get_curr_user_or_err()
-    return aq.get_all_articles_by_editor_id(int(user.get_id()))
+@log_if_error
+def get_all_articles_by_editor() -> Response:
+    user_id = au.get_curr_user_or_err().get_id()
+    articles = aq.get_all_articles_by_editor_id(int(user_id))
+    return Response.success_response(data=articles)
 
 @log_if_error
+def get_article_data_as_editor(article_id: int) -> Response:
+    if is_editor(article_id):
+        return get_article_data(article_id)
+    raise MessageException("You are not an editor of this article.")
+
+@log_if_error
+def get_article_data_as_author(article_id: int) -> Response:
+    if is_author(article_id):
+        return get_article_data(article_id)
+    raise MessageException("You are not an author of this article.")
+
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
     latest_round = aq.get_latest_round(article_id)
@@ -114,6 +127,23 @@ def get_article_data(article_id: int) -> Response:
     return Response.success_response(data=data)
 
 @log_if_error
+def set_article_status_accept(article_id: int) -> Response:
+    if is_editor(article_id):
+        return set_article_status(article_id, ArticleStatusEnum.Accepted)
+    raise MessageException("You are not an editor of this article.")
+
+@log_if_error
+def set_article_status_reject(article_id: int) -> Response:
+    if is_editor(article_id):
+        return set_article_status(article_id, ArticleStatusEnum.Rejected)
+    raise MessageException("You are not an editor of this article.")
+
+@log_if_error
+def set_article_status_needs_corrections(article_id: int) -> Response:
+    if is_editor(article_id):
+        return set_article_status(article_id, ArticleStatusEnum.NeedsCorrections)
+    raise MessageException("You are not an editor of this article.")
+
 def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     article = aq.get_article(article_id)
     if article is None:
@@ -123,6 +153,9 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
 
 @log_if_error
 def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
+    if not is_editor(article_id):
+        raise MessageException('You are not an editor of this article.')
+
     if not assigned_reviewers:
         raise MessageException('No reviewers assigned')
     
@@ -146,7 +179,7 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
         
     aq.set_deadlines(article_id = article_id, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
 
-    update_status_result = set_article_status.__wrapped__(article_id, ArticleStatusEnum.InReview)
+    update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
     if not update_status_result.success:
         raise MessageException(f'Failed to update article status to {ArticleStatusEnum.InReview.value}.')
     return Response.success_response()

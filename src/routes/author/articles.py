@@ -10,10 +10,7 @@ articles_bp = Blueprint("articles", __name__)
 @articles_bp.route('/<int:article_id>')
 @decor.approve_required
 def article_details(article_id):
-    if not ac.is_author(article_id):
-        return Response.error_response(message = "You are not an editor of this article").to_dict()
-
-    response = ac.get_article_data(article_id)
+    response = ac.get_article_data_as_author(article_id)
 
     if not response.success:
         return response.to_dict()
@@ -116,4 +113,4 @@ def temp_preview(filename: str):
     ret=ac.temp_preview(filename)
     if ret.success:
         return ret.data
-    return ret.data
+    return ret.to_dict()
