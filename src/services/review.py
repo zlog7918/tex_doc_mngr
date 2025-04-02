@@ -1,9 +1,10 @@
 from . import article as aq
+from models.utils import utils as util
 from models.article.Round import Round
 from models.article.Review import Review
 from models.article.Article import Article
-from models.utils.utils import get_function
-from db.db_base import db, log_activity, log_err
+from db.db_base import db, log_err, log_activity
+from models.utils.MessageException import MessageException
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 def get_review_by_id(review_id: int) -> Review|None:
@@ -21,7 +22,6 @@ def get_review(article_id: int, reviewer_id: int) -> Review|None:
         return review
 
     except Exception as e:
-        log_err(get_function(), e)
         return None
 
 
@@ -54,7 +54,7 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
                 aq.update_article_status(article_id, 4)
 
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
 
 
 def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
@@ -71,7 +71,7 @@ def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
 
 
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return []
 
 
@@ -79,25 +79,23 @@ def post_review(review: Review) -> bool:
     try:
         # Dodajemy nową recenzję do bazy danych
         db.session.add(review)
-        db.session.commit()
         return True
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return False
 
 
 def update_review_status(review_id: int, status: str) -> bool:
     try:
         review = get_review_by_id(review_id)
-        if review:
-            review.status = status
-            db.session.commit()
-            return True
-        log_activity(get_function(), False, {'err': f'Review with id: {review_id} not found'})
-        return False
-    except Exception as e:
-        log_err(get_function(), e)
-        return False
+        if review is None:
+            log_activity(False, {'err': f'Review with id: {review_id} not found'})
+            return False
+        review.status=status
+        db.session.flush()
+        return True
+    except Exception as err:
+        raise MessageException('Review status not updated', err) from None
 
 
 
@@ -133,21 +131,25 @@ def get_questions_with_answers(q_set_id: int) -> list[dict[int, str]]:
         return result
 
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return []
 
 
 def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
     try:
         for question_id, answer in answers.items():
-            new_answer = Answer(review_id=review_id, question_id=question_id, answer=answer)
+            new_answer = Answer(**util.get_kwargs_for(Answer, {
+                Answer.review_id: review_id,
+                Answer.question_id: question_id,
+                Answer.answer: answer,
+            }))
             db.session.add(new_answer)
 
         update_review_status(review_id=review_id, status='Reviewed')    # TODO: rollback answer submitting when exception here
         db.session.commit()
         return True
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return False
 
 
@@ -164,7 +166,7 @@ def get_questions_by_article(article_id: int) -> list[dict[str, str]]|None:
         return [{"id": q.id, "text": q.question, "is_abc": q.is_abc} for q in questions]
 
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return None
 
 
@@ -179,5 +181,5 @@ def get_question_answers(question_id: int) -> list[dict[int, str]]:
         return [{"id": ans.id, "answer": ans.answer} for ans in answers]
 
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return []
