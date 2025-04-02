@@ -9,114 +9,165 @@
     <h1>LaTeX to PDF Converter</h1>
 
     <form id="uploadForm" enctype="multipart/form-data">
-        <label for="file">Choose a LaTeX file (.tex):</label>
-        <input type="file" name="files" id="file"
-               accept=".tex,.zip,.tar,.gz,.bz2,.xz,.tgz,.tbz2"
-               multiple required><br>
+        <label for="file">Wybierz pliki:</label>
+        <input type="file" name="files" id="file" multiple required><br>
+
         Tytuł: <input type="text" name="title" required><br>
-        Edytor: 
+
+        Edytor:
         <select id="editor" name="editor" required>
-            <option value="" disabled selected>Select an editor</option>
+            <option value="" disabled selected>Wybierz edytora</option>
             {% for editor_id, editor_nick in editors.items() %}
                 <option value="{{ editor_id }}">{{ editor_nick }}</option>
             {% endfor %}
-        </select>
-        <br><br>
+        </select><br><br>
 
+        <div id="mainTexSelector" style="display: none;">
+            <label for="mainTex">Wybierz główny plik .tex:</label>
+            <select id="mainTex" name="mainTex" required></select>
+        </div><br>
 
         <button type="button" id="previewBtn" style="display: none;">View PDF</button>
-
-
         <button type="submit" id="sendBtn" style="display: none;">Send</button>
     </form>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let fileInput = document.getElementById('file');
-            let title = document.querySelector('#uploadForm input[name="title"]');
-            let editor = document.getElementById("editor");
-            let previewBtn = document.getElementById('previewBtn');
-            let sendBtn = document.getElementById('sendBtn');
-            let uploadForm = document.getElementById('uploadForm');
+    document.addEventListener("DOMContentLoaded", function () {
+        const fileInput = document.getElementById('file');
+        const title = document.querySelector('#uploadForm input[name="title"]');
+        const editor = document.getElementById("editor");
+        const previewBtn = document.getElementById('previewBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const mainTexDiv = document.getElementById('mainTexSelector');
+        const mainTexSelect = document.getElementById('mainTex');
 
-            // Po wybraniu pliku pokaż przyciski
-            const allowedExtensions = ['.tex', '.zip', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2'];
+        fileInput.addEventListener('change', function () {
+            const files = Array.from(this.files);
+            const texFiles = files.filter(file => file.name.toLowerCase().endsWith('.tex'));
 
-            fileInput.addEventListener('change', function() {
-                const files = this.files;
-                let showButtons = false;
+            const showButtons = files.length > 0;
+            previewBtn.style.display = showButtons ? "inline-block" : "none";
+            sendBtn.style.display = showButtons ? "inline-block" : "none";
 
-                for (let i = 0; i < files.length; i++) {
-                    const filename = files[i].name.toLowerCase();
-                    if (allowedExtensions.some(ext => filename.endsWith(ext))) {
-                        showButtons = true;
-                        break;
-                    }
-                }
+            if (texFiles.length > 1) {
+                mainTexSelect.innerHTML = '';
+                texFiles.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file.name;
+                    option.textContent = file.name;
+                    mainTexSelect.appendChild(option);
+                });
+                mainTexDiv.style.display = 'block';
+                mainTexSelect.required = true;
+            } else {
+                mainTexDiv.style.display = 'none';
+                mainTexSelect.required = false;
 
-                previewBtn.style.display = showButtons ? "inline-block" : "none";
-                sendBtn.style.display = showButtons ? "inline-block" : "none";
-            });
+            }
+        });
+        // Obsługa podglądu
+        previewBtn.addEventListener("click", async function () {
+            const formData = new FormData();
+            for (const file of fileInput.files) {
+                formData.append("files", file);
+            }
 
-            // Obsługa podglądu PDF
-            previewBtn.addEventListener("click", async function() {
-                let formData = new FormData();
-                for (const file of fileInput.files) {
-                    formData.append("files", file);
-                }
-                try {
-                    let response = await fetch("/articles/generate-preview", {
-                        method: "POST",
-                        body: formData
-                    });
+            // Dodaj wybrany plik mainTex
+            if (mainTexDiv.style.display !== "none") {
+                formData.append("mainTex", mainTexSelect.value);
+            }
 
-                    if (!response.ok) {
-                        throw new Error(`Server error: ${response.status} ${response.statusText}`);
-                    }
-
-                    let data = await response.json();
-
-                    if (data.pdf_url) {
-                        window.open(data.pdf_url, '_blank');
-                    } else {
-                        alert("❌ Błąd generowania podglądu: " + (data.message || "Nieznany błąd"));
-                    }
-                } catch (error) {
-                    alert("🚨 Błąd podczas generowania podglądu: " + error.message);
-                }
-            });
-
-            // Obsługa zapisu pliku
-            uploadForm.addEventListener("submit", async function(event) {
-                event.preventDefault();
-
-                let editorId = editor.value;
-                if (!editorId) {
-                    alert("Please select an editor.");
-                    return;
-                }
-
-                let formData = new FormData();
-                for (let i = 0; i < fileInput.files.length; i++) {
-                    formData.append("files", fileInput.files[i]);
-                }
-                formData.append("title", title.value);
-                formData.append("editor", editorId);
-
-                let response = await fetch("/articles/upload", {
+            try {
+                const response = await fetch("/articles/generate-preview", {
                     method: "POST",
                     body: formData
                 });
 
-                let data = await response.json();
+                const data = await response.json();
 
-                if (data['message']) {
-                    alert("File uploaded successfully!");
+                if (data.need_main_tex && data.tex_files) {
+                    mainTexSelect.innerHTML = '';
+                    data.tex_files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file;
+                        option.textContent = file;
+                        mainTexSelect.appendChild(option);
+                    });
+                    mainTexDiv.style.display = 'block';
+                    mainTexSelect.required = true;
+                    alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'View PDF'.");
+                } else if (data.pdf_url) {
+                    window.open(data.pdf_url, '_blank');
                 } else {
-                    alert("Upload failed: " + (data.error || "Unknown error"));
+                    alert("❌ Błąd generowania podglądu: " + (data.message || "Nieznany błąd"));
                 }
-            });
+            } catch (error) {
+                alert("🚨 Błąd podczas generowania podglądu: " + error.message);
+                console.error("[Preview ERROR]", error);
+            }
         });
+
+        // Obsługa zapisu pliku
+        uploadForm.addEventListener("submit", async function (event) {
+            event.preventDefault();
+
+            const editorId = editor.value;
+            if (!editorId) {
+                alert("Proszę wybrać edytora.");
+                return;
+            }
+
+            const formData = new FormData();
+            for (const file of fileInput.files) {
+                formData.append("files", file);
+            }
+
+            formData.append("title", title.value);
+            formData.append("editor", editorId);
+
+            // Dodaj wybrany plik mainTex
+            if (mainTexDiv.style.display !== "none" && mainTexSelect.value) {
+                formData.append("mainTex", mainTexSelect.value);
+            }
+
+            try {
+                const response = await fetch("/articles/upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                // Jeśli backend prosi o wybór głównego pliku
+                if (data.data?.need_main_tex && data.data?.tex_files) {
+                    mainTexSelect.innerHTML = '';
+                    data.data.tex_files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file;
+                        option.textContent = file;
+                        mainTexSelect.appendChild(option);
+                    });
+                    mainTexDiv.style.display = 'block';
+                    mainTexSelect.required = true;
+
+                    alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'Send'.");
+                    return;
+                }
+
+                // Przesłano i wygenerowano PDF
+                if (!data.data?.need_main_tex && data.data?.pdf_url) {
+                    alert("✅ Plik przesłany pomyślnie!");
+                } else {
+                    alert("❌ Błąd przesyłania: " + (data.error || "Nieznany błąd"));
+                }
+
+            } catch (error) {
+                alert("🚨 Błąd podczas przesyłania: " + error.message);
+            }
+        });
+    });
     </script>
+
 </body>
 </html>

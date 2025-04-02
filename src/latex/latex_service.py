@@ -17,8 +17,6 @@ class LatexService:
                     cwd=output_dir,
                     check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
-                print("[📄 PDFLaTeX STDOUT]", result.stdout.decode())
-                print("[❗ PDFLaTeX STDERR]", result.stderr.decode())
 
             pdf_path = tex_path.replace('.tex', '.pdf')
             return os.path.exists(pdf_path)
@@ -48,35 +46,43 @@ class LatexService:
         os.makedirs(folder, exist_ok=True)
         filename = secure_filename(file.filename)
         path = os.path.join(folder, filename)
-        file.save(path)
+
+        try:
+            file.save(path)
+        except Exception:
+            pass
+
         return path
 
     @staticmethod
-    def extract_archive_and_find_tex(file: FileStorage, folder: str) -> str | None:
+    def extract_tex_files_from_archive(file: FileStorage, folder: str) -> list[str]:
         os.makedirs(folder, exist_ok=True)
         archive_path = LatexService.save_file(file, folder)
         ext = os.path.splitext(file.filename)[1].lower()
-        tex_file = None
+        tex_files = []
 
         try:
             if ext == ".zip":
                 with zipfile.ZipFile(archive_path, 'r') as archive:
                     archive.extractall(folder)
-                    files = archive.namelist()
-
+                    tex_files = [
+                        os.path.join(folder, name)
+                        for name in archive.namelist()
+                        if name.endswith('.tex')
+                    ]
             elif ext in [".tar", ".gz", ".bz2", ".xz", ".tgz", ".tbz2"]:
                 with tarfile.open(archive_path, 'r:*') as archive:
                     archive.extractall(folder)
-                    files = archive.getnames()
-
+                    tex_files = [
+                        os.path.join(folder, name)
+                        for name in archive.getnames()
+                        if name.endswith('.tex')
+                    ]
             else:
-                return None
-
-            for name in files:
-                if name.endswith('.tex') and not tex_file:
-                    tex_file = os.path.join(folder, name)
+                pass
 
         except Exception:
-            return None
+            pass
 
-        return tex_file
+        return tex_files
+

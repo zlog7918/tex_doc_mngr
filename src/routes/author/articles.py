@@ -20,31 +20,16 @@ def upload_form():
 @articles_bp.route('/upload', methods=['POST'])
 @approve_required
 def upload_file():
-    title = request.form.get('title')
-    editor = request.form.get('editor')
-    if not title:
-        return Response.error_response(message='Title cannot be empty').to_dict()
-    if not editor:
-        return Response.error_response(message='Editor must be selected').to_dict()
-
     try:
-        editor = int(editor)
-    except (ValueError, TypeError) as e:
-        log_err(get_function(), e)
-        return Response.error_response(message='Invalid editor ID').to_dict()
-
-    response = ac.is_valid_editor(editor)
-    if not response.success:
-        return response.to_dict()
-    if 'file' not in request.files:
-        return Response.error_response(message='Nie przesłano pliku').to_dict()
-
-    files = request.files.getlist('files')
-    if not files or all(not f.filename for f in files):
-        return Response.error_response(message='Nie wybrano żadnych plików').to_dict()
-
-    return ac.upload_file(title, editor, files).to_dict()
-
+        result = ac.upload_file(
+            title=request.form.get('title'),
+            editor=request.form.get('editor'),
+            files=request.files.getlist('files'),
+            main_tex_name=request.form.get("mainTex")
+        )
+        return result.to_dict()
+    except Exception:
+        return Response.error_response(message="Błąd wewnętrzny podczas przesyłania pliku").to_dict()
 
 @articles_bp.route('/uploads/<filename>')
 @approve_required
@@ -54,20 +39,17 @@ def uploaded_file(filename: str):
         return response.data
     abort(404)
 
-
 @articles_bp.route('/generate-preview', methods=['POST'])
 @approve_required
 def generate_preview():
-    if 'files' not in request.files:
-        return Response.error_response(message='Nie przesłano plików').to_dict()
-
-    files = request.files.getlist('files')
-    if not files or all(not f.filename for f in files):
-        return Response.error_response(message='Nie wybrano żadnych plików').to_dict()
-
-    response = ac.generate_preview(files)
-    return response.data if response.success else response.to_dict()
-
+    try:
+        response = ac.generate_preview(
+            files=request.files.getlist('files'),
+            main_tex_name=request.form.get("mainTex")
+        )
+        return response.data if response.success else response.to_dict()
+    except Exception:
+        return Response.error_response(message="Błąd wewnętrzny podczas generowania podglądu").to_dict()
 
 @articles_bp.route('/temp-preview/<filename>')
 @approve_required

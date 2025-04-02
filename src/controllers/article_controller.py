@@ -2,7 +2,7 @@ import os
 import services.user as au
 import services.review as rs
 import services.article as aq
-from flask import send_from_directory
+from typing import Optional
 from models.utils.Response import Response
 from models.utils.utils import get_function
 from latex.latex_service import LatexService
@@ -182,39 +182,55 @@ def set_review_status(review_id: int, status: str) -> Response:
     except Exception as err:
         return Response.error_response(str(err))
 
-
-def upload_file(title: str, editor_id: int, files: list[FileStorage]) -> Response:
+def _handle_file_upload(title: str, editor_id: int, files: list[FileStorage], main_tex_name: Optional[str] = None) -> Response:
     upload_folder = ec.getDocFilesDir()
     os.makedirs(upload_folder, exist_ok=True)
 
-    tex_file_path = None
+    saved_paths = []
+    tex_candidates = []
+
     allowed_archives = ('.zip', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2')
 
     for file in files:
         filename = file.filename.lower()
 
         if filename.endswith(allowed_archives):
-            extracted_tex = LatexService.extract_archive_and_find_tex(file, upload_folder)
-            if extracted_tex:
-                tex_file_path = extracted_tex
+            extracted_tex_files = LatexService.extract_tex_files_from_archive(file, upload_folder)
+            saved_paths.extend(extracted_tex_files)
+            tex_candidates.extend(extracted_tex_files)
         else:
             saved_path = LatexService.save_file(file, upload_folder)
+            saved_paths.append(saved_path)
             if saved_path.endswith(".tex"):
-                tex_file_path = saved_path
+                tex_candidates.append(saved_path)
+
+    tex_file_path = None
+
+    if main_tex_name:
+        for path in tex_candidates:
+            if os.path.basename(path) == main_tex_name:
+                tex_file_path = path
+                break
+    else:
+        if len(tex_candidates) == 1:
+            tex_file_path = tex_candidates[0]
+        elif len(tex_candidates) > 1:
+            return Response.success_response(data={
+                "need_main_tex": True,
+                "tex_files": [os.path.basename(p) for p in tex_candidates]
+            })
 
     if not tex_file_path:
         return Response.error_response(message='Nie znaleziono pliku .tex')
 
-    # TODO: check if the function handles all possibilities
     try:
         upload_folder = os.path.dirname(tex_file_path)
         filename = os.path.basename(tex_file_path)
 
-        if filename.endswith('.tex'):
-            if not LatexService.convert_tex_to_pdf(tex_file_path, upload_folder):
-                return Response.error_response(message="Error converting LaTeX to PDF")
+        if not LatexService.convert_tex_to_pdf(tex_file_path, upload_folder):
+            return Response.error_response(message="Error converting LaTeX to PDF")
 
-        file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf') if filename.endswith('.tex') else filename}"
+        file_url = f"/articles/uploads/{filename.replace('.tex', '.pdf')}"
 
         if aq.create_article(title, file_url, editor_id):
             return Response.success_response(
@@ -229,35 +245,75 @@ def upload_file(title: str, editor_id: int, files: list[FileStorage]) -> Respons
         db.session.rollback()
         return Response.error_response(message=f"Server error: {str(e)}")
 
-def generate_preview(files: list[FileStorage]) -> Response:
-    
+
+def upload_file(title: Optional[str], editor, files: list[FileStorage], main_tex_name: Optional[str] = None) -> Response:
+    if not title:
+        return Response.error_response(message='Title cannot be empty')
+
+    if not editor:
+        return Response.error_response(message='Editor must be selected')
+
+    try:
+        editor_id = int(editor)
+    except (ValueError, TypeError):
+        return Response.error_response(message='Invalid editor ID')
+
+    response = is_valid_editor(editor_id)
+    if not response.success:
+        return response
+
+    if not files or all(not f.filename for f in files):
+        return Response.error_response(message='Nie wybrano żadnych plików')
+
+    return _handle_file_upload(title, editor_id, files, main_tex_name)
+
+def _handle_generate_preview(files: list[FileStorage], main_tex_name: Optional[str] = None) -> Response:
     temp_folder = ec.getTempDir()
     os.makedirs(temp_folder, exist_ok=True)
 
     archive_extensions = ('.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2')
-    tex_path = None
+    saved_paths = []
 
     for file in files:
         filename = file.filename.lower()
 
         if filename.endswith(archive_extensions):
-            extracted_tex = LatexService.extract_archive_and_find_tex(file, temp_folder)
-            if extracted_tex:
-                tex_path = extracted_tex
-
+            extracted_tex_files = LatexService.extract_tex_files_from_archive(file, temp_folder)
+            saved_paths.extend(extracted_tex_files)
         elif filename.endswith('.tex'):
             saved_path = LatexService.save_file(file, temp_folder)
-            if saved_path.endswith(".tex"):
-                tex_path = saved_path
-
+            saved_paths.append(saved_path)
         else:
             LatexService.save_file(file, temp_folder)
+
+    tex_path = None
+
+    if main_tex_name:
+        for path in saved_paths:
+            if os.path.basename(path) == main_tex_name:
+                tex_path = path
+                break
+
+    if not tex_path:
+        tex_candidates = [p for p in saved_paths if p.endswith(".tex")]
+        if len(tex_candidates) == 1:
+            tex_path = tex_candidates[0]
+        elif len(tex_candidates) > 1:
+            return Response.success_response(data={
+                "need_main_tex": True,
+                "tex_files": [os.path.basename(p) for p in tex_candidates]
+            })
 
     if not tex_path:
         return Response.error_response(message="Nie znaleziono pliku .tex")
 
     return LatexService.generate_preview(tex_path)
 
+def generate_preview(files: list[FileStorage], main_tex_name: Optional[str] = None) -> Response:
+    if not files or all(not f.filename for f in files):
+        return Response.error_response(message='Nie wybrano żadnych plików')
+
+    return _handle_generate_preview(files, main_tex_name)
 
 def temp_preview(filename: str) -> Response:
     return LatexService.get_file(ec.getTempDir(), filename)
