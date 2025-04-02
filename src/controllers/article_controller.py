@@ -35,7 +35,6 @@ def is_editor(article_id: int) -> bool:
         
         return int(article.editor_id) == int(user.get_id())
     except Exception as e:
-        print(e)
         log_err(e)
         return False
 
@@ -107,11 +106,11 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
 def add_round(article_id: int) -> Response:
     article = aq.get_article(article_id)
     if article is None:
-        raise MessageException('Article not found')
+        raise MessageException('Article not found', Exception(f'Article with id: {article_id} not found'))
 
     # Sprawdzanie, czy artykuł spełnia wymagane statusy
     if article.status.stat not in {ArticleStatusEnum.Accepted, ArticleStatusEnum.Reviewed}:
-        raise MessageException('Round cannot be added')
+        raise MessageException('Round cannot be added', Exception(f'Cannot add a new round to the article with id: {article_id} and status: {article.status.stat}'))
 
     new_round_number = len(article.rounds) + 1
     aq.create_round(article_id=article_id, round_number=new_round_number)
