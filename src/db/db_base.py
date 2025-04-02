@@ -1,8 +1,7 @@
 import json
-import traceback
 from flask import request
 from flask_sqlalchemy import SQLAlchemy
-from ..models.utils.utils import get_timestamp
+from ..models.utils import utils as util
 from sqlalchemy import MetaData, Integer, Boolean, Text, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -28,24 +27,27 @@ class Log(db.Model):
     log: Mapped[str] = mapped_column(Text, nullable=False)
 
 
-
-def log_activity(action: str, is_success: bool, log: dict) -> None:
+def __get_action_name(action: str|None) -> str:
+    return (util.get_function(2) if action is None else action)
+def log_activity(is_success: bool, log: dict, action: str|None=None) -> None:
     try:
         ip=request.environ['REMOTE_ADDR']
     except Exception:
         ip='local'
     db.session.add(
-        Log(
-            ip=ip
-            ,is_success=is_success
-            ,action=action
-            ,timest=get_timestamp()
-            ,log=json.dumps(log)
-        )
+        Log(**util.get_kwargs_for(Log, {
+            Log.ip: ip,
+            Log.is_success: is_success,
+            Log.action: __get_action_name(action),
+            Log.timest: util.get_timestamp(),
+            Log.log: json.dumps(log),
+        }))
     )
-    db.session.commit()
+    db.session.flush()
 
-def log_err(action: str, err: Exception) -> None:
-    log_activity(action, False, {'err': f'{err}', 'traceback': ''.join(traceback.format_tb(err.__traceback__))})
-
+def log_err(err: Exception, action: str|None=None) -> None:
+    log_activity(False, {
+        'err': f'{err}',
+        'traceback': util.get_traceback(err)
+    }, action=__get_action_name(action))
  

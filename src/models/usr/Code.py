@@ -8,13 +8,21 @@ from enum import Enum as PyEnum, auto
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import or_, Enum, Integer, Boolean, Text, DateTime, ForeignKey, UniqueConstraint, CheckConstraint, Index
 
+def _gen_len_code(alphabet: str, len: int) -> str:
+    return ''.join(random.choice(alphabet) for _ in range(len))
+
 class CodePurposeEnum(PyEnum):
-    __ALPHABET__=string.digits+string.ascii_letters
+    __ALPHABET=string.digits+string.ascii_letters
+    InviteUser=auto()
     ApproveUser=auto()
-    ResetUserPassReq=auto()
     ResetUserPass=auto()
+    InviteUserMail=auto()
+    ResetUserPassReq=auto()
     def gen_code(self) -> tuple[str, int]:
-        return ''.join(random.choice(self.__ALPHABET__) for _ in range(c.CODE_GEN_LEN)), c.TIME_TO_EXPIRE
+        code=_gen_len_code(self.__ALPHABET, c.CODE_GEN_LEN)
+        if self.value==self.__class__.InviteUser:
+            return code, c.TIME_TO_EXPIRE_INVITE
+        return code, c.TIME_TO_EXPIRE
     
 class CodePurpose(db.Model):
     __tablename__ = 'code_purpose'
@@ -33,8 +41,8 @@ class Code(db.Model):
     timest: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
     code_exp: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
 
-    purpose = relationship(CodePurpose.__name__, foreign_keys=[purpose_id])
-    usr = relationship(User.__name__, foreign_keys=[usr_id])
+    purpose: Mapped[CodePurpose] = relationship(foreign_keys=[purpose_id])
+    usr: Mapped[User] = relationship(foreign_keys=[usr_id])
     __table_args__ = (
         UniqueConstraint(code, is_active),
         CheckConstraint(or_(

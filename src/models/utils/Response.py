@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Any, Self
 
 class Response:
@@ -15,10 +14,10 @@ class Response:
         }
         return response
 
-    @staticmethod
-    def success_response(data: Any = None, message: str = "OK") -> Self:
-        return Response(success=True, message=message, data=data)
+    @classmethod
+    def success_response(cls, data: Any = None, message: str = "OK") -> Self:
+        return cls(success=True, message=message, data=data)
 
-    @staticmethod
-    def error_response(message: str, data: Any = None) -> Self:
-        return Response(success=False, message=message, data=data)
+    @classmethod
+    def error_response(cls, message: str, data: Any = None) -> Self:
+        return cls(success=False, message=message, data=data)

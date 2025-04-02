@@ -1,111 +1,132 @@
 {% extends "base.html" %}
 
 {% block body %}
-    <div class="container">
+<div class="container">
+    <div class="reset-box">
+        <h2>Zmiana hasła</h2>
+        <p class="instructions">Wpisz nowe hasło i potwierdź je, aby zakończyć proces resetowania.</p>
+        
         <form id="reset-password-form">
             <input type="hidden" name="email" value="{{email}}" required>
             <input id="code_input" type="hidden" name="code" value="{{code}}" required>
-            <div class="form-group">
-                <label>Nowe hasło:</label>
-                <input type="password" name="passwd" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Powtórz nowe hasło:</label>
-                <input type="password" name="rep_passwd" required>
-            </div>
 
-            <button type="button" id="change-password-btn" class="primary-btn">Zresetuj hasło</button>
+            <label>Nowe hasło:</label>
+            <input type="password" name="passwd" placeholder="Wpisz nowe hasło" required>
+
+            <label>Powtórz nowe hasło:</label>
+            <input type="password" name="rep_passwd" placeholder="Powtórz nowe hasło" required>
+
+            <button type="button" id="change-password-btn" class="primary-btn">Zmień hasło</button>
         </form>
+        <hr>
+        <a href="/"><button class="secondary-btn">Powrót do logowania</button></a>
     </div>
+</div>
 
-    <style>
-        .container {
-            text-align: center;
-            padding: 20px;
-            max-width: 400px;
-            margin: auto;
-        }
+<style>
+    /* Układ strony */
+    body {
+        font-family: 'Poppins', sans-serif;
+        background: #f9f9f9;
+        margin: 0;
+        padding: 0;
+    }
 
-        .actions {
-            margin: 20px 0;
-        }
+    .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        padding: 20px;
+    }
 
-        .primary-btn, .secondary-btn {
-            width: 100%;
-            padding: 10px;
-            margin-top: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
+    /* Formularz zmiany hasła */
+    .reset-box {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+        width: 350px;
+        text-align: center;
+    }
 
-        .primary-btn {
-            background: #5a3d90;
-            color: white;
-        }
+    /* Instrukcje */
+    .instructions {
+        font-size: 16px;
+        color: #555;
+        margin-bottom: 15px;
+    }
 
-        .secondary-btn {
-            background: #2d1053;
-            color: white;
-        }
+    /* Formularz */
+    label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+        font-size: 16px;
+        color: #2d1053;
+        text-align: left;
+    }
 
-        .primary-btn:hover, .secondary-btn:hover {
-            opacity: 0.9;
-        }
+    input {
+        width: 90%;
+        padding: 12px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+        font-size: 16px;
+        margin-bottom: 15px;
+    }
 
-        form {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            margin-top: 20px;
-        }
+    /* Przyciski */
+    .primary-btn {
+        width: 100%;
+        padding: 12px;
+        background: #5a3d90;
+        color: white;
+        font-size: 18px;
+        font-weight: 600;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
 
-        .form-group {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 10px;
-        }
+    .primary-btn:hover {
+        background: #4a1e87;
+    }
 
-        label {
-            font-weight: bold;
-        }
+    .secondary-btn {
+        width: 100%;
+        padding: 12px;
+        background: #2d1053;
+        color: white;
+        font-size: 16px;
+        font-weight: 600;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
 
-        input {
-            width: 80%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            text-align: left;
-        }
+    .secondary-btn:hover {
+        background: #1f083c;
+    }
+</style>
 
-        .hidden {
-            display: none;
-        }
-    </style>
-
-    <script>
-        document.getElementById("change-password-btn").addEventListener("click", ()=>{
-            let form=document.getElementById("reset-password-form");
-            let input=document.getElementById('code_input');
-            ajax_json_call('/user/pass_reset', null, form).then(data => {
-                if (data['success']) {
-                    alert(`Poprawnie zmieniono hasło`);
-                    window.location.href='/'
-                } else {
-                    alert(`Err: ${data['message']}`);
-                    if(data['data']!==null)
-                        input.value=data['data'];
-                }
-            }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
-        });
-    </script>
+<script>
+    document.getElementById("change-password-btn").addEventListener("click", function () {
+        let form = document.getElementById("reset-password-form");
+        let input = document.getElementById('code_input');
+        
+        ajax_json_call('/user/pass_reset', null, form).then(data => {
+            if (data['success']) {
+                alert(`Poprawnie zmieniono hasło`);
+                window.location.href = '/';
+            } else {
+                alert(`Błąd: ${data['message']}`);
+                if (data['data'] !== null)
+                    input.value = data['data'];
+            }
+        }).catch(err => alert(`Błąd: ${JSON.stringify(err)}`));
+    });
+</script>
 {% endblock %}
