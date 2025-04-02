@@ -28,6 +28,7 @@ def create_article(title: str, file_url: str, editor_id: int) -> None:
             Article.status_id: status.id,
         }))
         db.session.add(new_article)
+        db.session.flush()
     except MessageException as e:
         raise MessageException.from_exception(e, 'Article not created')
 
@@ -43,7 +44,7 @@ def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
 def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
     new_stat=__get_status_or_err(new_status)
     if article.update_status(new_stat):
-        db.session.commit()
+        db.session.flush()
         return True
     else:
         return False
@@ -204,6 +205,7 @@ def create_round(article_id: int, round_number: int, deadline_confirm: str|None=
             Round.deadline_submit: deadline_submit,
         }))
         db.session.add(new_round)
+        db.session.flush()
     except Exception as err:
         raise MessageException.from_exception(err, 'Round was not created')
 
@@ -225,6 +227,7 @@ def add_reviewer_to_article(article_id: int, reviewer_id: int) -> None:
                 Review.status: 'Pending confirmation',
             }))
             db.session.add(new_review)
+            db.session.flush()
         else:
             raise MessageException(f'No round found for the given article_id: {article_id}')
 

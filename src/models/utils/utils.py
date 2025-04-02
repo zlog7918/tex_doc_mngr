@@ -2,9 +2,10 @@ import sys
 import os.path
 import traceback
 from . import consts as c
-from flask import render_template
+from flask import render_template, g
 from datetime import datetime,timezone
 from .EnvConsts import envConsts as ec
+from models.lang import LangEnum, LangBaseEx
 from .FormNotFilledException import FormNotFilledException
 from werkzeug.datastructures.structures import ImmutableMultiDict
 
@@ -28,6 +29,12 @@ def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> 
 def render_base_template(name: str, **kwargs: object) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)
 
+def set_lang_pkg(lang: LangEnum) -> None:
+    g.lang=lang.value
+def get_lang_pkg() -> type[LangBaseEx]:
+    if 'lang' not in g:
+        g.lang=LangEnum.en.value
+    return g.lang
 def get_kwargs_for(t: type, d: dict[object, object]) -> dict[str, object]:
     return {str(k).removeprefix(f'{t.__name__}.'):i for k, i in d.items()}
 
