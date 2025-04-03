@@ -5,7 +5,6 @@ from sqlalchemy import and_, select
 from models.usr.User import User
 from db.db_base import db, log_activity, log_err
 from flask_login import current_user
-from models.utils.utils import get_function
 from models.usr.User import User
 from models.article.Round import Round
 from models.utils import utils as util
@@ -28,10 +27,6 @@ def create_article(title: str, editor_id: int) -> bool:
             return False
 
         status = __get_status_or_err(ArticleStatusEnum.Submitted)
-        if not status:
-            log_activity(False, {'err': 'Brak domyślnego statusu "Submitted" w bazie'})
-            return False
-
 
         new_article = Article(**util.get_kwargs_for(Article, {
             Article.title: title,
@@ -40,7 +35,11 @@ def create_article(title: str, editor_id: int) -> bool:
             Article.status_id: status.id,
         }))
         db.session.add(new_article)
-        log_activity(True, {'msg': f'Created article "{title}" with id {new_article.id} by user {user_id}'})
+        article = get_article_by_title(user_id, title)
+        if not article:
+            raise MessageException(f'Nie udało się pobrać artykułu "{title}" po zapisaniu')
+
+        log_activity(True, {'msg': f'Created article "{title}" with id {article.id} by user {user_id}'})
         return True
 
     except MessageException as e:

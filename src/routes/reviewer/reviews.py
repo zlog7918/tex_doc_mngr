@@ -1,3 +1,4 @@
+from db.db_base import log_err
 from models.utils.Response import Response
 import controllers.review_controller as rc
 from models.utils.decors import approve_required
@@ -51,10 +52,15 @@ def reject_article(review_id: int):
 @approve_required
 def submit_review(review_id: int):
     answers = {}
-    for question_id, answer in request.form.items():
-        if question_id.startswith("question_"):
-            question_id_int = int(question_id.split("_")[1])
-            answers[question_id_int] = answer
+    try:
+        for question_id, answer in request.form.items():
+            if question_id.startswith("question_"):
+                question_id_int = int(question_id.split("_")[1])
+                answers[question_id_int] = answer
+    except Exception as e:
+        log_err(e)
+        return Response.error_response(message = "Failed to save answers.").to_dict()
+
     response = rc.submit_review(review_id, answers)
 
     if response.success:

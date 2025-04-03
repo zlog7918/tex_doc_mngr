@@ -177,6 +177,7 @@ def handle_file(file: FileStorage, folder: str) -> str:
 @log_if_error
 def upload_file(title: str, editor_id: int, file: FileStorage) -> Response:
     # TODO: check if the function handles all possibilities
+    response = is_valid_editor(editor_id)
     upload_folder=ec.getDocFilesDir()
 
     result = aq.create_article(title, editor_id)

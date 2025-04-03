@@ -28,36 +28,36 @@ def get_review(article_id: int, reviewer_id: int) -> Review|None:
 
 
 def check_reviews_and_update_article_status(review_id: int) -> None:
-    try:
-        round_id = (
-            db.session.query(Review.round_id)
-            .filter(Review.id == review_id)
+    round_id = (
+        db.session.query(Review.round_id)
+        .filter(Review.id == review_id)
+        .scalar()
+    )
+
+    if round_id is None:
+        return
+
+    statuses = (
+        db.session.query(Review.status)
+        .where(Review.round_id == round_id)
+        .scalar()
+        .all()
+    )
+
+    all_reviewed = all(status == 'Reviewed' for status in statuses)
+
+    if all_reviewed:
+        article: Article = (
+            db.session.query(Article)
+            .join(Round, Round.article_id == Article.id)
+            .where(Round.id == round_id)
             .scalar()
         )
+        if article:
+            aq.update_article_status(article, ArticleStatusEnum.Reviewed)
+        else:
+            raise MessageException(f'Article with round id {round_id} not found.')
 
-        if round_id is None:
-            return
-
-        statuses = (
-            db.session.query(Review.status)
-            .filter(Review.round_id == round_id)
-            .all()
-        )
-
-        all_reviewed = all(status[0] == 'Reviewed' for status in statuses)
-
-        if all_reviewed:
-            article: Article = (
-                db.session.query(Article)
-                .join(Round, Round.article_id == Article.id)
-                .where(Round.id == round_id)
-                .scalar()
-            )
-            if article:
-                aq.update_article_status(article, ArticleStatusEnum.Reviewed)
-
-    except Exception as e:
-        log_err(e)
 
 
 def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
@@ -141,9 +141,9 @@ def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
                 Answer.answer: answer,
             }))
             db.session.add(new_answer)
+            db.session.flush()
 
-        update_review_status(review_id=review_id, status='Reviewed')    # TODO: rollback answer submitting when exception here
-        db.session.commit()
+        update_review_status(review_id=review_id, status='Reviewed')
         return True
     except Exception as e:
         log_err(e)

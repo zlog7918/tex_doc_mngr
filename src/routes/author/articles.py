@@ -51,20 +51,17 @@ def upload_file():
 
     try:
         editor = int(editor)
-        response = ac.is_valid_editor(editor)
-        if not response.success:
-            return response.to_dict()
-        if 'file' not in request.files:
-            return Response.error_response(message='Nie przesłano pliku').to_dict()
-
-        file = request.files['file']
-        if not file.filename:
-            return Response.error_response(message='No file selected').to_dict()
-
-        return ac.upload_file(title, editor, file).to_dict()
     except (ValueError, TypeError) as e:
         log_err(e)
         return Response.error_response(message='Invalid editor ID').to_dict()
+    if 'file' not in request.files:
+        return Response.error_response(message='Nie przesłano pliku').to_dict()
+
+    file = request.files['file']
+    if not file.filename:
+        return Response.error_response(message='No file selected').to_dict()
+
+    return ac.upload_file(title, editor, file).to_dict()
 
 @articles_bp.route('/<int:article_id>/upload-correction', methods=['POST'])
 @decor.approve_required

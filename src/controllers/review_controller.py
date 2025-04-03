@@ -9,23 +9,18 @@ from models.utils.MessageException import MessageException
 
 def is_reviewer(article_id: int, user_id: int) -> bool:
     review = rs.get_review(article_id, user_id)
-
     if review:
         return True
-    
-    log_activity(False, {'err': f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
-    return False
+    raise MessageException(f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
     
 def is_reviewer_of_review(review_id: int) -> bool:
     user_id = int(au.get_curr_user_or_err().get_id())
     review = rs.get_review_by_id(review_id)
     if not review:
-        log_activity(False, {'err': f'Reviewer {user_id} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}'})
-        return False
+        raise MessageException(f'Reviewer {user_id} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}')
     if int(review.reviewer_id) == int(user_id):
         return True
-    log_activity(False, {'err': f'Reviewer {user_id} usiłował uzyskać dostęp do review o id: {review_id}'})
-    return False
+    raise MessageException(f'Reviewer {user_id} usiłował uzyskać dostęp do review o id: {review_id}')
 
 
 @log_if_error
@@ -37,7 +32,7 @@ def set_review_status_accept(review_id: int) -> Response:
 @log_if_error
 def set_review_status_reject(review_id: int) -> Response:
     if is_reviewer_of_review(review_id):
-        set_review_status(review_id, "Rejected by reviewer")
+        return set_review_status(review_id, "Rejected by reviewer")
     raise MessageException("You are not a reviewer of this review")
 
 @log_if_error
@@ -65,10 +60,7 @@ def set_review_status(review_id: int, status: str) -> Response:
 def get_articles_as_reviewer() -> Response:
     reviewer_id = int(au.get_curr_user_or_err().get_id())
     articles = rs.get_articles_as_reviewer(reviewer_id)
-    if articles:
-        return Response.success_response(data = articles)
-
-    raise MessageException('Could not access the article')
+    return Response.success_response(data = articles)
 
 @log_if_error
 def get_article_details_as_reviewer(article_id: int) -> Response:
