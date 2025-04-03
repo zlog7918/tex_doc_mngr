@@ -5,7 +5,7 @@ from models.utils import decors as decor, utils as util
 from models.article.Article import ArticleStatusEnum, Article
 from flask import request, redirect, url_for, Blueprint, render_template
 
-editor_articles_bp = Blueprint("editor_articles", __name__)
+editor_articles_bp=Blueprint("editor_articles", __name__)
 
 '''
 Submitted - artykół przesłany przez autora - nowy lub poprawiony

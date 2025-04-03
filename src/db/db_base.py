@@ -39,6 +39,7 @@ def log_activity(is_success: bool, log: dict, action: str|None=None) -> None:
             Log.log: json.dumps(log),
         }))
     )
+    db.session.flush()
 
 def log_err(err: Exception, action: str|None=None) -> None:
     log_activity(False, {

@@ -3,9 +3,10 @@ from . import article as aq
 from models.utils import utils as util
 from models.article.Round import Round
 from models.article.Review import Review
-from models.article.Article import Article, ArticleStatusEnum
+from models.article.Article import Article
 from db.db_base import db, log_err, log_activity
 from models.utils.MessageException import MessageException
+from models.article.Article import Article, ArticleStatusEnum
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 def get_review_by_id(review_id: int) -> Review|None:
@@ -68,14 +69,14 @@ def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
         .filter(Review.reviewer_id == reviewer_id, Review.status.in_(['Pending confirmation', 'Accepted by reviewer']))
         .all()
     )
-
-    return [(row[0], row[1]) for row in articles]
+    return [row.tuple() for row in articles]
 
 
 def post_review(review: Review) -> bool:
     try:
         # Dodajemy nową recenzję do bazy danych
         db.session.add(review)
+        db.session.flush()
         return True
     except Exception as e:
         log_err(e)
@@ -141,6 +142,7 @@ def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
                 Answer.answer: answer,
             }))
             db.session.add(new_answer)
+            db.session.flush()
             db.session.flush()
 
         update_review_status(review_id=review_id, status='Reviewed')

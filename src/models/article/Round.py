@@ -19,6 +19,6 @@ class Round(db.Model):
     deadline_submit: Mapped[Date] = mapped_column(Date, nullable=True)
 
     article: Mapped["Article"] = relationship(back_populates='rounds')
-    status: Mapped[QuestionSet] = relationship(foreign_keys=[q_set_id])
+    question_set: Mapped[QuestionSet] = relationship(foreign_keys=[q_set_id])
 
     reviews: Mapped[list["Review"]] = relationship(back_populates='round')

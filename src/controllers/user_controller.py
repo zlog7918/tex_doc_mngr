@@ -2,8 +2,8 @@ import re
 import pickle as pkl
 import email_validator as emailV
 from models.usr.User import User
+from db.db_base import log_activity
 from models.utils import utils as util
-from db.db_base import db, log_activity
 from models.mail.SendMail import SendMail
 from models.utils.Response import Response
 from models.usr.Code import CodePurposeEnum

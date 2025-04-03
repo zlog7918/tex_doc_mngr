@@ -50,7 +50,6 @@ def is_editor(article_id: int) -> bool:
         
         return int(article.editor_id) == int(user.get_id())
     except Exception as e:
-        print(e)
         log_err(e)
         return False
 

@@ -1,10 +1,8 @@
-import os
 import html
+from .Sender import Sender
 from models.usr.Code import Code
-from .Sender import Sender, SenderLoginOpt
-from models.utils.MessageException import MessageException
-from models.utils.utils import get_function
 from models.utils.EnvConsts import envConsts as ec
+from models.utils.MessageException import MessageException
 
 def _get_link(url: str) -> str:
     port=ec.getHttpsPort()
