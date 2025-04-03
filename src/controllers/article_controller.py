@@ -74,9 +74,8 @@ def get_article_data_as_editor(article_id: int) -> Response:
 
 @log_if_error
 def get_article_data_as_author(article_id: int) -> Response:
-    if is_author(article_id):
-        return get_article_data(article_id)
-    raise MessageException("You are not an author of this article.")
+    is_author(article_id)
+    return get_article_data(article_id)
 
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
@@ -213,7 +212,8 @@ def upload_correction(article_id: int, file: FileStorage) -> Response:
     
     article = aq.get_article(article_id)
 
-    if article and is_author(article_id):
+    if article:
+        is_author(article_id)
         if article.status.stat != ArticleStatusEnum.NeedsCorrections:
             raise MessageException('Correction had already been uploaded.')
 
