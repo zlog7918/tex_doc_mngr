@@ -15,7 +15,7 @@ def get_review(article_id: int, reviewer_id: int) -> Review|None:
         review = (
             db.session.query(Review)
             .join(Round, Review.round_id == Round.id)
-            .where(and_(Review.id == article_id, Review.reviewer_id == reviewer_id))
+            .where(and_(Round.article_id == article_id, Review.reviewer_id == reviewer_id))
             .first()
         )
 
