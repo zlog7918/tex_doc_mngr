@@ -7,38 +7,42 @@ from db.db_base import log_activity
 from models.utils.MessageException import MessageException
 
 
-def is_reviewer(article_id: int, user_id: int) -> bool:
+def is_reviewer(article_id: int, user_id: int) -> None:
     review = rs.get_review(article_id, user_id)
-    if review:
-        return True
-    raise MessageException(f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
-    
-def is_reviewer_of_review(review_id: int) -> bool:
+    if not review:
+        raise MessageException(
+            'You are not a reviewer of this article',
+            Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+        )
+
+def is_reviewer_of_review(review_id: int) -> None:
     user_id = int(au.get_curr_user_or_err().get_id())
     review = rs.get_review_by_id(review_id)
     if not review:
-        raise MessageException(f'Reviewer {user_id} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}')
+        raise MessageException(
+            'You are not a reviewer of this review',
+            Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}')
+        )
     if int(review.reviewer_id) == int(user_id):
-        return True
-    raise MessageException(f'Reviewer {user_id} usiłował uzyskać dostęp do review o id: {review_id}')
-
+        return
+    raise MessageException(
+        'You are not a reviewer of this review',
+        Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do review o id: {review_id}')
+    )
 
 @log_if_error
 def set_review_status_accept(review_id: int) -> Response:
-    if is_reviewer_of_review(review_id):
-        return set_review_status(review_id, "Accepted by reviewer")
-    raise MessageException("You are not a reviewer of this review")
+    is_reviewer_of_review(review_id)
+    return set_review_status(review_id, "Accepted by reviewer")
 
 @log_if_error
 def set_review_status_reject(review_id: int) -> Response:
-    if is_reviewer_of_review(review_id):
-        return set_review_status(review_id, "Rejected by reviewer")
-    raise MessageException("You are not a reviewer of this review")
+    is_reviewer_of_review(review_id)
+    return set_review_status(review_id, "Rejected by reviewer")
 
 @log_if_error
 def submit_review(review_id: int, answers) -> Response:
-    if not is_reviewer_of_review(review_id):
-        return Response.error_response(message = "You are not a reviewer of this review")
+    is_reviewer_of_review(review_id)
     
     if rs.save_review_answers(review_id, answers):
         rs.check_reviews_and_update_article_status(review_id)
@@ -65,18 +69,21 @@ def get_articles_as_reviewer() -> Response:
 @log_if_error
 def get_article_details_as_reviewer(article_id: int) -> Response:
     reviewer_id = int(au.get_curr_user_or_err().get_id())
-    if not is_reviewer(article_id, reviewer_id):
-        return Response.error_response(message = "You are not a reviewer of this article")
+    is_reviewer(article_id, reviewer_id)
     
     article = aq.get_article(article_id)
     if not article:
-        log_activity(False, {'err': f'Article with id: {article_id} not found'})
-        return Response.error_response(message = 'Article not found')
+        raise MessageException(
+            'Article not found',
+            Exception(f'Article with id: {article_id} not found')
+        )
 
     review = rs.get_review(article_id, reviewer_id)
     if not review:
-        log_activity(False, {'err': f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found'})
-        return Response.error_response(message = 'Review not found')
+        raise MessageException(
+            'Review not found',
+            Exception(f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found')
+        )
     
     questions=None
     article_content=None

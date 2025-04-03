@@ -26,32 +26,40 @@ def is_valid_editor(editor_id: int) -> Response:
     else:
         return Response.success_response()
 
-def is_author(article_id: int) -> bool:
+def is_author(article_id: int) -> None:
     try:
         user = au.get_curr_user_or_err()
         article = aq.get_article(article_id)
         if not article:
-            log_activity(False, {'err': f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
-            return False
-        
-        return int(article.author_id) == int(user.get_id())
+            raise MessageException(
+                'You are not an author of this article.',
+                Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+            )
+        if int(article.author_id) != int(user.get_id()):
+            raise MessageException(
+                'You are not an author of this article.',
+                Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+            )
     except Exception as e:
-        print(e)
-        log_err(e)
-        return False
+        raise MessageException.from_exception(e, 'You are not an author of this article.')
 
-def is_editor(article_id: int) -> bool:
+def is_editor(article_id: int) -> None:
     try:
         user = au.get_curr_user_or_err()
         article = aq.get_article(article_id)
         if not article or not article.editor_id:
-            log_activity(False, {'err': f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}'})
-            return False
+            raise MessageException(
+                'You are not an editor of this article.',
+                Exception(f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+            )
         
-        return int(article.editor_id) == int(user.get_id())
+        if int(article.editor_id) != int(user.get_id()):
+            raise MessageException(
+                'You are not an author of this article.',
+                Exception(f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+            )
     except Exception as e:
-        log_err(e)
-        return False
+        raise MessageException.from_exception(e, 'You are not an editor of this article.')
 
 @log_if_error
 def get_all_articles_by_editor() -> Response:
