@@ -69,9 +69,8 @@ def get_all_articles_by_editor() -> Response:
 
 @log_if_error
 def get_article_data_as_editor(article_id: int) -> Response:
-    if is_editor(article_id):
-        return get_article_data(article_id)
-    raise MessageException("You are not an editor of this article.")
+    is_editor(article_id)
+    return get_article_data(article_id)
 
 @log_if_error
 def get_article_data_as_author(article_id: int) -> Response:
@@ -106,21 +105,18 @@ def get_article_data(article_id: int) -> Response:
 
 @log_if_error
 def set_article_status_accept(article_id: int) -> Response:
-    if is_editor(article_id):
-        return set_article_status(article_id, ArticleStatusEnum.Accepted)
-    raise MessageException("You are not an editor of this article.")
+    is_editor(article_id)
+    return set_article_status(article_id, ArticleStatusEnum.Accepted)
 
 @log_if_error
 def set_article_status_reject(article_id: int) -> Response:
-    if is_editor(article_id):
-        return set_article_status(article_id, ArticleStatusEnum.Rejected)
-    raise MessageException("You are not an editor of this article.")
+    is_editor(article_id)
+    return set_article_status(article_id, ArticleStatusEnum.Rejected)
 
 @log_if_error
 def set_article_status_needs_corrections(article_id: int) -> Response:
-    if is_editor(article_id):
-        return set_article_status(article_id, ArticleStatusEnum.NeedsCorrections)
-    raise MessageException("You are not an editor of this article.")
+    is_editor(article_id)
+    return set_article_status(article_id, ArticleStatusEnum.NeedsCorrections)
 
 def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     article = aq.get_article(article_id)
@@ -131,8 +127,7 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
 
 @log_if_error
 def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
-    if not is_editor(article_id):
-        raise MessageException('You are not an editor of this article.')
+    is_editor(article_id)
 
     if not assigned_reviewers:
         raise MessageException('No reviewers assigned')
