@@ -20,6 +20,10 @@
             border: 1px solid #ccc;
             padding: 10px;
         }
+        .hidden {
+            display: none;
+        }
+
         button {
             margin-top: 20px;
         }
@@ -30,24 +34,50 @@
     <p><strong>Author:</strong> {{ article.author.nick }}</p>
     <div id="tabs">
         {% for round in article.rounds %}
-            <div class="tab {% if loop.last %}active{% endif %}" data-index="{{ loop.index }}" onclick="showTab(this.getAttribute('data-index'))">
-                Round {{ round.id }}
+            <div class="tab {% if loop.last %}active{% endif %}" 
+                 data-index="{{ loop.index0 }}" 
+                 data-url="{{ round.article_content }}"
+                 data-last="{% if loop.last %}true{% else %}false{% endif %}"
+                 onclick="showTab(this)">
+                Round {{ round.round_number }}
             </div>
         {% endfor %}
     </div>
     <div class="tab-content" id="tab-content">
         {{ tab_content|safe }}
     </div>
+    <div id="old-round-content" class="tab-content hidden">
+        <p>To jest stara wersja artykułu. Aby zobaczyć pełną treść, przejdź do najnowszej rundy.</p>
+    </div>
 
     <script>
-        function showTab(index) {
+        let loadedArticles = {};
+
+        function showTab(tabElement) {
+            let url = tabElement.getAttribute('data-url');
+            let isLastRound = tabElement.getAttribute('data-last') === 'true';
+
             // Zmiana aktywnej zakładki
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelector(`.tab:nth-child(${index})`).classList.add('active');
+            tabElement.classList.add('active');
 
-            const addRoundButton = document.getElementById('add-round');
-            addRoundButton.style.display = 'none';
+            // Pokaż odpowiednią zawartość
+            if (isLastRound) {
+                document.getElementById('tab-content').classList.remove('hidden');
+                document.getElementById('old-round-content').classList.add('hidden');
+            } else {
+                document.getElementById('tab-content').classList.add('hidden');
+                document.getElementById('old-round-content').classList.remove('hidden');
+            }
         }
+
+        // Automatyczne wczytanie ostatniej rundy na starcie
+        window.onload = function () {
+            let lastTab = document.querySelector('.tab.active');
+            if (lastTab) {
+                showTab(lastTab);
+            }
+        };
     </script>
 </body>
 </html>

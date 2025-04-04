@@ -12,4 +12,34 @@
             </li>
         {% endfor %}
     </ul>
+    <button id="needs_correction" onclick="setCorrectionStatus()">
+        Needs Correction
+    </button>
+    <button id="reject" onclick="rejectArticle()">Reject</button>
 </div>
+<script>
+    function setCorrectionStatus() {
+        fetch(`/editor/articles/{{ article.id }}/request_correction`, { method: "POST" })
+            .then(response => response.json())
+            .then(data => {
+                if (data['success']) {
+                    location.reload();
+                } else {
+                    alert("Unable to update the article status.");
+                }
+            });
+    }
+
+    function rejectArticle() {
+        fetch(`/editor/articles/{{ article.id }}/reject`, { method: "POST" })
+            .then(response => response.json())
+            .then(data => {
+                if (data['success']) {
+                    alert("Article has been rejected.");
+                    location.reload();
+                } else {
+                    alert("Unable to reject the article.");
+                }
+            });
+    }
+</script>
