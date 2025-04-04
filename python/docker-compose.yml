@@ -16,5 +16,6 @@ services:
       - psql
     expose:
       - 5000
+    runtime: "runsc"
 volumes:
   doc_files:
