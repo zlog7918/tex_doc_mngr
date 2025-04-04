@@ -6,11 +6,15 @@ services:
       args:
         - APP_MAIN_DIR=${APP_MAIN_DIR}
     volumes:
+      # - ./test_src:${APP_MAIN_DIR}/app:rw
       - ./src:${APP_MAIN_DIR}/app/src:ro
     env_file:
       - ./.env
       - ./.psql.env
       - ./.python.env
-    runtime: "runsc"
+    # depends_on:
+    #   - psql
+    # expose:
+    #   - 5000
 volumes:
   doc_files:

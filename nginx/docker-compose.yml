@@ -15,6 +15,5 @@ services:
       - ./.nginx.env
     depends_on:
       - python
-    runtime: "runsc"
 volumes:
   nginx_ssl:
