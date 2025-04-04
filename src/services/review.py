@@ -61,20 +61,19 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
 
 
 def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
-    try:
-        articles = (
-            db.session.query(Article, Review.status)
-            .join(Round, Round.article_id == Article.id)
-            .join(Review, Review.round_id == Round.id)
-            .join(ArticleStatus, ArticleStatus.id == Article.status_id)
-            .where(and_(
-                Review.reviewer_id == reviewer_id,
-                Review.status.in_(['Pending confirmation', 'Accepted by reviewer']),
-                ArticleStatus.stat != ArticleStatusEnum.Rejected
-            ))
-            .all()
-        )
-        return [row.tuple() for row in articles]
+    articles = (
+        db.session.query(Article, Review.status)
+        .join(Round, Round.article_id == Article.id)
+        .join(Review, Review.round_id == Round.id)
+        .join(ArticleStatus, ArticleStatus.id == Article.status_id)
+        .where(and_(
+            Review.reviewer_id == reviewer_id,
+            Review.status.in_(['Pending confirmation', 'Accepted by reviewer']),
+            ArticleStatus.stat != ArticleStatusEnum.Rejected
+        ))
+        .all()
+    )
+    return [row.tuple() for row in articles]
 
 
 def post_review(review: Review) -> bool:
