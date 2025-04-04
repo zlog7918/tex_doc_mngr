@@ -54,8 +54,25 @@ def get_article_by_title(author_id: int, title: str) -> Article|None:
     return Article.query.where(and_(Article.author_id == author_id, Article.title == title)).first()
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
-    return Article.query.where(Article.editor_id == editor_id).all()
+    return (
+        Article.query
+        .join(ArticleStatus)
+        .where(and_(
+            Article.editor_id == editor_id,
+            ArticleStatus.stat != ArticleStatusEnum.Rejected
+        ))
+        .all()
+    )
 
+
+def is_article_rejected(article_id: int) -> bool:
+    article_status = (
+        db.session.query(ArticleStatus.stat)
+        .join(Article, Article.status_id == ArticleStatus.id)
+        .where(Article.id == article_id)
+        .scalar()
+    )
+    return article_status == ArticleStatusEnum.Rejected
 
 def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
     new_stat=__get_status_or_err(new_status)

@@ -6,7 +6,7 @@ from models.article.Review import Review
 from models.article.Article import Article
 from db.db_base import db, log_err, log_activity
 from models.utils.MessageException import MessageException
-from models.article.Article import Article, ArticleStatusEnum
+from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 def get_review_by_id(review_id: int) -> Review|None:
@@ -61,14 +61,20 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
 
 
 def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
-    articles = (
-        db.session.query(Article, Review.status)
-        .join(Round, Round.article_id == Article.id)
-        .join(Review, Review.round_id == Round.id)
-        .filter(Review.reviewer_id == reviewer_id, Review.status.in_(['Pending confirmation', 'Accepted by reviewer']))
-        .all()
-    )
-    return [row.tuple() for row in articles]
+    try:
+        articles = (
+            db.session.query(Article, Review.status)
+            .join(Round, Round.article_id == Article.id)
+            .join(Review, Review.round_id == Round.id)
+            .join(ArticleStatus, ArticleStatus.id == Article.status_id)
+            .where(and_(
+                Review.reviewer_id == reviewer_id,
+                Review.status.in_(['Pending confirmation', 'Accepted by reviewer']),
+                ArticleStatus.stat != ArticleStatusEnum.Rejected
+            ))
+            .all()
+        )
+        return [row.tuple() for row in articles]
 
 
 def post_review(review: Review) -> bool:
@@ -88,6 +94,10 @@ def update_review_status(review_id: int, status: str) -> bool:
         if review is None:
             log_activity(False, {'err': f'Review with id: {review_id} not found'})
             return False
+        if review.status in ("Reviewed", "Not reviewed", "Rejected by reviewer") or aq.is_article_rejected(review.round.article_id):
+            log_activity(False, {'err': f'Attempt to access review: {review_id} which should be unavailable'})
+            return False
+        
         review.status=status
         db.session.flush()
         return True

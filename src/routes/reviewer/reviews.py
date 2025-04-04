@@ -1,3 +1,4 @@
+from models.article.Article import ArticleStatusEnum
 from db.db_base import log_err
 from models.utils.Response import Response
 import controllers.review_controller as rc
@@ -27,6 +28,9 @@ def article_details(article_id: int):
     data = response.data
     article = data["article"]
     review = data["review"]
+
+    if article.status.stat == ArticleStatusEnum.Rejected:
+        return render_template("round_tabs/rejected.html")
 
     if review.status == "Pending confirmation":
         article_content = data["article_content"]
