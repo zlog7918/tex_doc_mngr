@@ -41,11 +41,10 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
     statuses = (
         db.session.query(Review.status)
         .where(Review.round_id == round_id)
-        .scalar()
         .all()
     )
 
-    all_reviewed = all(status == 'Reviewed' for status in statuses)
+    all_reviewed = all(status[0] == 'Reviewed' for status in statuses)
 
     if all_reviewed:
         article: Article = (
