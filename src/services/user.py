@@ -1,31 +1,34 @@
-from sqlalchemy import or_
-from models.usr.User import User
-from db.db_base import db, log_err
+import pickle as pkl
+from db.db_base import db
 from flask_login import current_user
-from models.utils.utils import get_function
+from models.utils import utils as util
+from models.usr.User import User, User_params
+from typing import Callable, ParamSpec, TypeVarTuple
+from models.utils.MessageException import MessageException
 
-def user_loader(id: int) -> User|None:
+def get_user(id: int) -> User|None:
     return User.query.where(User.id==id).first()
 
-def user_loader_by_nick(nick: str) -> User|None:
+def get_user_by_nick(nick: str) -> User|None:
     return User.query.where(User.nick==nick).first()
 
-def user_loader_by_email(email: str) -> User|None:
+def get_user_by_email(email: str) -> User|None:
     return User.query.where(User.email==email).first()
 
 def get_user_id(nick: str) -> int:
     # TODO: split handling exceptions and handling non-existing user
     try:
-        user=user_loader_by_nick(nick)
+        user=get_user_by_nick(nick)
         if user is None:
-            raise Exception(f'{nick}')
+            raise MessageException(f'{nick}')
         return user.id
-    except Exception as e:
-        raise Exception(f'Nie znaleziono użytkownika: {str(e)}')
+    except MessageException as e:
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.UserNotFoundErr.value(e)) from None
 
 def get_curr_user() -> User|None:
     try:
-        u=current_user._get_current_object()
+        u=current_user._get_current_object() # type: ignore[private_access]
     except RuntimeError:
         return None
     if u is None:
@@ -37,44 +40,73 @@ def get_curr_user() -> User|None:
 def get_curr_user_or_err() -> User:
     u=get_curr_user()
     if u is None:
-        raise Exception('Nie jest zalogowany, żaden użytkownik')
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException(lang_pkg.UserNotLogged.value)
     return u
 
-def is_user_existing(nick: str, email: str) -> bool:
-    try:
-        return User.query.where(
-            or_(
-                User.nick==nick
-                ,User.email==email
-            )
-        ).first() is not None
-    except Exception as e:
-        log_err(get_function(), e)
-        return False
-
-def add_user(user: User) -> bool:
+def add_user(user: User):
     try:
         db.session.add(user)
-        db.session.commit()
-        return True 
+        db.session.flush()
     except Exception as e:
-        log_err(get_function(), e)
-        return False
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.UserNotAdded.value)
 
 def approve_user(user: User) -> None:
     try:
         user.approve()
-        db.session.commit()
+        db.session.flush()
     except Exception as e:
-        log_err(get_function(), e)
-        raise Exception('Konto nie zostało potwierdzone')
+        raise MessageException.from_exception(e, 'Konto nie zostało potwierdzone')
+
+def delete_user(user: User) -> None:
+    try:
+        db.session.delete(user)
+        db.session.flush()
+    except Exception as e:
+        raise MessageException.from_exception(e, 'Konto nie zostało usunięte')
 
 def change_user_pass(user: User, passwd: str) -> bool:
     try:
         if user.ch_pass(passwd):
-            db.session.commit()
+            db.session.flush()
             return True
         return False
     except Exception as e:
-        log_err(get_function(), e)
-        raise Exception('Hasło nie zostało zmienione')
+        raise MessageException.from_exception(e, 'Hasło nie zostało zmienione')
+
+TVT=TypeVarTuple('TVT')
+def map_args(user: User, args: tuple[*TVT]) -> tuple[*TVT]:
+    l: list=[]
+    for v in args:
+        if isinstance(v, User_params):
+            if v==User_params.self:
+                v=user
+            elif v==User_params.id:
+                v=user.id
+            elif v==User_params.nick:
+                v=user.nick
+            elif v==User_params.email:
+                v=user.email
+        l.append(v)
+    return tuple(l)
+
+P=ParamSpec('P')
+def _exec_funcs(do: Callable[P, object], *args: P.args, **kwargs: P.kwargs) -> None:
+    try:
+        do(*args, **kwargs)
+    except Exception as e:
+        raise MessageException.from_exception(e, 'Nie wykonano funkcji')
+
+def set_user_nick(user: User, nick: str) -> None:
+    try:
+        user.nick=nick
+        db.session.flush()
+        if user.do_after_cr is not None:
+            todo: list[tuple[Callable[..., object], tuple[object, ...]]]=pkl.loads(user.do_after_cr)
+            for do, args in todo:
+                _exec_funcs(do, *map_args(user, args))
+            user.do_after_cr=None
+        db.session.flush()
+    except Exception as e:
+        raise MessageException.from_exception(e, 'Konto nie zostało utworzone')

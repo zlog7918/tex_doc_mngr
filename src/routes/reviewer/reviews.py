@@ -1,13 +1,12 @@
-from db.db_base import log_activity
 from models.article.Article import ArticleStatusEnum
 import services.user as su
 import services.review as rq
 import services.article as aq
-from decors import approve_required
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from db.db_base import log_activity
 from models.utils.Response import Response
-from models.utils.utils import get_function
 import controllers.article_controller as ac
+from models.utils.decors import approve_required
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 
 review_bp = Blueprint("review", __name__)
 
@@ -25,7 +24,7 @@ def list_reviewer_reviews():
 
 @review_bp.route("/<int:article_id>", methods=["GET"])
 @approve_required
-def article_details(article_id):
+def article_details(article_id: int):
     try:
         user=su.get_curr_user_or_err()
         if not ac.is_reviewer(article_id, int(user.get_id())):
@@ -33,12 +32,12 @@ def article_details(article_id):
 
         article = aq.get_article(article_id)
         if not article:
-            log_activity(get_function(), False, {'err': f'Article with id: {article_id} not found'})
+            log_activity(False, {'err': f'Article with id: {article_id} not found'})
             return Response.error_response(message = 'Article not found').to_dict()
         reviewer_id = int(user.get_id())
         review = rq.get_review(article_id, reviewer_id)
         if not review:
-            log_activity(get_function(), False, {'err': f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found'})
+            log_activity(False, {'err': f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found'})
             return Response.error_response(message = 'Review not found').to_dict()
 
         if article.status.stat == ArticleStatusEnum.Rejected:
@@ -66,7 +65,7 @@ def article_details(article_id):
 
 @review_bp.route("/<int:review_id>/accept", methods=["POST"])
 @approve_required
-def accept_article(review_id):
+def accept_article(review_id: int):
     try:
         if not ac.is_reviewer_of_review(review_id):
             return Response.error_response(message = "You are not a reviewer of this review").to_dict()
@@ -83,13 +82,13 @@ def accept_article(review_id):
     
 @review_bp.route("/<int:review_id>/reject", methods=["POST"])
 @approve_required
-def reject_article(review_id):
+def reject_article(review_id: int):
     try:
         if not ac.is_reviewer_of_review(review_id):
             return Response.error_response(message = "You are not a reviewer of this review").to_dict()
 
         result = ac.set_review_status(review_id, "Rejected by reviewer")
-        if result:
+        if result.success:
             return {"message": "Rejected reviewing the article"}, 200
         else:
             return {"error": "Failed to reject the review"}, 500
@@ -98,7 +97,7 @@ def reject_article(review_id):
     
 @review_bp.route('/<int:review_id>/submit_review', methods=['POST'])
 @approve_required
-def submit_review(review_id):
+def submit_review(review_id: int):
     if not ac.is_reviewer_of_review(review_id):
         return Response.error_response(message = "You are not a reviewer of this review").to_dict()
 
