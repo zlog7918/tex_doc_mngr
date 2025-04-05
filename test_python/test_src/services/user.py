@@ -1,9 +1,10 @@
-import os
 from src.services import user as su
 from src.models.usr.User import User
-from test_utils import TestingUnit as tu
+from test_utils import TestingUnitBlueprint
 
-@tu.test_resp_with_context
+service_user_bluebrint=TestingUnitBlueprint()
+
+@service_user_bluebrint.test_resp_with_context
 def add_user_ShouldNotAddIncorrectUser1():
     u=User()
     try:
@@ -11,7 +12,7 @@ def add_user_ShouldNotAddIncorrectUser1():
         assert False
     except Exception: pass
 
-@tu.test_resp_with_context
+@service_user_bluebrint.test_resp_with_context
 def add_user_ShouldNotAddIncorrectUser2():
     nick='adsadsad'
     u=User(**{'nick':nick})
@@ -20,7 +21,7 @@ def add_user_ShouldNotAddIncorrectUser2():
         assert False
     except Exception: pass
 
-@tu.test_resp_with_context
+@service_user_bluebrint.test_resp_with_context
 def add_user_ShouldNotAddIncorrectUser3():
     u=User()
     passwd=u.ch_pass('A@s#d4feffeq')
@@ -30,7 +31,7 @@ def add_user_ShouldNotAddIncorrectUser3():
         assert False
     except Exception: pass
 
-@tu.test_resp_with_context
+@service_user_bluebrint.test_resp_with_context
 def add_user_ShouldNotAddIncorrectUser4():
     email='w@wp.pl'
     u=User(**{'email':email})
@@ -39,7 +40,7 @@ def add_user_ShouldNotAddIncorrectUser4():
         assert False
     except Exception: pass
 
-@tu.test_resp_with_context
+@service_user_bluebrint.test_resp_with_context
 def add_user_ShouldAddCorrectUser():
     u=User()
     u.ch_pass('A@s#d4feffeq')
@@ -55,7 +56,7 @@ def add_user_ShouldAddCorrectUser():
     # except Exception as e:
     #     assert False
 
-@tu.test_resp_with_context
+@service_user_bluebrint.test_resp_with_context
 def get_user_by_nick_ShouldGetCorrectUser():
     nick='adsadsad'
     email='w@wp.pl'
@@ -73,7 +74,7 @@ def get_user_by_nick_ShouldGetCorrectUser():
     assert usr.get_passwd()==passwd
     assert usr.get_email()==email
 
-@tu.test_resp_with_context
+@service_user_bluebrint.test_resp_with_context
 def get_user_by_email_ShouldGetCorrectUser():
     nick='adsadsad'
     email='w@wp.pl'
@@ -100,7 +101,7 @@ def get_user_by_email_ShouldGetCorrectUser():
     # assert usr.get_passwd()==passwd
     # assert usr.get_email()==email
 
-@tu.test_resp_with_context
+@service_user_bluebrint.test_resp_with_context
 def get_user_id_ShouldGetCorrectUserId():
     nick='adsadsad'
     email='w@wp.pl'
@@ -120,7 +121,7 @@ def get_user_id_ShouldGetCorrectUserId():
     usr_id=su.get_user_id(nick)
     assert f'{usr_id}'==usr.get_id()
 
-@tu.test_resp_with_context
+@service_user_bluebrint.test_resp_with_context
 def get_user_ShouldGetCorrectUser():
     nick='adsadsad'
     email='w@wp.pl'

@@ -6,7 +6,7 @@ from functools import wraps
 from threading import Thread
 from werkzeug.serving import make_server
 from test_utils import testing_consts as tconst
-from typing import Callable, ParamSpec, TypeVar, Generic
+from typing import Callable, ParamSpec, TypeVar, Generic, Self
 
 _PWrapped=ParamSpec('_PWrapped')
 _RWrapped=TypeVar('_RWrapped')
@@ -72,25 +72,36 @@ def _build_server(f: Callable[[_ServerThread], None]) -> _Wrapped[[_ServerThread
             raise Exception('Cause given above^')
     return func
 
-class TestingUnit:
-    _tests: list[_Wrapped[[_ServerThread], None, [], None]]=[]
+class _TestingUnit:
     def __init__(self) -> None:
-        pass
-    def exec(self) -> None:
-        for t in self._tests:
-            t()
-    @classmethod
-    def test_resp_with_context(cls, f: Callable[[], None]) -> _Wrapped[[_ServerThread], None, [], None]:
+        self._tests: list[_Wrapped[[_ServerThread], None, [], None]]=[]
+    
+    def add_blueprint(self, tub: "_TestingUnit") -> None:
+        self._tests.extend(tub._tests)
+    def test_resp_with_context(self, f: Callable[[], None]) -> _Wrapped[[_ServerThread], None, [], None]:
         @_build_server
         def func(server: _ServerThread) -> None:
             with server.get_context():
                 f()
-        cls._tests.append(func)
+        self._tests.append(func)
         return func
-    @classmethod
-    def test_resp(cls, f: Callable[[], None]) -> _Wrapped[[_ServerThread], None, [], None]:
+    def test_resp(self, f: Callable[[], None]) -> _Wrapped[[_ServerThread], None, [], None]:
         @_build_server
         def func(server: _ServerThread) -> None:
             f()
-        cls._tests.append(func)
+        self._tests.append(func)
         return func
+
+class TestingUnitBlueprint(_TestingUnit):
+    def __init__(self, *args: "TestingUnitBlueprint") -> None:
+        super().__init__()
+        for arg in args:
+            self.add_blueprint(arg)
+
+class TestingUnit(_TestingUnit):
+    def __init__(self) -> None:
+        super().__init__()
+    def exec(self) -> None:
+        for t in self._tests:
+            t()
+
