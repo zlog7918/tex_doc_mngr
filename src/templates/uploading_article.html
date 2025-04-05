@@ -1,145 +1,165 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Article</title>
-</head>
-<body>
-    <h1>LaTeX to PDF Converter</h1>
+{% extends "base.html" %}
 
-    <form id="uploadForm" enctype="multipart/form-data">
-        <label for="file">Wybierz pliki:</label>
-        <input type="file" name="files" id="file" multiple required><br>
+{% block title %}Dodaj Artykuł{% endblock %}
 
-        Tytuł: <input type="text" name="title" required><br>
+{% block body %}
+    {% include 'toolbar.html' %}
 
-        Edytor:
-        <select id="editor" name="editor" required>
-            <option value="" disabled selected>Wybierz edytora</option>
-            {% for editor_id, editor_nick in editors.items() %}
-                <option value="{{ editor_id }}">{{ editor_nick }}</option>
-            {% endfor %}
-        </select><br><br>
+    <style>
+        .main-content {
+            padding: 30px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            border-radius: 10px;
+        }
 
-        <div id="mainTexSelector" style="display: none;">
-            <label for="mainTex">Wybierz główny plik .tex:</label>
-            <select id="mainTex" name="mainTex" required></select>
-        </div><br>
+        h1 {
+            font-size: 36px;
+            font-weight: bold;
+            color: #2d1053;
+            margin-bottom: 20px;
+            text-align: center;
+        }
 
-        <button type="button" id="previewBtn" style="display: none;">View PDF</button>
-        <button type="submit" id="sendBtn" style="display: none;">Send</button>
-    </form>
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            font-size: 18px;
+            color: #2d1053;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .form-actions {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .btn {
+            background: #5a3d90;
+            color: white;
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            background: #4a1e87;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px;
+            }
+
+            .form-group {
+                margin-bottom: 15px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+            }
+        }
+    </style>
+
+    <div class="main-content">
+        <h1>Dodaj Artykuł</h1>
+
+        <form id="uploadForm" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group">
+                <label for="file">Wybierz pliki:</label>
+                <input type="file" name="files" id="file" multiple required>
+            </div>
+
+            <div class="form-group">
+                <label for="title">Tytuł:</label>
+                <input type="text" name="title" id="title" required>
+            </div>
+
+            <div class="form-group">
+                <label for="editor">Edytor:</label>
+                <select id="editor" name="editor" required>
+                    <option value="" disabled selected>Wybierz edytora</option>
+                    {% for editor_id, editor_nick in editors.items() %}
+                        <option value="{{ editor_id }}">{{ editor_nick }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group" id="mainTexSelector" style="display: none;">
+                <label for="mainTex">Wybierz główny plik .tex:</label>
+                <select id="mainTex" name="mainTex"></select>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" id="previewBtn" class="btn" style="display: none;">Podgląd PDF</button>
+                <button type="submit" id="sendBtn" class="btn" style="display: none;">Wyślij</button>
+            </div>
+        </form>
+    </div>
 
     <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const fileInput = document.getElementById('file');
-        const title = document.querySelector('#uploadForm input[name="title"]');
-        const editor = document.getElementById("editor");
-        const previewBtn = document.getElementById('previewBtn');
-        const sendBtn = document.getElementById('sendBtn');
-        const uploadForm = document.getElementById('uploadForm');
-        const mainTexDiv = document.getElementById('mainTexSelector');
-        const mainTexSelect = document.getElementById('mainTex');
+        document.addEventListener("DOMContentLoaded", function () {
+            const fileInput = document.getElementById('file');
+            const title = document.querySelector('#uploadForm input[name="title"]');
+            const editor = document.getElementById("editor");
+            const previewBtn = document.getElementById('previewBtn');
+            const sendBtn = document.getElementById('sendBtn');
+            const uploadForm = document.getElementById('uploadForm');
+            const mainTexDiv = document.getElementById('mainTexSelector');
+            const mainTexSelect = document.getElementById('mainTex');
 
-        fileInput.addEventListener('change', function () {
-            const files = Array.from(this.files);
-            const texFiles = files.filter(file => file.name.toLowerCase().endsWith('.tex'));
-
-            const showButtons = files.length > 0;
-            previewBtn.style.display = showButtons ? "inline-block" : "none";
-            sendBtn.style.display = showButtons ? "inline-block" : "none";
-
-            if (texFiles.length > 1) {
-                mainTexSelect.innerHTML = '';
-                texFiles.forEach(file => {
-                    const option = document.createElement('option');
-                    option.value = file.name;
-                    option.textContent = file.name;
-                    mainTexSelect.appendChild(option);
-                });
-                mainTexDiv.style.display = 'block';
-                mainTexSelect.required = true;
-            } else {
-                mainTexDiv.style.display = 'none';
-                mainTexSelect.required = false;
-
-            }
-        });
-        // Obsługa podglądu
-        previewBtn.addEventListener("click", async function () {
-            const formData = new FormData();
-            for (const file of fileInput.files) {
-                formData.append("files", file);
-            }
-
-            // Dodaj wybrany plik mainTex
-            if (mainTexDiv.style.display !== "none") {
-                formData.append("mainTex", mainTexSelect.value);
-            }
-
-            try {
-                const response = await fetch("/articles/generate-preview", {
-                    method: "POST",
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (data.need_main_tex && data.tex_files) {
-                    mainTexSelect.innerHTML = '';
-                    data.tex_files.forEach(file => {
-                        const option = document.createElement('option');
-                        option.value = file;
-                        option.textContent = file;
-                        mainTexSelect.appendChild(option);
-                    });
-                    mainTexDiv.style.display = 'block';
-                    mainTexSelect.required = true;
-                    alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'View PDF'.");
-                } else if (data.pdf_url) {
-                    window.open(data.pdf_url, '_blank');
+            fileInput.addEventListener('change', function() {
+                let filename = this.files[0]?.name || "";
+                if (filename.endsWith('.tex')) {
+                    previewBtn.style.display = "inline-block";
+                    sendBtn.style.display = "inline-block";
                 } else {
-                    alert("❌ Błąd generowania podglądu: " + (data.message || "Nieznany błąd"));
+                    previewBtn.style.display = "none";
+                    sendBtn.style.display = "none";
                 }
-            } catch (error) {
-                alert("🚨 Błąd podczas generowania podglądu: " + error.message);
-                console.error("[Preview ERROR]", error);
-            }
-        });
+            });
 
-        // Obsługa zapisu pliku
-        uploadForm.addEventListener("submit", async function (event) {
-            event.preventDefault();
+            previewBtn.addEventListener("click", async function() {
+                let formData = new FormData();
+                for (const file of fileInput.files)
+                    formData.append("files", file);
+                if (mainTexDiv.style.display !== "none" && mainTexSelect.value)
+                    formData.append("mainTex", mainTexSelect.value);
 
-            const editorId = editor.value;
-            if (!editorId) {
-                alert("Proszę wybrać edytora.");
-                return;
-            }
-
-            const formData = new FormData();
-            for (const file of fileInput.files) {
-                formData.append("files", file);
-            }
-
-            formData.append("title", title.value);
-            formData.append("editor", editorId);
-
-            // Dodaj wybrany plik mainTex
-            if (mainTexDiv.style.display !== "none" && mainTexSelect.value) {
-                formData.append("mainTex", mainTexSelect.value);
-            }
-
-            try {
-                const response = await fetch("/articles/upload", {
+                let response = await fetch("/articles/generate-preview", {
                     method: "POST",
                     body: formData
                 });
 
                 const data = await response.json();
 
-                // Jeśli backend prosi o wybór głównego pliku
                 if (data.data?.need_main_tex && data.data?.tex_files) {
                     mainTexSelect.innerHTML = '';
                     data.data.tex_files.forEach(file => {
@@ -150,24 +170,73 @@
                     });
                     mainTexDiv.style.display = 'block';
                     mainTexSelect.required = true;
+                    alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'View PDF'.");
+                } else if (data.data?.pdf_url) {
+                    window.open(data.data.pdf_url, '_blank');
+                } else {
+                    alert("❌ Błąd generowania podglądu: " + (data.message || "Nieznany błąd"));
+                }
+            });
 
-                    alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'Send'.");
+            // Obsługa zapisu pliku
+            uploadForm.addEventListener("submit", async function (event) {
+                event.preventDefault();
+
+                const editorId = editor.value;
+                if (!editorId) {
+                    alert("Proszę wybrać edytora.");
                     return;
                 }
 
-                // Przesłano i wygenerowano PDF
-                if (!data.data?.need_main_tex && data.data?.pdf_url) {
-                    alert("✅ Plik przesłany pomyślnie!");
-                } else {
-                    alert("❌ Błąd przesyłania: " + (data.error || "Nieznany błąd"));
+                const formData = new FormData();
+                for (const file of fileInput.files) {
+                    formData.append("files", file);
                 }
 
-            } catch (error) {
-                alert("🚨 Błąd podczas przesyłania: " + error.message);
-            }
-        });
-    });
-    </script>
+                formData.append("title", title.value);
+                formData.append("editor", editorId);
 
-</body>
-</html>
+                // Dodaj wybrany plik mainTex
+                if (mainTexDiv.style.display !== "none" && mainTexSelect.value) {
+                    formData.append("mainTex", mainTexSelect.value);
+                }
+
+                try {
+                    const response = await fetch("/articles/upload", {
+                        method: "POST",
+                        body: formData
+                    });
+
+                    const data = await response.json();
+
+                    // Jeśli backend prosi o wybór głównego pliku
+                    if (data.data?.need_main_tex && data.data?.tex_files) {
+                        mainTexSelect.innerHTML = '';
+                        data.data.tex_files.forEach(file => {
+                            const option = document.createElement('option');
+                            option.value = file;
+                            option.textContent = file;
+                            mainTexSelect.appendChild(option);
+                        });
+                        mainTexDiv.style.display = 'block';
+                        mainTexSelect.required = true;
+
+                        alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'Send'.");
+                        return;
+                    }
+
+                    // Przesłano i wygenerowano PDF
+                    if (!data.data?.need_main_tex && data.data?.pdf_url) {
+                        alert("✅ Plik przesłany pomyślnie!");
+                        window.location.href = window.location.href;
+                    } else {
+                        alert("❌ Błąd przesyłania: " + (data.message || "Nieznany błąd"));
+                    }
+
+                } catch (error) {
+                    alert("🚨 Błąd podczas przesyłania: " + error.message);
+                }
+            });
+        });
+    </script>
+{% endblock %}
