@@ -1,12 +1,12 @@
 import os
-from ...db.db_base import log_err
+from src.db.db_base import log_err
 from werkzeug.utils import secure_filename
-from ...models.utils.Response import Response
+from src.models.utils.Response import Response
 from werkzeug.datastructures import FileStorage
-from ...controllers import article_controller as ac
+from src.controllers import article_controller as ac
 from flask import request, Blueprint, render_template
-from ...models.utils.EnvConsts import envConsts as ec
-from ...models.utils import decors as decor, utils as util
+from src.models.utils.EnvConsts import envConsts as ec
+from src.models.utils import decors as decor, utils as util
 
 articles_bp = Blueprint("articles", __name__)
 

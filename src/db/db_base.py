@@ -1,7 +1,7 @@
 import json
 from flask import request
 from flask_sqlalchemy import SQLAlchemy
-from ..models.utils import utils as util
+from src.models.utils import utils as util
 from sqlalchemy import MetaData, Integer, Boolean, Text, DateTime
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 

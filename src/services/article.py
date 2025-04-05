@@ -1,14 +1,14 @@
 from . import user as uq
-from ..db.db_base import db
-from ..models.usr.User import User
+from src.db.db_base import db
+from src.models.usr.User import User
 from sqlalchemy import and_, select
 from flask_login import current_user
-from ..models.article.Round import Round
-from ..models.utils import utils as util
-from ..models.article.Review import Review
-from ..models.article.Questions import Answer, Question
-from ..models.utils.MessageException import MessageException
-from ..models.article.Article import Article, ArticleStatus, ArticleStatusEnum
+from src.models.article.Round import Round
+from src.models.utils import utils as util
+from src.models.article.Review import Review
+from src.models.article.Questions import Answer, Question
+from src.models.utils.MessageException import MessageException
+from src.models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
 def __get_status_or_err(status: ArticleStatusEnum) -> ArticleStatus:
     _status: ArticleStatus|None = ArticleStatus.query.where(ArticleStatus.stat==status).first()

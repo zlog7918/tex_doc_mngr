@@ -1,19 +1,19 @@
 import time
-from .db.db_base import db
 from typing import Awaitable
-from .services import user as su
-from .db.seed_db import seed_data
-from .models.lang import LangEnum
-from .models.usr.User import User
+from src.db.db_base import db
+from src.services import user as su
 from flask_login import LoginManager
+from src.db.seed_db import seed_data
+from src.models.lang import LangEnum
+from src.models.usr.User import User
 from flask.typing import RouteCallable
-from .routes.users.users import user_bp
-from .models.utils import utils as util
 from werkzeug.exceptions import NotFound
-from .routes.reviewer.reviews import review_bp
-from .routes.author.articles import articles_bp
-from .models.utils.EnvConsts import envConsts as ec
-from .routes.editor.articles import editor_articles_bp
+from src.routes.users.users import user_bp
+from src.models.utils import utils as util
+from src.routes.reviewer.reviews import review_bp
+from src.routes.author.articles import articles_bp
+from src.models.utils.EnvConsts import envConsts as ec
+from src.routes.editor.articles import editor_articles_bp
 from flask import Flask, Request as flRequest, request, current_app
 from werkzeug.routing import RequestRedirect, MapAdapter, BaseConverter, ValidationError
 

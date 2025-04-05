@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .Review import Review
     from .Article import Article
-from ...db.db_base import db
+from src.db.db_base import db
 from .Questions import QuestionSet
 from sqlalchemy import ForeignKey, Integer, Date
 from sqlalchemy.orm import Mapped, mapped_column, relationship

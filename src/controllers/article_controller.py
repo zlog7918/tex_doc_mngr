@@ -1,16 +1,14 @@
 import os
 import subprocess
 from typing import Any
-from ..services import user as au
-from ..services import review as rs
-from ..services import article as aq
 from flask import send_from_directory
-from ..models.utils.Response import Response
-from ..models.utils.decors import log_if_error
-from ..db.db_base import db, log_activity, log_err
-from ..models.utils.EnvConsts import envConsts as ec
-from ..models.utils.MessageException import MessageException
-from ..models.article.Article import Article, ArticleStatusEnum
+from src.models.utils.Response import Response
+from src.models.utils.decors import log_if_error
+from src.db.db_base import db, log_activity, log_err
+from src.models.utils.EnvConsts import envConsts as ec
+from src.models.utils.MessageException import MessageException
+from src.services import user as au, review as rs, article as aq
+from src.models.article.Article import Article, ArticleStatusEnum
 
 
 def get_available_editors() -> dict[int, str]:

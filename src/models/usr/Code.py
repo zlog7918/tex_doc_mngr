@@ -2,7 +2,7 @@ import string
 import random
 from .User import User
 from typing import Optional
-from ...db.db_base import db
+from src.db.db_base import db
 from ..utils import consts as c
 from enum import Enum as PyEnum, auto
 from sqlalchemy.orm import Mapped, mapped_column, relationship

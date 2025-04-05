@@ -1,9 +1,9 @@
-from ..models.usr.User import User
+from src.models.usr.User import User
 from flask_sqlalchemy import SQLAlchemy
-from ..models.utils import utils as util
-from ..models.usr.Code import CodePurpose, CodePurposeEnum
-from ..models.article.Article import Article, ArticleStatus, ArticleStatusEnum
-from ..models.article.Questions import Question, QuestionA, QuestionSet, QuestionSetQuestions
+from src.models.utils import utils as util
+from src.models.usr.Code import CodePurpose, CodePurposeEnum
+from src.models.article.Article import Article, ArticleStatus, ArticleStatusEnum
+from src.models.article.Questions import Question, QuestionA, QuestionSet, QuestionSetQuestions
 
 def seed_data(db: SQLAlchemy) -> None:
     if not User.query.first():

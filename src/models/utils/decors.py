@@ -2,8 +2,8 @@ from flask import abort
 from functools import wraps
 from . import utils as util
 from .Response import Response
-from ...services import user as su
-from ...db.db_base import db, log_err
+from src.services import user as su
+from src.db.db_base import db, log_err
 from flask.typing import ResponseReturnValue
 from .MessageException import MessageException
 from typing import Callable, ParamSpec, TypeVar, Generic

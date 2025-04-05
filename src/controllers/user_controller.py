@@ -1,16 +1,16 @@
 import re
 import pickle as pkl
 import email_validator as emailV
-from ..models.usr.User import User
-from ..db.db_base import log_activity
-from ..models.utils import utils as util
-from ..models.mail.SendMail import SendMail
-from ..models.utils.Response import Response
-from ..models.usr.Code import CodePurposeEnum
-from ..services import user as su, code as sc
-from ..models.utils.decors import log_if_error
+from src.models.usr.User import User
+from src.db.db_base import log_activity
+from src.models.utils import utils as util
+from src.models.mail.SendMail import SendMail
+from src.models.utils.Response import Response
 from flask_login import login_user, logout_user
-from ..models.utils.MessageException import MessageException
+from src.models.usr.Code import CodePurposeEnum
+from src.services import user as su, code as sc
+from src.models.utils.decors import log_if_error
+from src.models.utils.MessageException import MessageException
 from typing import Callable, ParamSpec, Concatenate, TypeVar, TypeVarTuple
 
 P=ParamSpec('P')

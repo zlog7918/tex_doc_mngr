@@ -1,11 +1,11 @@
 from . import article as aq
-from ..models.article.Round import Round
-from ..models.utils import utils as util
-from ..models.article.Review import Review
-from ..db.db_base import db, log_err, log_activity
-from ..models.utils.MessageException import MessageException
-from ..models.article.Article import Article, ArticleStatusEnum
-from ..models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
+from src.models.article.Round import Round
+from src.models.utils import utils as util
+from src.models.article.Review import Review
+from src.db.db_base import db, log_err, log_activity
+from src.models.utils.MessageException import MessageException
+from src.models.article.Article import Article, ArticleStatusEnum
+from src.models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 def get_review_by_id(review_id: int) -> Review|None:
     return Review.query.where(Review.id==review_id).first()

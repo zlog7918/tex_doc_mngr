@@ -1,8 +1,8 @@
 from flask_login import login_required
 from flask import Blueprint, redirect, request
-from ...controllers import user_controller as uc
-from ...models.utils import decors as decor, utils as util
-from ...models.utils.FormNotFilledException import FormNotFilledException
+from src.controllers import user_controller as uc
+from src.models.utils import decors as decor, utils as util
+from src.models.utils.FormNotFilledException import FormNotFilledException
 
 user_bp = Blueprint('user', __name__)
 
