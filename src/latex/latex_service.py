@@ -7,32 +7,44 @@ from werkzeug.utils import secure_filename
 from models.utils.Response import Response
 from werkzeug.datastructures import FileStorage
 from models.utils.MessageException import MessageException
+from services.user import get_curr_user_or_err
 
 class LatexService:
     @staticmethod
-    def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
+    def convert_tex_to_pdf(tex_path: str, output_dir: str, raise_on_error: bool = False) -> bool:
         try:
+            pdf_path = tex_path.replace('.tex', '.pdf')
             for _ in range(2):
                 result = subprocess.run(
-                    ["pdflatex", "--shell-escape", "-interaction=nonstopmode", "-output-directory", output_dir, tex_path],
+                    ["pdflatex", "--shell-escape", "-interaction=nonstopmode", "-output-directory", output_dir,
+                     tex_path],
                     cwd=output_dir,
                     check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
+            if result.returncode != 0:
+                if raise_on_error:
+                    raise MessageException("LaTeX compilation failed", err=result.stderr.decode())
+                return False
 
-            pdf_path = tex_path.replace('.tex', '.pdf')
             return os.path.exists(pdf_path)
-        except subprocess.CalledProcessError:
+
+        except subprocess.CalledProcessError as e:
+            if raise_on_error:
+                raise MessageException(str(e), err=e)
             return False
 
     @staticmethod
     def generate_preview(tex_path: str) -> Response:
         temp_folder = os.path.dirname(tex_path)
         filename = os.path.basename(tex_path)
-        if LatexService.convert_tex_to_pdf(tex_path, temp_folder):
-            return Response.success_response(data={
-                "pdf_url": f"/articles/temp-preview/{filename.replace('.tex', '.pdf')}"
-            })
-        raise MessageException('Błąd generowania PDF')
+
+        if not LatexService.convert_tex_to_pdf(tex_path, temp_folder):
+            raise MessageException('Błąd generowania PDF')
+
+        user_id = get_curr_user_or_err().get_id()
+        return Response.success_response(data={
+            "pdf_url": f"/articles/temp-preview/{user_id}/{filename.replace('.tex', '.pdf')}"
+        })
 
     @staticmethod
     def get_file(folder: str, filename: str) -> Response:

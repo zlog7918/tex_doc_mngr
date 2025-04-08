@@ -1,5 +1,4 @@
 import os
-import subprocess
 from typing import Any
 import services.user as au
 import services.article as aq
@@ -16,6 +15,12 @@ from models.utils.MessageException import MessageException
 
 def get_available_editors() -> dict[int, str]:
     return aq.get_available_editors()
+
+def _get_user_temp_dir() -> str:
+    user_id = au.get_curr_user_or_err().get_id()
+    user_temp_path = os.path.join(ec.getTempDir(), str(user_id))
+    os.makedirs(user_temp_path, exist_ok=True)
+    return user_temp_path
 
 def is_valid_editor(editor_id: int) -> None:
     try:
@@ -157,17 +162,17 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
         raise MessageException(f'Failed to update article status to {ArticleStatusEnum.InReview.value}.')
     return Response.success_response()
 
-def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
-    try:
-        for _ in range(2):
-            subprocess.run(
-                ["pdflatex", "--shell-escape", "-interaction=nonstopmode", "-output-directory", output_dir, tex_path],
-                cwd=output_dir,
-                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-        return os.path.exists(tex_path.replace('.tex', '.pdf'))
-    except subprocess.CalledProcessError as e:
-        raise MessageException(str(e), err=e)
+# def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
+#     try:
+#         for _ in range(2):
+#             subprocess.run(
+#                 ["pdflatex", "--shell-escape", "-interaction=nonstopmode", "-output-directory", output_dir, tex_path],
+#                 cwd=output_dir,
+#                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+#             )
+#         return os.path.exists(tex_path.replace('.tex', '.pdf'))
+#     except subprocess.CalledProcessError as e:
+#         raise MessageException(str(e), err=e)
 
 def handle_file(file: FileStorage, folder: str) -> str:
     os.makedirs(folder, exist_ok=True)
@@ -268,8 +273,12 @@ def upload_file(title: str, editor_id: int, files: list[FileStorage], main_tex_n
     )
 
 @log_if_error
-def generate_preview(files: list[FileStorage], main_tex_name: str|None = None) -> Response:
-    ret=_handle_files('/articles/temp-preview', ec.getTempDir(), files, main_tex_name)
+def generate_preview(files: list[FileStorage], main_tex_name: str | None = None) -> Response:
+    user_temp_dir = _get_user_temp_dir()
+
+    user_id = au.get_curr_user_or_err().get_id()
+    ret = _handle_files(f'/articles/temp-preview/{user_id}', user_temp_dir, files, main_tex_name)
+
     return Response.success_response(data={
         'pdf_url': ret
     })

@@ -1,9 +1,15 @@
+import os
+from flask import abort
+from models.utils.EnvConsts import envConsts as ec
 from db.db_base import log_err
 from models.utils.Response import Response
+from werkzeug.utils import secure_filename
 import controllers.article_controller as ac
 from models.article.Article import ArticleStatusEnum
 from flask import request, Blueprint, render_template
 from models.utils import decors as decor, utils as util
+import services.user as au
+from latex.latex_service import LatexService
 from werkzeug.datastructures import ImmutableMultiDict, FileStorage
 
 articles_bp = Blueprint("articles", __name__)
@@ -101,10 +107,20 @@ def generate_preview():
 
     return ac.generate_preview(files, main_tex_name).to_dict()
 
-@articles_bp.route('/temp-preview/<filename>')
+@articles_bp.route('/temp-preview/<int:user_id>/<filename>')
 @decor.approve_required
-def temp_preview(filename: str):
-    ret=ac.temp_preview(filename)
-    if ret.success:
-        return ret.data
-    return ret.to_dict()
+def temp_preview(user_id: int, filename: str):
+    current_user_id = au.get_curr_user_or_err().get_id()
+
+    if int(user_id) != int(current_user_id):
+        abort(403)
+
+    safe_filename = secure_filename(filename)
+    tmp_dir = os.path.join(ec.getTempDir(), str(user_id))
+
+    response = LatexService.get_file(tmp_dir, safe_filename)
+    if response.success:
+        return response.data
+    abort(404)
+
+

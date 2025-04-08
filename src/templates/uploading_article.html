@@ -95,6 +95,7 @@
             <div class="form-group">
                 <label for="file">Wybierz pliki:</label>
                 <input type="file" name="files" id="file" multiple required>
+                <ul id="fileList" style="margin-top: 10px; font-size: 14px; color: #333; list-style: none; padding: 0;"></ul>
             </div>
 
             <div class="form-group">
@@ -135,15 +136,63 @@
             const mainTexDiv = document.getElementById('mainTexSelector');
             const mainTexSelect = document.getElementById('mainTex');
 
-            fileInput.addEventListener('change', function() {
-                let showButtons = this.files.length > 0;
+            function updateFileList() {
+                const label = document.querySelector('label[for="file"]');
+                const fileList = document.getElementById("fileList");
+
+                label.innerText = `Wybierz pliki: (Liczba plików: ${selectedFiles.length})`;
+
+                fileList.innerHTML = "";
+
+                selectedFiles.forEach((file, index) => {
+                    const li = document.createElement("li");
+                    li.style.display = "flex";
+                    li.style.justifyContent = "space-between";
+                    li.style.alignItems = "center";
+                    li.style.padding = "4px 0";
+
+                    const fileName = document.createElement("span");
+                    fileName.textContent = file.name;
+
+                    const removeBtn = document.createElement("button");
+                    removeBtn.textContent = "Usuń";
+                    removeBtn.style.background = "#e74c3c";
+                    removeBtn.style.color = "white";
+                    removeBtn.style.border = "none";
+                    removeBtn.style.padding = "4px 8px";
+                    removeBtn.style.borderRadius = "4px";
+                    removeBtn.style.cursor = "pointer";
+
+                    removeBtn.addEventListener("click", function () {
+                        selectedFiles.splice(index, 1);
+                        updateFileList();
+                    });
+
+                    li.appendChild(fileName);
+                    li.appendChild(removeBtn);
+                    fileList.appendChild(li);
+                });
+
+                const showButtons = selectedFiles.length > 0;
                 previewBtn.style.display = showButtons ? "inline-block" : "none";
                 sendBtn.style.display = showButtons ? "inline-block" : "none";
+            }
+
+            let selectedFiles = [];
+
+            fileInput.addEventListener('change', function () {
+                for (const file of this.files) {
+                    if (!selectedFiles.some(f => f.name === file.name)) {
+                        selectedFiles.push(file);
+                    }
+                }
+
+                updateFileList();
             });
 
             previewBtn.addEventListener("click", async function() {
                 let formData = new FormData();
-                for (const file of fileInput.files)
+                for (const file of selectedFiles)
                     formData.append("files", file);
                 if (mainTexDiv.style.display !== "none" && mainTexSelect.value)
                     formData.append("mainTex", mainTexSelect.value);
