@@ -52,7 +52,7 @@
         font-weight: bold;
     }
 
-    .reviewers-section select,
+    .reviewers-section input[type="text"],
     .reviewers-section input[type="datetime-local"] {
         padding: 6px 10px;
         border-radius: 5px;
@@ -60,21 +60,16 @@
         box-sizing: border-box;
         font-size: 14px;
         width: 100%;
+        max-width: 400px; /* Możesz dostosować szerokość */
         margin-bottom: 10px;
     }
 
-    .reviewers-section select {
+    .reviewers-section input[type="text"] {
         color: rgba(0, 0, 0, 0.5);
         font-style: italic;
     }
 
-    .reviewers-section select option {
-        color: black;
-        font-style: normal;
-    }
-
-    .reviewers-section select option:first-child {
-        color: rgba(0, 0, 0, 0.5);
+    .reviewers-section input[type="text"]::placeholder {
         font-style: italic;
     }
 
@@ -115,12 +110,12 @@
     <h2>Przypisz recenzentów</h2>
     <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post" onsubmit="return validateForm()">
         <label for="reviewer">Wybierz recenzenta:</label>
-        <select id="reviewer" name="reviewer">
-            <option value="" disabled selected>Wybierz recenzenta</option>
+        <input list="reviewers" id="reviewer" name="reviewer" autocomplete="off" placeholder="Wpisz lub wybierz recenzenta">
+        <datalist id="reviewers">
             {% for reviewer_id, reviewer_nick in reviewers.items() %}
-                <option value="{{ reviewer_id }}">{{ reviewer_nick }}</option>
+                <option data-id="{{ reviewer_id }}" value="{{ reviewer_nick }}"></option>
             {% endfor %}
-        </select>
+        </datalist>
         <button type="button" id="addReviewer">Dodaj recenzenta</button>
 
         <h3>Przypisani recenzenci:</h3>
@@ -143,48 +138,47 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        const reviewerSelect = document.getElementById("reviewer");
+        const reviewerInput = document.getElementById("reviewer");
+        const reviewerDatalist = document.getElementById("reviewers");
         const assignedReviewersList = document.getElementById("assignedReviewers");
         const noReviewersItem = document.getElementById("noReviewers");
         const form = document.querySelector("form");
-        const deadlineConfirmInput = document.getElementById("deadline_confirm");
-        const deadlineSubmitInput = document.getElementById("deadline_submit"); // Dodano zmienną dla deadline_submit
-
-        function updateReviewerStyle() {
-            reviewerSelect.style.color = reviewerSelect.value ? "black" : "rgba(0, 0, 0, 0.5)";
-            reviewerSelect.style.fontStyle = reviewerSelect.value ? "normal" : "italic";
-        }
-
-        reviewerSelect.addEventListener("change", updateReviewerStyle);
-        updateReviewerStyle();
 
         document.getElementById('addReviewer').addEventListener('click', function () {
-            const selectedReviewerId = reviewerSelect.value;
-            const selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
+            const enteredReviewer = reviewerInput.value.trim();
+            let selectedReviewerId = null;
 
+            // Sprawdzenie, czy wpisany tekst pasuje do dostępnych opcji
+            for (let option of reviewerDatalist.options) {
+                if (option.value === enteredReviewer) {
+                    selectedReviewerId = option.getAttribute("data-id");
+                    break;
+                }
+            }
+
+            // Jeśli nie znaleziono recenzenta, wyświetl komunikat
             if (!selectedReviewerId) {
-                alert('Proszę wybrać recenzenta.');
+                alert("Wybierz recenzenta z listy.");
                 return;
             }
 
-            const existingItems = assignedReviewersList.querySelectorAll('li');
-            for (let item of existingItems) {
-                if (item.getAttribute('data-id') === selectedReviewerId) {
-                    alert('Recenzent już został dodany.');
-                    return;
-                }
+            // Sprawdzanie, czy recenzent już został dodany
+            if ([...assignedReviewersList.children].some(li => li.dataset.id === selectedReviewerId)) {
+                alert("Recenzent już został dodany.");
+                return;
             }
 
             if (noReviewersItem) {
                 noReviewersItem.remove();
             }
 
-            const newReviewerItem = document.createElement('li');
+            // Dodanie recenzenta do listy
+            const newReviewerItem = document.createElement("li");
             newReviewerItem.classList.add("reviewer-item");
-            newReviewerItem.setAttribute('data-id', selectedReviewerId);
+            newReviewerItem.setAttribute("data-id", selectedReviewerId);
 
-            const reviewerNameSpan = document.createElement('span');
-            reviewerNameSpan.textContent = selectedReviewerName;
+            const reviewerNameSpan = document.createElement("span");
+            reviewerNameSpan.textContent = enteredReviewer;
             reviewerNameSpan.classList.add("reviewer-name");
 
             const removeButton = document.createElement("button");
@@ -193,11 +187,6 @@
             removeButton.addEventListener("click", function () {
                 newReviewerItem.remove();
                 hiddenInput.remove();
-
-                const option = document.createElement("option");
-                option.value = selectedReviewerId;
-                option.textContent = selectedReviewerName;
-                reviewerSelect.appendChild(option);
 
                 if (assignedReviewersList.children.length === 0) {
                     assignedReviewersList.appendChild(noReviewersItem);
@@ -208,15 +197,13 @@
             newReviewerItem.appendChild(removeButton);
             assignedReviewersList.appendChild(newReviewerItem);
 
-            const hiddenInput = document.createElement('input');
-            hiddenInput.type = 'hidden';
-            hiddenInput.name = 'assigned_reviewers[]';
+            const hiddenInput = document.createElement("input");
+            hiddenInput.type = "hidden";
+            hiddenInput.name = "assigned_reviewers[]";
             hiddenInput.value = selectedReviewerId;
             form.appendChild(hiddenInput);
 
-            reviewerSelect.querySelector(`option[value="${selectedReviewerId}"]`).remove();
-            reviewerSelect.value = "";
-            updateReviewerStyle();
+            reviewerInput.value = "";  // Resetowanie wartości po dodaniu recenzenta
         });
 
         function validateForm() {
@@ -240,22 +227,10 @@
             tomorrow.setHours(0, 0, 0, 0);
 
             const minDate = tomorrow.toISOString().slice(0, 16); // Format 'YYYY-MM-DDTHH:mm'
-
-            // Ustawienie minimalnej daty na odpowiednie pola
-            deadlineConfirmInput.min = minDate;
-            deadlineSubmitInput.min = minDate; // Dodano ustawienie minDate dla deadline_submit
+            document.getElementById("deadline_confirm").min = minDate;
+            document.getElementById("deadline_submit").min = minDate;
         }
 
         setMinDate();
-
-        // Zdarzenie na polu deadlineConfirmInput, by od razu "straciło" focus po zmianie daty
-        deadlineConfirmInput.addEventListener("change", function () {
-            this.blur();
-        });
-
-        // Zdarzenie na polu deadlineSubmitInput, by od razu "straciło" focus po zmianie daty
-        deadlineSubmitInput.addEventListener("change", function () {
-            this.blur();
-        });
     });
 </script>
