@@ -37,14 +37,9 @@
             let mainTexSelect = document.getElementById('mainTex');
 
             fileInput.addEventListener('change', function() {
-                let filename = this.files[0]?.name || "";
-                if (filename.endsWith('.tex')) {
-                    previewBtn.style.display = "inline-block";
-                    sendBtn.style.display = "inline-block";
-                } else {
-                    previewBtn.style.display = "none";
-                    sendBtn.style.display = "none";
-                }
+                let showButtons = this.files.length > 0;
+                previewBtn.style.display = showButtons ? "inline-block" : "none";
+                sendBtn.style.display = showButtons ? "inline-block" : "none";
             });
 
             previewBtn.addEventListener("click", async function() {
