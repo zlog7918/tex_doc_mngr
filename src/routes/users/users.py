@@ -1,6 +1,4 @@
-from typing import Callable
 from flask_login import login_required
-from models.usr.User import User_params
 import controllers.user_controller as uc
 from flask import Blueprint, redirect, request
 from models.utils import decors as decor, utils as util

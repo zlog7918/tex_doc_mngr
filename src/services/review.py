@@ -1,3 +1,4 @@
+from sqlalchemy import and_, desc
 from . import article as aq
 from models.utils import utils as util
 from models.article.Round import Round
@@ -5,6 +6,7 @@ from models.article.Review import Review
 from models.article.Article import Article
 from db.db_base import db, log_err, log_activity
 from models.utils.MessageException import MessageException
+from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 def get_review_by_id(review_id: int) -> Review|None:
@@ -15,7 +17,8 @@ def get_review(article_id: int, reviewer_id: int) -> Review|None:
         review = (
             db.session.query(Review)
             .join(Round, Review.round_id == Round.id)
-            .filter(Round.article_id == article_id, Review.reviewer_id == reviewer_id)
+            .where(and_(Round.article_id == article_id, Review.reviewer_id == reviewer_id))
+            .order_by(desc(Round.round_number))
             .first()
         )
 
@@ -26,59 +29,58 @@ def get_review(article_id: int, reviewer_id: int) -> Review|None:
 
 
 def check_reviews_and_update_article_status(review_id: int) -> None:
-    try:
-        round_id = (
-            db.session.query(Review.round_id)
-            .filter(Review.id == review_id)
+    round_id = (
+        db.session.query(Review.round_id)
+        .filter(Review.id == review_id)
+        .scalar()
+    )
+
+    if round_id is None:
+        return
+
+    statuses = (
+        db.session.query(Review.status)
+        .where(Review.round_id == round_id)
+        .all()
+    )
+
+    all_reviewed = all(status[0] == 'Reviewed' for status in statuses)
+
+    if all_reviewed:
+        article: Article = (
+            db.session.query(Article)
+            .join(Round, Round.article_id == Article.id)
+            .where(Round.id == round_id)
             .scalar()
         )
+        if article:
+            aq.update_article_status(article, ArticleStatusEnum.Reviewed)
+        else:
+            raise MessageException(f'Article with round id {round_id} not found.')
 
-        if round_id is None:
-            return
-
-        statuses = (
-            db.session.query(Review.status)
-            .filter(Review.round_id == round_id)
-            .all()
-        )
-
-        all_reviewed = all(status[0] == 'Reviewed' for status in statuses)
-
-        if all_reviewed:
-            article_id = (
-                db.session.query(Round.article_id)
-                .filter(Round.id == round_id)
-                .scalar()
-            )
-            if article_id:
-                aq.update_article_status(article_id, 4)
-
-    except Exception as e:
-        log_err(e)
 
 
 def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
-    try:
-        articles = (
-            db.session.query(Article, Review.status)
-            .join(Round, Round.article_id == Article.id)
-            .join(Review, Review.round_id == Round.id)
-            .filter(Review.reviewer_id == reviewer_id, Review.status.in_(['Pending confirmation', 'Accepted by reviewer']))
-            .all()
-        )
-
-        return [(row[0], row[1]) for row in articles]
-
-
-    except Exception as e:
-        log_err(e)
-        return []
+    articles = (
+        db.session.query(Article, Review.status)
+        .join(Round, Round.article_id == Article.id)
+        .join(Review, Review.round_id == Round.id)
+        .join(ArticleStatus, ArticleStatus.id == Article.status_id)
+        .where(and_(
+            Review.reviewer_id == reviewer_id,
+            Review.status.in_(['Pending confirmation', 'Accepted by reviewer']),
+            ArticleStatus.stat != ArticleStatusEnum.Rejected
+        ))
+        .all()
+    )
+    return [row.tuple() for row in articles]
 
 
 def post_review(review: Review) -> bool:
     try:
         # Dodajemy nową recenzję do bazy danych
         db.session.add(review)
+        db.session.flush()
         return True
     except Exception as e:
         log_err(e)
@@ -91,6 +93,10 @@ def update_review_status(review_id: int, status: str) -> bool:
         if review is None:
             log_activity(False, {'err': f'Review with id: {review_id} not found'})
             return False
+        if review.status in ("Reviewed", "Not reviewed", "Rejected by reviewer") or aq.is_article_rejected(review.round.article_id):
+            log_activity(False, {'err': f'Attempt to access review: {review_id} which should be unavailable'})
+            return False
+        
         review.status=status
         db.session.flush()
         return True
@@ -144,9 +150,10 @@ def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
                 Answer.answer: answer,
             }))
             db.session.add(new_answer)
+            db.session.flush()
+            db.session.flush()
 
-        update_review_status(review_id=review_id, status='Reviewed')    # TODO: rollback answer submitting when exception here
-        db.session.commit()
+        update_review_status(review_id=review_id, status='Reviewed')
         return True
     except Exception as e:
         log_err(e)

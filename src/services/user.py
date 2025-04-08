@@ -1,6 +1,7 @@
 import pickle as pkl
 from db.db_base import db
 from flask_login import current_user
+from models.utils import utils as util
 from models.usr.User import User, User_params
 from typing import Callable, ParamSpec, TypeVarTuple
 from models.utils.MessageException import MessageException
@@ -22,7 +23,8 @@ def get_user_id(nick: str) -> int:
             raise MessageException(f'{nick}')
         return user.id
     except MessageException as e:
-        raise MessageException.from_exception(e, f'Nie znaleziono użytkownika: {str(e)}') from None
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.UserNotFoundErr.value(e)) from None
 
 def get_curr_user() -> User|None:
     try:
@@ -38,14 +40,17 @@ def get_curr_user() -> User|None:
 def get_curr_user_or_err() -> User:
     u=get_curr_user()
     if u is None:
-        raise MessageException('Nie jest zalogowany, żaden użytkownik')
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException(lang_pkg.UserNotLogged.value)
     return u
 
 def add_user(user: User):
     try:
         db.session.add(user)
+        db.session.flush()
     except Exception as e:
-        raise MessageException.from_exception(e, 'Użytkownik nie został dodany')
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.UserNotAdded.value)
 
 def approve_user(user: User) -> None:
     try:
@@ -57,6 +62,7 @@ def approve_user(user: User) -> None:
 def delete_user(user: User) -> None:
     try:
         db.session.delete(user)
+        db.session.flush()
     except Exception as e:
         raise MessageException.from_exception(e, 'Konto nie zostało usunięte')
 
@@ -86,7 +92,7 @@ def map_args(user: User, args: tuple[*TVT]) -> tuple[*TVT]:
     return tuple(l)
 
 P=ParamSpec('P')
-def exec_funcs(do: Callable[P, object], *args: P.args, **kwargs: P.kwargs) -> None:
+def _exec_funcs(do: Callable[P, object], *args: P.args, **kwargs: P.kwargs) -> None:
     try:
         do(*args, **kwargs)
     except Exception as e:
@@ -95,10 +101,11 @@ def exec_funcs(do: Callable[P, object], *args: P.args, **kwargs: P.kwargs) -> No
 def set_user_nick(user: User, nick: str) -> None:
     try:
         user.nick=nick
+        db.session.flush()
         if user.do_after_cr is not None:
             todo: list[tuple[Callable[..., object], tuple[object, ...]]]=pkl.loads(user.do_after_cr)
             for do, args in todo:
-                exec_funcs(do, *map_args(user, args))
+                _exec_funcs(do, *map_args(user, args))
             user.do_after_cr=None
         db.session.flush()
     except Exception as e:

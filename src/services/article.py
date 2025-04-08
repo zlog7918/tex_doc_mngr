@@ -2,6 +2,10 @@ from db.db_base import db
 from services import user as uq
 from models.usr.User import User
 from sqlalchemy import and_, select
+from models.usr.User import User
+from db.db_base import db, log_activity, log_err
+from flask_login import current_user
+from models.usr.User import User
 from models.article.Round import Round
 from models.utils import utils as util
 from models.article.Review import Review
@@ -15,19 +19,30 @@ def __get_status_or_err(status: ArticleStatusEnum) -> ArticleStatus:
         raise ValueError(f'Podany status artykułu: {status.name} nie istnieje w bazie danych')
     return _status
 
-def create_article(title: str, file_url: str, editor_id: int) -> None:
+def create_article(title: str, editor_id: int) -> bool:
     try:
-        user_id = uq.get_curr_user_or_err().get_id()
+        user_id = current_user.get_id()
+        if not editor_id:
+            log_activity(False, {'err': f'Nie znaleziono edytora o id: {editor_id}'})
+            return False
+
         status = __get_status_or_err(ArticleStatusEnum.Submitted)
 
         new_article = Article(**util.get_kwargs_for(Article, {
             Article.title: title,
             Article.author_id: int(user_id),
             Article.editor_id: editor_id,
-            Article.content: file_url,
             Article.status_id: status.id,
         }))
         db.session.add(new_article)
+        db.session.flush()
+        article = get_article_by_title(user_id, title)
+        if not article:
+            raise MessageException(f'Nie udało się pobrać artykułu "{title}" po zapisaniu')
+
+        log_activity(True, {'msg': f'Created article "{title}" with id {article.id} by user {user_id}'})
+        return True
+
     except MessageException as e:
         raise MessageException.from_exception(e, 'Article not created')
 
@@ -35,21 +50,43 @@ def create_article(title: str, file_url: str, editor_id: int) -> None:
 def get_article(article_id: int) -> Article|None:
     return Article.query.where(Article.id==article_id).first()
 
+def get_article_by_title(author_id: int, title: str) -> Article|None:
+    return Article.query.where(and_(Article.author_id == author_id, Article.title == title)).first()
+
 def get_my_articles(author_id: int) -> list[Article]:
     return Article.query.where(Article.author_id == author_id).all()
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
-    return Article.query.where(Article.editor_id == editor_id).all()
+    return (
+        Article.query
+        .join(ArticleStatus)
+        .where(and_(
+            Article.editor_id == editor_id,
+            ArticleStatus.stat != ArticleStatusEnum.Rejected
+        ))
+        .all()
+    )
 
+
+def is_article_rejected(article_id: int) -> bool:
+    article_status = (
+        db.session.query(ArticleStatus.stat)
+        .join(Article, Article.status_id == ArticleStatus.id)
+        .where(Article.id == article_id)
+        .scalar()
+    )
+    return article_status == ArticleStatusEnum.Rejected
 
 def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
     new_stat=__get_status_or_err(new_status)
     if article.update_status(new_stat):
-        db.session.commit()
+        db.session.flush()
         return True
     else:
         return False
 
+def get_latest_round(article_id: int) -> Round | None:
+    return Round.query.filter_by(article_id=article_id).order_by(Round.round_number.desc()).first()
 
 def get_available_reviewers(article_id: int) -> dict[int, str]:
     try:
@@ -196,18 +233,51 @@ def get_last_round_number(article_id: int) -> int:
         raise MessageException.from_exception(err, 'Error while: finding last round number')
 
 
-def create_round(article_id: int, round_number: int, deadline_confirm: str|None=None, deadline_submit: str|None=None) -> None:
+def create_round(article_id: int, article_content: str, round_number: int, deadline_confirm: str = None, deadline_submit: str = None) -> bool:
     try:
+        article = get_article(article_id)
+        if not article:
+            return False
+        
+        if article.status.stat != ArticleStatusEnum.NeedsCorrections and not (article.status.stat == ArticleStatusEnum.Submitted and round_number == 1):
+            return False
+
         new_round = Round(**util.get_kwargs_for(Round, {
             Round.article_id: article_id,
+            Round.article_content: article_content,
             Round.round_number: round_number,
             Round.q_set_id: 1, # TODO: should be set later
             Round.deadline_confirm: deadline_confirm,
             Round.deadline_submit: deadline_submit,
         }))
         db.session.add(new_round)
+        db.session.flush()
+        return True
     except Exception as err:
         raise MessageException.from_exception(err, 'Round was not created')
+
+def set_deadlines(article_id: int, deadline_confirm: str|None, deadline_submit: str|None) -> bool:
+    try:
+        article = get_article(article_id)
+        if not article or not article.rounds:
+            return False
+
+        round = get_latest_round(article_id)
+
+        if not round:
+            log_activity(False, {'err':f'Did not set deadlines because of not finding latest round.'})
+            return False
+
+        if deadline_confirm:
+            round.deadline_confirm = deadline_confirm
+        if deadline_submit:
+            round.deadline_submit = deadline_submit
+
+        return True
+    except Exception as e:
+        db.session.rollback()
+        log_err(e)
+        return False
 
 
 def add_reviewer_to_article(article_id: int, reviewer_id: int) -> None:
@@ -227,6 +297,7 @@ def add_reviewer_to_article(article_id: int, reviewer_id: int) -> None:
                 Review.status: 'Pending confirmation',
             }))
             db.session.add(new_review)
+            db.session.flush()
         else:
             raise MessageException(f'No round found for the given article_id: {article_id}')
 
@@ -234,9 +305,10 @@ def add_reviewer_to_article(article_id: int, reviewer_id: int) -> None:
         raise MessageException.from_exception(err, f'Nie dodano podanych reviewer\'ów do artykułu: {article_id}')
 
 def update_article_status(article: Article, status: ArticleStatusEnum) -> None:
-        try:
-            _status=__get_status_or_err(status)
-            article.update_status(_status)
-            db.session.flush()
-        except Exception as err:
-            raise MessageException('Article status not updated', err)
+    try:
+        _status=__get_status_or_err(status)
+        article.update_status(_status)
+        db.session.commit()
+    except Exception as err:
+        print(err)
+        raise MessageException('Article status not updated', err)
