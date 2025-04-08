@@ -25,19 +25,20 @@ def article_details(article_id):
         return response.to_dict()
 
     article = response.data["article"]
+    article_content = response.data["article_content"]
 
     data = response.to_dict()
 
     if article.status.stat == ArticleStatusEnum.Submitted:
-        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article)
+        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.Accepted:
-        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article)
+        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.InReview:
-        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article)
+        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.Reviewed:
-        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article)
+        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.Rejected:
-        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article)
+        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
         tab_content = util.render_base_template("author_tabs/needs_corrections.html", article=article)
     else:

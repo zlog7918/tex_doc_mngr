@@ -1,8 +1,5 @@
-from db.db_base import db
 from services import user as uq
-from models.usr.User import User
 from sqlalchemy import and_, select
-from models.usr.User import User
 from db.db_base import db, log_activity, log_err
 from flask_login import current_user
 from models.usr.User import User
