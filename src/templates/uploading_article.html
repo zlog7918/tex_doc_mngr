@@ -188,6 +188,7 @@
                 }
 
                 updateFileList();
+                fileInput.value = '';
             });
 
             previewBtn.addEventListener("click", async function() {
@@ -233,7 +234,7 @@
                 }
 
                 const formData = new FormData();
-                for (const file of fileInput.files) {
+                for (const file of selectedFiles) {
                     formData.append("files", file);
                 }
 
