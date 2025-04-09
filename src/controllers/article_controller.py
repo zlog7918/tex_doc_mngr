@@ -1,4 +1,6 @@
 import os
+import shutil
+import traceback
 from typing import Any
 import services.user as au
 import services.article as aq
@@ -251,30 +253,42 @@ def upload_correction(article_id: int, files: list[FileStorage], main_tex_name: 
         data={'pdf_url': file_url}
     )
 
+
 @log_if_error
-def upload_file(title: str, editor_id: int, files: list[FileStorage], main_tex_name: str|None=None) -> Response:
-    # TODO: check if the function handles all possibilities
+def upload_file(title: str, editor_id: int, files: list[FileStorage], main_tex_name: str | None = None) -> Response:
+    user = au.get_curr_user_or_err()
+
+    if aq.article_exists_for_author(title, user.id):
+        return Response.error_response(message="Masz już artykuł o tym tytule. Zmień tytuł i spróbuj ponownie.")
+
     is_valid_editor(editor_id)
     article = aq.create_article(title, editor_id)
 
-    sub_dir=f'{article.id}/1'
-    prefix=f'/articles/uploads/{sub_dir}'
-    file_url=_handle_files(prefix, f'{ec.getDocFilesDir()}/{sub_dir}', files, main_tex_name)
+    sub_dir = f'{article.id}/1'
+    prefix = f'/articles/uploads/{sub_dir}'
+    file_url = _handle_files(prefix, f'{ec.getDocFilesDir()}/{sub_dir}', files, main_tex_name)
 
-    filename=file_url.removeprefix(prefix)
+    filename = file_url.removeprefix(prefix)
     aq.create_round(int(article.id), filename, 1)
+
     log_activity(True, {
-        'message': f'Uploaded files: {files} with "{main_tex_name}" as main successfully',
+        'message': f'Uploaded files: {files} with \"{main_tex_name}\" as main successfully',
         'data': {'pdf_url': file_url}
     })
+
     return Response.success_response(
         message=f'File {filename} uploaded successfully',
         data={'pdf_url': file_url}
     )
 
+
 @log_if_error
 def generate_preview(files: list[FileStorage], main_tex_name: str | None = None) -> Response:
     user_temp_dir = _get_user_temp_dir()
+
+    if os.path.exists(user_temp_dir):
+        shutil.rmtree(user_temp_dir)
+    os.makedirs(user_temp_dir, exist_ok=True)
 
     user_id = au.get_curr_user_or_err().get_id()
     ret = _handle_files(f'/articles/temp-preview/{user_id}', user_temp_dir, files, main_tex_name)

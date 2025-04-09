@@ -295,3 +295,6 @@ def update_article_status(article: Article, status: ArticleStatusEnum) -> None:
     except Exception as err:
         print(err)
         raise MessageException.from_exception(err, 'Article status not updated')
+
+def article_exists_for_author(title: str, author_id: int) -> bool:
+    return db.session.query(Article).filter_by(title=title, author_id=author_id).first() is not None
