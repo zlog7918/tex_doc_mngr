@@ -1,10 +1,11 @@
+from datetime import datetime, timedelta
 import os
 import subprocess
 from db.db_base import db, log_activity, log_err
 from models.article.Article import Article, ArticleStatusEnum
 from models.article.Review import ReviewStatusEnum
 from models.utils.Response import Response
-from models.utils.utils import get_function
+from models.utils.utils import get_function, get_timestamp
 import services.article as aq
 import services.user as au
 import services.article as aq
@@ -139,6 +140,20 @@ def add_round(article_id: int) -> Response:
 def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     if not assigned_reviewers:
         return Response.error_response(message = 'No reviewers assigned')
+    
+    confirm_date = datetime.strptime(deadline_confirm, "%Y-%m-%d")
+    submit_date = datetime.strptime(deadline_submit, "%Y-%m-%d")
+    date = get_timestamp().date()
+
+    min_date = date + timedelta(days=2)
+    if confirm_date.date() < min_date:
+        return Response.error_response(message=f"Confirmation deadline must be at least {min_date}.")
+
+    if submit_date.date() < min_date:
+        return Response.error_response(message=f"Submission deadline must be at least {min_date}.")
+
+    if submit_date <= confirm_date:
+        return Response.error_response(message="Submission deadline cannot be earlier than confirmation deadline.")
     
     try:
         article = aq.get_article(article_id)

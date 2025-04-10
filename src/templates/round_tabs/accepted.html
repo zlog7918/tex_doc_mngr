@@ -25,6 +25,17 @@
 
 </div>
 <script>
+    function setMinDate(inputId) {
+        const input = document.getElementById(inputId);
+        const today = new Date();
+        today.setDate(today.getDate() + 2);
+        const minDate = today.toISOString().split('T')[0];
+        input.min = minDate;
+    }
+
+    setMinDate('deadline_confirm');
+    setMinDate('deadline_submit');
+
     document.getElementById('addReviewer').addEventListener('click', function () {
         const reviewerSelect = document.getElementById('reviewer');
         const selectedReviewerId = reviewerSelect.value;
@@ -55,4 +66,17 @@
         hiddenInput.value = selectedReviewerId;
         assignedReviewersList.appendChild(hiddenInput);
     });
+
+    document.getElementById('deadline_confirm').addEventListener('change', function () {
+        const confirmDate = new Date(this.value);
+        if (!isNaN(confirmDate)) {
+            const submitInput = document.getElementById('deadline_submit');
+            submitInput.min = this.value;
+
+            if (submitInput.value < this.value) {
+                submitInput.value = '';
+            }
+        }
+    });
+
 </script>
