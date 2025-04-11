@@ -179,8 +179,37 @@
                 const showButtons = selectedFiles.length > 0;
                 previewBtn.style.display = showButtons ? "inline-block" : "none";
                 sendBtn.style.display = showButtons ? "inline-block" : "none";
-            }
 
+                const hasTexFile = selectedFiles.some(file => file.name.endsWith('.tex'));
+
+                // Jeśli mainTexDiv JEST widoczny (czyli user już raz go uruchomił)
+                if (mainTexDiv.style.display !== 'none') {
+                    mainTexSelect.innerHTML = '';
+
+                    if (hasTexFile) {
+                        selectedFiles
+                            .filter(file => file.name.endsWith('.tex'))
+                            .forEach(file => {
+                                const option = document.createElement('option');
+                                option.value = file.name;
+                                option.textContent = file.name;
+                                mainTexSelect.appendChild(option);
+                            });
+
+                        // Resetuj wartość, jeśli obecnie wybrany plik nie istnieje
+                        const availableTexNames = Array.from(mainTexSelect.options).map(opt => opt.value);
+                        if (!availableTexNames.includes(mainTexSelect.value)) {
+                            mainTexSelect.value = '';
+                        }
+
+                        mainTexDiv.style.display = 'block';
+                    } else {
+                        mainTexDiv.style.display = 'none';
+                        mainTexSelect.required = false;
+                    }
+                }
+
+            }
 
             let selectedFiles = [];
 
