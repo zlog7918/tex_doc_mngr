@@ -8,7 +8,7 @@ import services.article as aq
 from flask import send_from_directory
 from models.utils.Response import Response
 from models.utils.decors import log_if_error
-from db.db_base import db, log_activity, log_err
+from db.db_base import db, log_activity
 from models.utils.EnvConsts import envConsts as ec
 from models.utils.MessageException import MessageException
 from models.article.Article import ArticleStatusEnum
@@ -16,6 +16,9 @@ from models.article.Article import ArticleStatusEnum
 
 def get_available_editors() -> dict[int, str]:
     return aq.get_available_editors()
+
+def get_available_reviewers(article_id: int) -> dict[int, str]:
+    return aq.get_available_reviewers(article_id)
 
 def is_valid_editor(editor_id: int) -> Response:
     user = au.get_curr_user_or_err()
@@ -60,6 +63,11 @@ def is_editor(article_id: int) -> None:
             )
     except Exception as e:
         raise MessageException.from_exception(e, 'You are not an editor of this article.')
+
+@log_if_error
+def get_my_articles() -> Response:
+    user=au.get_curr_user_or_err()
+    return Response.success_response(data = aq.get_my_articles(int(user.get_id())))
 
 @log_if_error
 def get_all_articles_by_editor() -> Response:

@@ -151,7 +151,6 @@ def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
             }))
             db.session.add(new_answer)
             db.session.flush()
-            db.session.flush()
 
         update_review_status(review_id=review_id, status='Reviewed')
         return True

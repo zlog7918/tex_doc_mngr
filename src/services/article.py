@@ -1,8 +1,5 @@
-from db.db_base import db
 from services import user as uq
-from models.usr.User import User
 from sqlalchemy import and_, select
-from models.usr.User import User
 from db.db_base import db, log_activity, log_err
 from flask_login import current_user
 from models.usr.User import User
@@ -52,6 +49,9 @@ def get_article(article_id: int) -> Article|None:
 
 def get_article_by_title(author_id: int, title: str) -> Article|None:
     return Article.query.where(and_(Article.author_id == author_id, Article.title == title)).first()
+
+def get_my_articles(author_id: int) -> list[Article]:
+    return Article.query.where(Article.author_id == author_id).all()
 
 def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
     return (

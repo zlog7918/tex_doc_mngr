@@ -7,6 +7,15 @@ from models.utils import decors as decor, utils as util
 
 articles_bp = Blueprint("articles", __name__)
 
+@articles_bp.route('/')
+@decor.approve_required
+def show_articles():
+    response = ac.get_my_articles()
+    if response.success:
+        articles = response.data
+        return util.render_base_template("my_articles.html", articles=articles)
+    return response.to_dict()
+
 @articles_bp.route('/<int:article_id>')
 @decor.approve_required
 def article_details(article_id):
@@ -16,23 +25,25 @@ def article_details(article_id):
         return response.to_dict()
 
     article = response.data["article"]
+    article_content = response.data["article_content"]
 
     data = response.to_dict()
-# TODO: change templates
+
     if article.status.stat == ArticleStatusEnum.Submitted:
-        return Response.error_response(message="Not found").to_dict()
+        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.Accepted:
-        return Response.error_response(message="Not found").to_dict()
+        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.InReview:
-        return Response.error_response(message="Not found").to_dict()
+        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.Reviewed:
-        return Response.error_response(message="Not found").to_dict()
+        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.Rejected:
-        return Response.error_response(message="Not found").to_dict()
+        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
-        return util.render_base_template("author_tabs/needs_corrections.html", article=article)
+        tab_content = util.render_base_template("author_tabs/needs_corrections.html", article=article)
     else:
         return Response.error_response(message="Not found").to_dict()
+    return render_template("article_author_base.html", tab_content=tab_content, article=article, data=data)
 
 @articles_bp.route('/upload-form')
 @decor.approve_required
