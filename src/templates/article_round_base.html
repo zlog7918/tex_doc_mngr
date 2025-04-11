@@ -19,7 +19,12 @@
         }
 
         .tab {
-            display: inline-block;
+            padding: 12px 20px;
+            background: #f4f4f4;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s;
+            border-radius: 10px 10px 0 0;
             margin-right: 5px;
             padding: 12px 20px;
             background-color: #ddd;
@@ -27,6 +32,7 @@
             cursor: pointer;
             transition: background-color 0.3s ease, transform 0.3s ease;
         }
+
 
         .tab.active {
             background-color: #5a3d90;
@@ -76,6 +82,31 @@
         .back-button:hover {
             background-color: #4a2a70;
         }
+
+        .btn {
+            background: #5a3d90;
+            color: white;
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            background: #4a1e87;
+        }
+
+        .btn-danger {
+            background: #c0392b;
+        }
+
+        .btn-danger:hover {
+            background: #a93226;
+        }
+
     </style>
 
     <div class="main-content">
@@ -132,4 +163,5 @@
     </div>
 
 
+{% endblock %}
 {% endblock %}
