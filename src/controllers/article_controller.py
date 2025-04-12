@@ -1,10 +1,10 @@
 import os
 import shutil
-import traceback
 from typing import Any
 import services.user as au
 import services.article as aq
 from db.db_base import log_activity
+from models.utils import utils as util
 from werkzeug.utils import secure_filename
 from models.utils.Response import Response
 from latex.latex_service import LatexService
@@ -164,6 +164,7 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
     return Response.success_response()
 
 def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_tex_name: str|None=None) -> str:
+    lang_pkg=util.get_lang_pkg()
     dir_path=os.path.join(dir_path, '')
     if os.path.exists(dir_path):
         shutil.rmtree(dir_path)
@@ -173,7 +174,7 @@ def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_
     allowed_archives = ('.zip', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2')
 
     for file in files:
-        filename = file.filename.lower()
+        filename = file.filename.lower() if file.filename else ''
 
         if filename.endswith(allowed_archives):
             extracted_tex_files = LatexService.extract_tex_files_from_archive(file, dir_path)
@@ -202,9 +203,7 @@ def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_
 
     file=tex_file_path.removeprefix(dir_path)
     if not LatexService.convert_tex_to_pdf(tex_file_path, dir_path):
-        raise MessageException('Błąd konwertowania LaTeX to PDF')
-        # raise MessageException('Error converting LaTeX to PDF')
-
+        raise MessageException(lang_pkg.LaTeXtoPDFconvertError.value)
     file_url = f"{url_start}/{file.replace('.tex', '.pdf')}"
     return file_url
     
