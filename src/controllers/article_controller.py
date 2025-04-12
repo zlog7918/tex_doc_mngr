@@ -20,8 +20,7 @@ def get_available_editors() -> dict[int, str]:
 
 def _get_user_temp_dir() -> str:
     user_id = au.get_curr_user_or_err().get_id()
-    user_temp_path = os.path.join(ec.getTempDir(), str(user_id))
-    os.makedirs(user_temp_path, exist_ok=True)
+    user_temp_path = os.path.join(ec.getTempDir(), user_id)
     return user_temp_path
 
 def is_valid_editor(editor_id: int) -> None:
@@ -164,27 +163,10 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
         raise MessageException(f'Failed to update article status to {ArticleStatusEnum.InReview.value}.')
     return Response.success_response()
 
-# def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
-#     try:
-#         for _ in range(2):
-#             subprocess.run(
-#                 ["pdflatex", "--shell-escape", "-interaction=nonstopmode", "-output-directory", output_dir, tex_path],
-#                 cwd=output_dir,
-#                 check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-#             )
-#         return os.path.exists(tex_path.replace('.tex', '.pdf'))
-#     except subprocess.CalledProcessError as e:
-#         raise MessageException(str(e), err=e)
-
-def handle_file(file: FileStorage, folder: str) -> str:
-    os.makedirs(folder, exist_ok=True)
-    filename = secure_filename(file.filename)
-    tex_path = os.path.join(folder, filename)
-    file.save(tex_path)
-    return tex_path
-
 def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_tex_name: str|None=None) -> str:
     dir_path=os.path.join(dir_path, '')
+    if os.path.exists(dir_path):
+        shutil.rmtree(dir_path)
     os.makedirs(dir_path, exist_ok=True)
     saved_paths: list[str] = []
 
@@ -285,21 +267,16 @@ def upload_file(title: str, editor_id: int, files: list[FileStorage], main_tex_n
 @log_if_error
 def generate_preview(files: list[FileStorage], main_tex_name: str | None = None) -> Response:
     user_temp_dir = _get_user_temp_dir()
-
-    if os.path.exists(user_temp_dir):
-        shutil.rmtree(user_temp_dir)
-    os.makedirs(user_temp_dir, exist_ok=True)
-
-    user_id = au.get_curr_user_or_err().get_id()
-    ret = _handle_files(f'/articles/temp-preview/{user_id}', user_temp_dir, files, main_tex_name)
-
+    ret = _handle_files(f'/articles/temp-preview', user_temp_dir, files, main_tex_name)
     return Response.success_response(data={
         'pdf_url': ret
     })
 
 @log_if_error
 def temp_preview(filename: str) -> Response:
-    return LatexService.get_file(ec.getTempDir(), filename)
+    filename=secure_filename(filename)
+    user_temp_dir=_get_user_temp_dir()
+    return LatexService.get_file(user_temp_dir, filename)
 
 @log_if_error
 def get_uploaded_file(article_id: int, round_num: int, filename: str) -> Response:

@@ -14,6 +14,7 @@ class LatexService:
     def convert_tex_to_pdf(tex_path: str, output_dir: str, raise_on_error: bool = False) -> bool:
         try:
             pdf_path = tex_path.replace('.tex', '.pdf')
+            result=None
             for _ in range(2):
                 result = subprocess.run(
                     ["pdflatex", "--shell-escape", "-interaction=nonstopmode", "-output-directory", output_dir,
@@ -21,9 +22,9 @@ class LatexService:
                     cwd=output_dir,
                     check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE
                 )
-            if result.returncode != 0:
+            if result is not None and result.returncode != 0:
                 if raise_on_error:
-                    raise MessageException("LaTeX compilation failed", err=result.stderr.decode())
+                    raise MessageException("LaTeX compilation failed", err=Exception(result.stderr.decode()))
                 return False
 
             return os.path.exists(pdf_path)
