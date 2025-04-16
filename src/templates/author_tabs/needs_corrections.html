@@ -1,36 +1,160 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Correction</title>
-</head>
-<body>
-    <h1>LaTeX to PDF Converter</h1>
 
-    <form id="uploadForm" enctype="multipart/form-data">
-        <h2>{{ article.title }}</h1>
-        <label for="file">Choose a LaTeX file (.tex):</label>
-        <input type="file" name="file" id="file" accept=".tex" required>
-        <br><br>
+    <style>
+        .main-content {
+            padding: 30px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            border-radius: 10px;
+        }
 
+        h2 {
+            font-size: 26px;
+            font-weight: bold;
+            color: #2d1053;
+            margin-bottom: 20px;
+        }
 
-        <button type="button" id="previewBtn" style="display: none;">View PDF</button>
+        .info-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            color: #856404;
+            font-size: 16px;
+        }
 
+        .comments-box {
+            background-color: #e9ecef;
+            border-left: 5px solid #5a3d90;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
 
-        <button type="submit" id="sendBtn" style="display: none;">Send</button>
-    </form>
+        .comments-box h3 {
+            margin-top: 0;
+            color: #2d1053;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            font-size: 18px;
+            color: #2d1053;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: #5a3d90;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #452d78;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-light {
+            background-color: #ddd3f2;
+            color: #2d1053;
+        }
+
+        .btn-light:hover {
+            background-color: #c8b8ea;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+            }
+        }
+    </style>
+
+<div>
+    <div class="main-content">
+        <h2>Dodaj korektę do artykułu: "{{ article.title }}"</h2>
+
+        <div class="info-box">
+            Prosimy o przesłanie poprawionej wersji artykułu w formacie LaTeX z uwzględnieniem poniższych komentarzy recenzenta.
+        </div>
+
+        <div class="comments-box">
+            <h3>Komentarze recenzenta:</h3>
+            <ul>
+                <li>Proszę poprawić formatowanie bibliografii zgodnie z wytycznymi.</li>
+                <li>Rozdział 2 zawiera powtórzenia – sugeruję skrócenie.</li>
+                <li>Wykres na stronie 5 jest nieczytelny – zalecam poprawienie opisu osi.</li>
+            </ul>
+        </div>
+
+        <form id="uploadForm" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group">
+                <label for="file">Wybierz poprawiony plik LaTeX (.tex):</label>
+                <input type="file" name="file" id="file" accept=".tex" required>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" id="previewBtn" class="btn btn-light" style="display: none;"> Podgląd PDF</button>
+                <button type="submit" id="sendBtn" class="btn btn-primary" style="display: none;"> Wyślij</button>
+            </div>            
+        </form>
+    </div>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
-            let fileInput = document.getElementById('file');
-            let title = document.querySelector('#uploadForm input[name="title"]');
-            let editor = document.querySelector('#uploadForm input[name="editor"]');
-            let previewBtn = document.getElementById('previewBtn');
-            let sendBtn = document.getElementById('sendBtn');
-            let uploadForm = document.getElementById('uploadForm');
+            const fileInput = document.getElementById('file');
+            const previewBtn = document.getElementById('previewBtn');
+            const sendBtn = document.getElementById('sendBtn');
+            const uploadForm = document.getElementById('uploadForm');
 
-            // Po wybraniu pliku pokaż przyciski
             fileInput.addEventListener('change', function() {
                 let filename = this.files[0]?.name || "";
                 if (filename.endsWith('.tex')) {
@@ -42,7 +166,6 @@
                 }
             });
 
-            // Obsługa podglądu PDF
             previewBtn.addEventListener("click", async function() {
                 let formData = new FormData();
                 formData.append("file", fileInput.files[0]);
@@ -56,14 +179,14 @@
                     if (data["pdf_url"]) {
                         window.open(data["pdf_url"], '_blank');
                     } else {
-                        alert("Error: " + (data.error || "Could not generate preview"));
+                        alert("Błąd: " + (data.error || "Nie udało się wygenerować podglądu"));
                     }
-                })
+                });
             });
 
-            // Obsługa zapisu pliku
             uploadForm.addEventListener("submit", async function(event) {
                 event.preventDefault();
+
                 let formData = new FormData();
                 formData.append("file", fileInput.files[0]);
 
@@ -75,12 +198,12 @@
                 let data = await response.json();
 
                 if (data['success']) {
+                    alert("Korekta została dodana.");
                     window.location.reload();
                 } else {
-                    alert("Upload failed: " + (data.error || "Unknown error"));
+                    alert("Błąd: " + (data.error || "Nieznany problem"));
                 }
             });
         });
     </script>
-</body>
-</html>
+</div>
