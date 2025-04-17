@@ -10,4 +10,7 @@ class LangBaseEx(Enum):
     PasswordNotChanged=\
     FuncNotExecuted=\
     AccountNotCreated=\
+    CodeNotGenerated=\
+    CodeNotDeactivated=\
+    CodeNotApproved=\
         member('')

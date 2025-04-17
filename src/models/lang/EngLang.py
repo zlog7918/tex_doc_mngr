@@ -10,3 +10,6 @@ class EngLang(LangBase):
     PasswordNotChanged='Password is not changed'
     FuncNotExecuted='Function has not been executed'
     AccountNotCreated='Account has not been created'
+    CodeNotGenerated='Code has not been generated'
+    CodeNotDeactivated='Code is not deactivated'
+    CodeNotApproved='Code is not approved'

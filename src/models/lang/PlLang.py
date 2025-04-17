@@ -10,3 +10,6 @@ class PlLang(LangBase):
     PasswordNotChanged='Hasło nie zostało zmienione'
     FuncNotExecuted='Nie wykonano funkcji'
     AccountNotCreated='Konto nie zostało utworzone'
+    CodeNotGenerated='Nie można wygenerować kodu'
+    CodeNotDeactivated='Nie można deaktywować kodu'
+    CodeNotApproved='Nie można potwierdzić kodu'
