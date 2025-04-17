@@ -1,13 +1,12 @@
-from sqlalchemy import and_, desc
-from . import article as aq
+from sqlalchemy import and_, select
+from . import article_service as aq
 from models.utils import utils as util
 from models.article.Round import Round
 from models.article.Review import Review
-from models.article.Article import Article
+from models.article import Questions as Q
 from db.db_base import db, log_err, log_activity
 from models.utils.MessageException import MessageException
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
-from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
 def get_review_by_id(review_id: int) -> Review|None:
     return Review.query.where(Review.id==review_id).first()
@@ -18,7 +17,7 @@ def get_review(article_id: int, reviewer_id: int) -> Review|None:
             db.session.query(Review)
             .join(Round, Review.round_id == Round.id)
             .where(and_(Round.article_id == article_id, Review.reviewer_id == reviewer_id))
-            .order_by(desc(Round.round_number))
+            .order_by(Round.round_number.desc())
             .first()
         )
 
@@ -104,50 +103,53 @@ def update_review_status(review_id: int, status: str) -> bool:
         raise MessageException('Review status not updated', err) from None
 
 
+# def get_questions_with_answers(review: Review) -> list[dict[int, str]]:
+#     try:
+#         q_set_id=review.round.q_set_id
+#         # TODO: modify question set join
+#         questions = (
+#             db.session.query(Q.Question)
+#             .join(Q.QuestionGroupQuestions, Q.QuestionGroupQuestions.question_id == Q.Question.id)
+#             .join(Q.QuestionSetGroups, Q.QuestionSetGroups.question_group_id == Q.QuestionGroupQuestions.question_group_id)
+#             .where(Q.QuestionSetGroups.question_set_id == q_set_id)
+#             .all()
+#         )
 
-def get_questions_with_answers(q_set_id: int) -> list[dict[int, str]]:
+#         result = []
+#         for question in questions:
+#             question_data = {
+#                 "id": question.id,
+#                 "text": question.question,
+#                 "is_abc": question.is_abc,
+#                 "answers": []
+#             }
+#             if question.is_abc:
+#                 # Should it be Answer of reviewer or possible answer (QuestionA)?
+#                 answers = (
+#                     db.session.query(Q.Answer)
+#                     .join(Q.QuestionA, Q.Question.id == Q.Answer.question_id)
+#                     .filter(Q.QuestionA.question_id == question.id)
+#                     .all()
+#                 )
+#                 question_data["answers"] = [{"id": ans.id, "answer": ans.answer} for ans in answers]
+
+#             result.append(question_data)
+
+#         return result
+
+#     except Exception as e:
+#         log_err(e)
+#         return []
+
+
+def save_review_answers(review_id: int, answers: dict[tuple[int, int], str]) -> bool:
     try:
-        questions = (
-            db.session.query(Question)
-            .join(QuestionSetQuestions, QuestionSetQuestions.question_id == Question.id)
-            .filter(QuestionSetQuestions.question_set_id == q_set_id)
-            .all()
-        )
-
-        result = []
-        for question in questions:
-            question_data = {
-                "id": question.id,
-                "text": question.question,
-                "is_abc": question.is_abc,
-                "answers": []
-            }
-            if question.is_abc:
-                answers = (
-                    db.session.query(Answer)
-                    .join(QuestionA, Question.question_id == Answer.question_id)
-                    .filter(QuestionA.question_id == question.id)
-                    .scalars()
-                    .all()
-                )
-                question_data["answers"] = [{"id": ans.id, "answer": ans.answer} for ans in answers]
-
-            result.append(question_data)
-
-        return result
-
-    except Exception as e:
-        log_err(e)
-        return []
-
-
-def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
-    try:
-        for question_id, answer in answers.items():
-            new_answer = Answer(**util.get_kwargs_for(Answer, {
-                Answer.review_id: review_id,
-                Answer.question_id: question_id,
-                Answer.answer: answer,
+        for (question_group_id, question_id), answer in answers.items():
+            new_answer = Q.Answer(**util.get_kwargs_for(Q.Answer, {
+                Q.Answer.review_id: review_id,
+                Q.Answer.question_group_id: question_group_id,
+                Q.Answer.question_id: question_id,
+                Q.Answer.answer: answer,
             }))
             db.session.add(new_answer)
             db.session.flush()
@@ -159,32 +161,29 @@ def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
         return False
 
 
-def get_questions_by_article(article_id: int) -> list[dict[str, str]]|None:
-    # TODO: finish this
-    try:
-        questions = (
-            db.session.query(Question)
-            .join(QuestionSetQuestions, Question.id == QuestionSetQuestions.question_id)
-            .join(QuestionSet, QuestionSetQuestions.question_set_id == QuestionSet.id)
-            .all()
-        )
+def get_questions_by_article(article: Article) -> list[tuple[int, int, str, bool]]:
+    round=aq.get_latest_round(article)
+    if round is None:
+        raise MessageException('Last round not found', Exception('Last round not found'))
+    questions = db.session.execute(
+        select(Q.QuestionSetGroups.question_group_id, Q.Question)
+            .join(Q.QuestionGroupQuestions, Q.QuestionGroupQuestions.question_id == Q.Question.id)
+            .join(Q.QuestionSetGroups, Q.QuestionSetGroups.question_group_id == Q.QuestionGroupQuestions.question_group_id)
+            .where(Q.QuestionSetGroups.question_set_id==round.q_set_id)
+    )
 
-        return [{"id": q.id, "text": q.question, "is_abc": q.is_abc} for q in questions]
-
-    except Exception as e:
-        log_err(e)
-        return None
+    return [(q[0], q[1].id, q[1].question, q[1].is_abc) for q in (question.tuple() for question in questions)]
 
 
-def get_question_answers(question_id: int) -> list[dict[int, str]]:
+def get_question_answers(question_id: int) -> list[dict[str, str]]:
     try:
         answers = (
-            db.session.query(QuestionA)
-            .filter(QuestionA.question_id == question_id)
+            db.session.query(Q.QuestionA)
+            .filter(Q.QuestionA.question_id == question_id)
             .all()
         )
 
-        return [{"id": ans.id, "answer": ans.answer} for ans in answers]
+        return [{"id": str(ans.id), "answer": ans.answer} for ans in answers]
 
     except Exception as e:
         log_err(e)

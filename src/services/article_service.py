@@ -1,12 +1,11 @@
-from services import user as uq
+from . import user_service as uq
 from sqlalchemy import and_, select
 from db.db_base import db, log_activity, log_err
-from flask_login import current_user
 from models.usr.User import User
 from models.article.Round import Round
 from models.utils import utils as util
 from models.article.Review import Review
-from models.article.Questions import Answer, Question
+from models.article import Questions as Q
 from models.utils.MessageException import MessageException
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
@@ -18,7 +17,7 @@ def __get_status_or_err(status: ArticleStatusEnum) -> ArticleStatus:
 
 def create_article(title: str, editor_id: int) -> bool:
     try:
-        user_id = current_user.get_id()
+        user_id = uq.get_curr_user_or_err().id
         if not editor_id:
             log_activity(False, {'err': f'Nie znaleziono edytora o id: {editor_id}'})
             return False
@@ -27,7 +26,7 @@ def create_article(title: str, editor_id: int) -> bool:
 
         new_article = Article(**util.get_kwargs_for(Article, {
             Article.title: title,
-            Article.author_id: int(user_id),
+            Article.author_id: user_id,
             Article.editor_id: editor_id,
             Article.status_id: status.id,
         }))
@@ -45,7 +44,13 @@ def create_article(title: str, editor_id: int) -> bool:
 
 
 def get_article(article_id: int) -> Article|None:
-    return Article.query.where(Article.id==article_id).first()
+    a: Article|None=Article.query.where(Article.id==article_id).first()
+    if a is not None:
+        print(f'Rounds ({a.title}):')
+        for r in a.rounds:
+            r: Round
+            print(r.round_number)
+    return a
 
 def get_article_by_title(author_id: int, title: str) -> Article|None:
     return Article.query.where(and_(Article.author_id == author_id, Article.title == title)).first()
@@ -82,13 +87,15 @@ def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
     else:
         return False
 
-def get_latest_round(article_id: int) -> Round | None:
-    return Round.query.filter_by(article_id=article_id).order_by(Round.round_number.desc()).first()
+def get_latest_round(article: Article) -> Round | None:
+    # return article.rounds[-1]
+    return Round.query.where(Round.article_id==article.id).order_by(Round.round_number.desc()).first()
 
 def get_available_reviewers(article_id: int) -> dict[int, str]:
     try:
-        user_id = uq.get_curr_user_or_err().get_id()
-        article = Article.query.where(Article.id == article_id).first()
+        user_id = uq.get_curr_user_or_err().id
+        user0_id = uq.get_usr0_or_err().id
+        article = get_article(article_id)
         author_id = article.author_id if article else None
 
         latest_round_subquery = (
@@ -110,6 +117,7 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
             .where(and_(
                 ~User.id.in_(select(assigned_reviewers_subquery)),
                 User.id != user_id,
+                User.id != user0_id,
                 User.id != author_id
             ))
             .all()
@@ -125,7 +133,10 @@ def get_available_editors() -> dict[int, str]:
     try:
         editors = (
             db.session.query(User.id, User.nick)
-            .filter(User.id != int(uq.get_curr_user_or_err().get_id()))
+            .where(and_(
+                User.id!=uq.get_curr_user_or_err().id,
+                User.id!=uq.get_usr0_or_err().id
+            ))
             .all()
         )
 
@@ -188,22 +199,29 @@ from collections import defaultdict
 def get_answers_as_editor(article_id: int) -> dict[str, list[dict]]:
     try:
         # Pobieramy identyfikator najnowszej rundy dla artykułu
-        latest_round_subquery = (
-            db.session.query(Round.id)
-            .filter(Round.article_id == article_id)
-            .order_by(Round.round_number.desc())
-            .limit(1)
-            .scalar_subquery()
+        latest_round_id_subquery = (
+            select(Round.id)
+                .where(Round.article_id == article_id)
+                .order_by(Round.round_number.desc())
+                .limit(1)
+                .scalar_subquery()
         )
 
         # Pobieramy odpowiedzi z recenzji najnowszej rundy
-        results = (
-            db.session.query(User.nick, Question.question, Answer.answer)
-            .join(Review, Review.reviewer_id == User.id)
-            .join(Answer, Answer.review_id == Review.id)
-            .join(Question, Question.id == Answer.question_id)
-            .filter(Review.round_id == latest_round_subquery)
-            .all()
+        results = db.session.execute(
+            select(User.nick, Q.Question.question, Q.Answer.answer)
+                .join(Review, Review.reviewer_id == User.id)
+                .join(Round, Round.id == Review.round_id)
+                .join(Q.QuestionSetGroups, Q.QuestionSetGroups.question_set_id == Round.q_set_id)
+                .join(Q.QuestionGroupQuestions, Q.QuestionGroupQuestions.question_group_id == Q.QuestionSetGroups.question_group_id)
+                .join(Q.Question, Q.Question.id == Q.QuestionGroupQuestions.question_id)
+                .join(Q.Answer, and_(
+                    Q.Answer.review_id == Review.id,
+                    Q.Answer.question_group_id == Q.QuestionGroupQuestions.question_group_id,
+                    Q.Answer.question_id == Q.QuestionGroupQuestions.question_id,
+                ))
+                .where(Round.id == latest_round_id_subquery)
+            # db.session.query(User.nick, Q.Question.question, Q.Answer.answer)
         )
 
         # Grupowanie wyników po recenzencie
@@ -216,21 +234,21 @@ def get_answers_as_editor(article_id: int) -> dict[str, list[dict]]:
     except Exception as err:
         raise MessageException.from_exception(err, 'Error while: finding answers')
 
-def get_last_round_number(article_id: int) -> int:
-    try:
-        last_round = (
-            db.session.query(Round.round_number)
-            .where(Round.article_id == article_id)
-            .order_by(Round.round_number.desc())
-            .limit(1)
-            .scalar()
-        )
-        return 0 if last_round is None else last_round
-    except Exception as err:
-        raise MessageException.from_exception(err, 'Error while: finding last round number')
+# def get_last_round_number(article_id: int) -> int:
+#     try:
+#         last_round = (
+#             db.session.query(Round.round_number)
+#             .where(Round.article_id == article_id)
+#             .order_by(Round.round_number.desc())
+#             .limit(1)
+#             .scalar()
+#         )
+#         return 0 if last_round is None else last_round
+#     except Exception as err:
+#         raise MessageException.from_exception(err, 'Error while: finding last round number')
 
 
-def create_round(article_id: int, article_content: str, round_number: int, deadline_confirm: str = None, deadline_submit: str = None) -> bool:
+def create_round(article_id: int, article_content: str, round_number: int, deadline_confirm: str|None = None, deadline_submit: str|None = None) -> bool:
     try:
         article = get_article(article_id)
         if not article:
@@ -243,7 +261,6 @@ def create_round(article_id: int, article_content: str, round_number: int, deadl
             Round.article_id: article_id,
             Round.article_content: article_content,
             Round.round_number: round_number,
-            Round.q_set_id: 1, # TODO: should be set later
             Round.deadline_confirm: deadline_confirm,
             Round.deadline_submit: deadline_submit,
         }))
@@ -253,22 +270,24 @@ def create_round(article_id: int, article_content: str, round_number: int, deadl
     except Exception as err:
         raise MessageException.from_exception(err, 'Round was not created')
 
-def set_deadlines(article_id: int, deadline_confirm: str|None, deadline_submit: str|None) -> bool:
+def set_deadlines_and_qs(article_id: int, question_set: Q.QuestionSet, deadline_confirm: str|None, deadline_submit: str|None) -> bool:
     try:
         article = get_article(article_id)
         if not article or not article.rounds:
             return False
 
-        round = get_latest_round(article_id)
+        round = get_latest_round(article)
 
         if not round:
             log_activity(False, {'err':f'Did not set deadlines because of not finding latest round.'})
             return False
+        round.q_set_id=question_set.id
 
         if deadline_confirm:
             round.deadline_confirm = deadline_confirm
         if deadline_submit:
             round.deadline_submit = deadline_submit
+        db.session.flush()
 
         return True
     except Exception as e:

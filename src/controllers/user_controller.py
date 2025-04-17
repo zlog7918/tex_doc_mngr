@@ -7,10 +7,10 @@ from models.utils import utils as util
 from models.mail.SendMail import SendMail
 from models.utils.Response import Response
 from models.usr.Code import CodePurposeEnum
-from services import user as su, code as sc
 from models.utils.decors import log_if_error
 from flask_login import login_user, logout_user
 from models.utils.MessageException import MessageException
+from services import user_service as su, code_service as sc
 from typing import Callable, ParamSpec, Concatenate, TypeVar, TypeVarTuple
 
 P=ParamSpec('P')
@@ -60,7 +60,9 @@ def check_password(passwd: str) -> str:
   flag=user.ch_pass(passwd)
   if flag is False:
     raise MessageException('Konto nie zostało utworzone')
-  return user.get_passwd()
+  if user.passwd is None:
+    raise Exception('Password not set even though flag was set as True')
+  return user.passwd
 
 def send_code_by_email(send_func: Callable[Concatenate[SendMail, str, P], None], email, *args: P.args, **kwargs: P.kwargs) -> None:
   try:
@@ -202,7 +204,7 @@ def approve(email: str, code: str) -> Response:
   user=su.get_user_by_email(email)
   if user is None:
     raise MessageException('Konto nie wymaga potwierdzenia')
-  if user.is_approved():
+  if user.approved:
     raise MessageException('Konto nie wymaga potwierdzenia')
   if sc.check_code(user, code, CodePurposeEnum.ApproveUser) is None:
     raise MessageException(

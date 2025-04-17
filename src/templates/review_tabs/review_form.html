@@ -10,11 +10,11 @@
             <label>{{ question["text"] }}</label><br>
             {% if question["is_abc"] %}
                 {% for option in question["answers"] %}
-                    <input type="radio" id="option{{ option["id"] }}" name="question_{{ question['id'] }}" value="{{ option['answer'] }}" required>
-                    <label for="option{{ option["id"] }}">{{ option["answer"] }}</label><br>
+                    <input type="radio" id="option_{{ question['group_id'] }}_{{ question['id'] }}_{{ option['id'] }}" name="question_{{ question['group_id'] }}_{{ question['id'] }}" value="{{ option['answer'] }}" required>
+                    <label for="option_{{ question['group_id'] }}_{{ question['id'] }}_{{ option['id'] }}">{{ option["answer"] }}</label><br>
                 {% endfor %}
             {% else %}
-                <input type="text" name="question_{{ question['id'] }}" required><br>
+                <input type="text" name="question_{{ question['group_id'] }}_{{ question['id'] }}" required><br>
             {% endif %}
         {% endfor %}
         <button type="submit">Submit</button>

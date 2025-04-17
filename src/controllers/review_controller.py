@@ -1,9 +1,8 @@
-import services.user as au
-import services.review as rs
-import services.article as aq
+import services.user_service as au
+import services.review_service as rs
+import services.article_service as aq
 from models.utils.Response import Response
 from models.utils.decors import log_if_error
-from db.db_base import log_activity
 from models.utils.MessageException import MessageException
 
 
@@ -16,7 +15,7 @@ def is_reviewer(article_id: int, user_id: int) -> None:
         )
 
 def is_reviewer_of_review(review_id: int) -> None:
-    user_id = int(au.get_curr_user_or_err().get_id())
+    user_id = au.get_curr_user_or_err().id
     review = rs.get_review_by_id(review_id)
     if not review:
         raise MessageException(
@@ -41,7 +40,7 @@ def set_review_status_reject(review_id: int) -> Response:
     return set_review_status(review_id, "Rejected by reviewer")
 
 @log_if_error
-def submit_review(review_id: int, answers) -> Response:
+def submit_review(review_id: int, answers: dict[tuple[int, int], str]) -> Response:
     is_reviewer_of_review(review_id)
     
     if rs.save_review_answers(review_id, answers):
@@ -62,13 +61,13 @@ def set_review_status(review_id: int, status: str) -> Response:
 
 @log_if_error
 def get_articles_as_reviewer() -> Response:
-    reviewer_id = int(au.get_curr_user_or_err().get_id())
+    reviewer_id = au.get_curr_user_or_err().id
     articles = rs.get_articles_as_reviewer(reviewer_id)
     return Response.success_response(data = articles)
 
 @log_if_error
 def get_article_details_as_reviewer(article_id: int) -> Response:
-    reviewer_id = int(au.get_curr_user_or_err().get_id())
+    reviewer_id = au.get_curr_user_or_err().id
     is_reviewer(article_id, reviewer_id)
     
     article = aq.get_article(article_id)
@@ -88,7 +87,7 @@ def get_article_details_as_reviewer(article_id: int) -> Response:
     questions=None
     article_content=None
     if review.status == "Pending confirmation":
-        latest_round = aq.get_latest_round(article_id)
+        latest_round = aq.get_latest_round(article)
         article_content = ""
         if article and latest_round:
             article_content = latest_round.article_content
@@ -96,15 +95,16 @@ def get_article_details_as_reviewer(article_id: int) -> Response:
                 article_content = f'<br><embed src="{f"/articles/uploads/{article.id}/{latest_round.round_number}/{article_content}"}" width="800" height="500" type="application/pdf">'
 
     elif review.status == "Accepted by reviewer":
-        questions = rs.get_questions_by_article(article_id)
-        if not questions:
+        touple_questions = rs.get_questions_by_article(article)
+        if not touple_questions:
             raise MessageException("No questions found for the article.")
-
-        for question in questions:
+        questions=[]
+        for question in touple_questions:
+            question={'group_id': question[0], 'id': question[1], 'text': question[2], 'is_abc': question[3]}
             if question['is_abc']:
                 answers = rs.get_question_answers(question['id'])
-                question['answers'] = answers if answers else [{"id": 0, "answer": "No answers available"}]
-    
+                question['answers'] = answers if answers else [{'id': '0', 'answer': 'No answers available'}]
+            questions.append(question)
     else:
         return Response.error_response(message = "Not implemented")
     return Response.success_response(data = {"article": article, "review": review, "questions": questions, "article_content": article_content})

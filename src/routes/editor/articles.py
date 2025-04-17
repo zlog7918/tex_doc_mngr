@@ -1,6 +1,6 @@
-from db.db_base import log_err
 from models.utils.Response import Response
 import controllers.article_controller as ac
+import controllers.question_controller as qc
 from models.utils import decors as decor, utils as util
 from models.article.Article import ArticleStatusEnum, Article
 from flask import request, redirect, url_for, Blueprint, render_template
@@ -48,7 +48,12 @@ def article_details(article_id: int):
         reviewers = response.data["reviewers"]
         assigned_reviewers = response.data["assigned_reviewers"]
         reviews = response.data["reviews"]
-        tab_content = util.render_base_template("round_tabs/accepted.html", article=article, assigned_reviewers=assigned_reviewers, reviewers=reviewers)
+        question_sets=qc.get_all_question_sets()
+        if question_sets.success:
+            question_sets=question_sets.data
+        else:
+            question_sets=[]
+        tab_content = util.render_base_template("round_tabs/accepted.html", article=article, assigned_reviewers=assigned_reviewers, reviewers=reviewers, question_sets=question_sets)
     elif article.status.stat == ArticleStatusEnum.InReview:
         reviews = response.data["reviews"]
         tab_content = util.render_base_template("round_tabs/in_review.html", reviews=reviews)
@@ -81,15 +86,18 @@ def request_article_correction(article_id: int):
 @decor.handle_form_not_filled
 def assign_reviewers(article_id: int):
     assigned_reviewers = request.form.getlist('assigned_reviewers[]')
-    (deadline_confirm, deadline_submit)=util.get_from_form(request.form, (
+    (deadline_confirm, deadline_submit, question_set)=util.get_from_form(request.form, (
         'deadline_confirm',
         'deadline_submit',
+        'question_set',
     ))
-    
-    response = ac.assign_reviewers(article_id, assigned_reviewers, deadline_confirm, deadline_submit)
 
-    if response.success:
-        return redirect(url_for('editor_articles.article_details', article_id=article_id))
+    try:
+        question_set=int(question_set)
+    except:
+        return Response.error_response('Incorrect question set').to_dict()
+    
+    response = ac.assign_reviewers(article_id, question_set, assigned_reviewers, deadline_confirm, deadline_submit)
     return response.to_dict()
 
 

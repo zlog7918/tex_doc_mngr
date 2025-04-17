@@ -1,7 +1,6 @@
 import time
 from db.db_base import db
 from typing import Awaitable
-from services import user as su
 from db.seed_db import seed_data
 from models.lang import LangEnum
 from models.usr.User import User
@@ -9,12 +8,14 @@ from flask_login import LoginManager
 from flask.typing import RouteCallable
 from routes.users.users import user_bp
 from models.utils import utils as util
+from services import user_service as su
 from werkzeug.exceptions import NotFound
 from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
+from routes.editor.questions import questions_bp
 from models.utils.EnvConsts import envConsts as ec
 from routes.editor.articles import editor_articles_bp
-from flask import Flask, Request as flRequest, request, current_app
+from flask import abort, Flask, Request as flRequest, request, current_app
 from werkzeug.routing import RequestRedirect, MapAdapter, BaseConverter, ValidationError
 
 class LangEnumConverter(BaseConverter):
@@ -55,6 +56,7 @@ login_manager.init_app(app)
 app.secret_key=ec.getFlaskKey()
 
 app.register_blueprint(editor_articles_bp, url_prefix="/editor/articles")
+app.register_blueprint(questions_bp, url_prefix="/questions")
 app.register_blueprint(articles_bp, url_prefix="/articles")
 app.register_blueprint(review_bp, url_prefix="/reviews")
 app.register_blueprint(user_bp, url_prefix="/user")
@@ -93,6 +95,8 @@ def choose_lang(lang: LangEnum, path: str):
             url=get_path_from_url(e.new_url)
         return get_func(map, list, url, i+1)
     func, kwargs=get_func(current_app.url_map.bind_to_environ(request), current_app.view_functions, path)
+    if func==choose_lang:
+        abort(404)
     ret=func(**kwargs)
     if isinstance(ret, Awaitable):
         # return await ret
@@ -104,7 +108,7 @@ def choose_lang(lang: LangEnum, path: str):
 @app.route('/')
 def index():
     user=su.get_curr_user()
-    return util.render_base_template('login_form.html' if user is None else ('logged.html' if user.is_approved() else 'check_approval.html'))
+    return util.render_base_template('login_form.html' if user is None else ('logged.html' if user.approved else 'check_approval.html'))
 
 if __name__=='__main__':
     app.run(debug=True)

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %} {{ lang_pkg.QuestionSetAdding.value }} {% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
+    <div class="container">
+        <form id="question-add-form">
+            <div class="form-group">
+                <label>{{ lang_pkg.QuestionSet.value }} ({{ lang_pkg.Name.value }})</label>
+                <input type="text" name="name" required>
+            </div>
+
+            <div class="form-group">
+                <label>{{ lang_pkg.QuestionGroupList.value }}</label>
+                <select name="question_group_input">
+                    <option value="" selected>--{{ lang_pkg.QuestionGroup.value }}--</option>
+                    {% for qg in question_groups %}
+                        <option data-id="{{ qg.id }}">{{ qg.name }}</option>
+                    {% endfor %}
+                </select><button type="button" id="add-question-group-btn" class="secondary-btn">{{ lang_pkg.AddQuestionGroup.value }}</button>
+                <ul id="question-group-list">
+                </ul>
+            </div>
+
+            <button type="button" id="add-question-set-btn" class="primary-btn">{{ lang_pkg.AddQuestionSet.value }}</button>
+        </form>
+    </div>
+
+    <style>
+        .container {
+            text-align: center;
+            padding: 20px;
+            max-width: 400px;
+            margin: auto;
+        }
+
+        .actions {
+            margin: 20px 0;
+        }
+
+        .primary-btn, .secondary-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .primary-btn {
+            background: #5a3d90;
+            color: white;
+        }
+
+        .secondary-btn {
+            background: #2d1053;
+            color: white;
+        }
+
+        .primary-btn:hover, .secondary-btn:hover {
+            opacity: 0.9;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .form-group {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input {
+            width: 80%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+
+    <script>
+        (function(){
+            let start;
+            let form;
+            
+            start=()=>{
+                form=document.getElementById('question-add-form');
+                let ul=document.getElementById('question-group-list');
+                let question_group_input=form['question_group_input'];
+                let add_question_btn=document.getElementById('add-question-group-btn');
+                let values_dict={};
+                add_question_btn.addEventListener('click', ()=>{
+                    let option=question_group_input.selectedOptions[0];
+                    if(option.value=='') {
+                        alert('{{ lang_pkg.QuestionGroupIsEmpty.value }}');
+                        return;
+                    }
+                    let option_id=option.dataset['id'];
+                    if(option_id in values_dict) {
+                        alert('{{ lang_pkg.QuestionGroupDuplicate.value }}');
+                        return;
+                    }
+                    values_dict[option_id]=true;
+                    let li=document.createElement('li');
+                    let inp=document.createElement('input');
+                    inp.type='hidden'; inp.name='question_group'; inp.value=option_id;
+                    let span=document.createElement('span');
+                    span.innerText=option.value;
+                    option.parentElement.removeChild(option)
+                    li.appendChild(inp);
+                    li.appendChild(span);
+                    ul.appendChild(li);
+                }, false);
+                document.getElementById('add-question-set-btn').addEventListener('click', ()=>{
+                    ajax_json_call('{{ url_with_lang_for("question.question_set_add") }}', null, form).then(data => {
+                        if(data['success']) {
+                            alert('{{ lang_pkg.CorrectQuestionSetCreation.value }}');
+                            window.location.href='{{ url_with_lang_for("question.show_question_sets") }}';
+                        } else {
+                            alert(`Err: ${data['message']}`);
+                        }
+                    }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
+                }, false);
+            };
+
+            start();
+        })()
+    </script>
+{% endblock %}

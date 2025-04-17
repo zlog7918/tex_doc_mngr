@@ -1,7 +1,54 @@
 from enum import Enum, member
 
 class LangBaseEx(Enum):
-    UserNotFoundErr=member(lambda e:f'')
+    UserNotFoundErr=\
+    FormDoesNotContain=\
+        member(lambda _:f'')
     UserNotLogged=\
     UserNotAdded=\
+    User0NotFound=\
+    QuestionAlreadyExists=\
+    QuestionAnsAlreadyExists=\
+    QuestionGroupAlreadyExists=\
+    QuestionSetAlreadyExists=\
+    QuestionInQuestionGroupAlreadyExists=\
+    QuestionGroupInQuestionSetAlreadyExists=\
+    QuestionNeedAtLeastTwoOptions=\
+    QuestionNotCreated=\
+    QuestionGroupNotCreated=\
+    QuestionSetNotCreated=\
+    QuestionNotFound=\
+    QuestionGroupNotFound=\
+    QuestionSetNotFound=\
+    QuestionGroupList=\
+    QuestionSetList=\
+    PossibleAnswers=\
+    QuestionAdding=\
+    QuestionGroupAdding=\
+    QuestionSetAdding=\
+    QuestionList=\
+    AddQuestion=\
+    AddQuestionGroup=\
+    AddQuestionSet=\
+    OptionList=\
+    AddAnswer=\
+    Question=\
+    QuestionGroup=\
+    QuestionSet=\
+    Details=\
+    Author=\
+    IsABC=\
+    Name=\
+    User=\
+    YES=\
+    NO=\
+    PossibleAnswerIsEmpty=\
+    PossibleAnswerDuplicate=\
+    CorrectQuestionCreation=\
+    QuestionIsEmpty=\
+    QuestionDuplicate=\
+    CorrectQuestionGroupCreation=\
+    QuestionGroupIsEmpty=\
+    QuestionGroupDuplicate=\
+    CorrectQuestionSetCreation=\
         member('')

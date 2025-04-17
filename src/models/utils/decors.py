@@ -2,8 +2,8 @@ from flask import abort
 from functools import wraps
 from . import utils as util
 from .Response import Response
-from services import user as su
 from db.db_base import db, log_err
+from services import user_service as su
 from flask.typing import ResponseReturnValue
 from .MessageException import MessageException
 from typing import Callable, ParamSpec, TypeVar, Generic
@@ -34,7 +34,7 @@ def approve_required(f: Callable[P, ResponseReturnValue]) -> _Wrapped[P, Respons
         user=su.get_curr_user()
         if user is None:
             abort(401)
-        if not user.is_approved():
+        if not user.approved:
             abort(401)
         return f(*args, **kwargs)
     return func

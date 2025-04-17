@@ -35,7 +35,7 @@ class Article(db.Model):
     author: Mapped[User] = relationship(foreign_keys=[author_id])
     editor: Mapped[User] = relationship(foreign_keys=[editor_id])
     status: Mapped[ArticleStatus] = relationship(foreign_keys=[status_id])
-    rounds: Mapped[list["Round"]] = relationship("Round", back_populates='article', cascade="all, delete-orphan")
+    rounds: Mapped[list["Round"]] = relationship(back_populates='article', cascade="all, delete-orphan")
 
     __table_args__ = (
         UniqueConstraint('author_id', 'title', name='uq_author_title'),

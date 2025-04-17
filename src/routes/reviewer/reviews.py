@@ -55,12 +55,13 @@ def reject_article(review_id: int):
 @review_bp.route('/<int:review_id>/submit_review', methods=['POST'])
 @approve_required
 def submit_review(review_id: int):
-    answers = {}
+    answers: dict[tuple[int, int], str] = {}
     try:
         for question_id, answer in request.form.items():
             if question_id.startswith("question_"):
-                question_id_int = int(question_id.split("_")[1])
-                answers[question_id_int] = answer
+                question_id=question_id.split("_")
+                question_id=int(question_id[1]), int(question_id[2])
+                answers[question_id]=answer
     except Exception as e:
         log_err(e)
         return Response.error_response(message = "Failed to save answers.").to_dict()

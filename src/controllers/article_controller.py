@@ -3,15 +3,17 @@ import subprocess
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from typing import Any
-import services.user as au
-import services.article as aq
+import services.user_service as au
+import services.article_service as aq
+import services.question_service as sq
+from . import question_controller as qc
 from flask import send_from_directory
-from models.utils.Response import Response
-from models.utils.decors import log_if_error
 from db.db_base import db, log_activity
+from models.utils.Response import Response
 from models.utils.EnvConsts import envConsts as ec
-from models.utils.MessageException import MessageException
 from models.article.Article import ArticleStatusEnum
+from models.utils import utils as util, decors as decor
+from models.utils.MessageException import MessageException
 
 
 def get_available_editors() -> dict[int, str]:
@@ -22,7 +24,8 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
 
 def is_valid_editor(editor_id: int) -> Response:
     user = au.get_curr_user_or_err()
-    if editor_id == user.id:
+    user0_id = au.get_usr0_or_err().id
+    if editor_id == user.id or  user.id == user0_id:
         return Response.error_response(message="An author cannot assign themselves as an editor.")
     elif not au.get_user(editor_id):
         return Response.error_response(message="Editor does not exist.")
@@ -36,12 +39,12 @@ def is_author(article_id: int) -> None:
         if not article:
             raise MessageException(
                 'You are not an author of this article.',
-                Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+                Exception(f'Autor {user.id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
-        if int(article.author_id) != int(user.get_id()):
+        if int(article.author_id) != int(user.id):
             raise MessageException(
                 'You are not an author of this article.',
-                Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+                Exception(f'Autor {user.id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
     except Exception as e:
         raise MessageException.from_exception(e, 'You are not an author of this article.')
@@ -53,42 +56,44 @@ def is_editor(article_id: int) -> None:
         if not article or not article.editor_id:
             raise MessageException(
                 'You are not an editor of this article.',
-                Exception(f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+                Exception(f'Edytor {user.id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
         
-        if int(article.editor_id) != int(user.get_id()):
+        if int(article.editor_id) != user.id:
             raise MessageException(
                 'You are not an author of this article.',
-                Exception(f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+                Exception(f'Edytor {user.id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
     except Exception as e:
         raise MessageException.from_exception(e, 'You are not an editor of this article.')
 
-@log_if_error
+@decor.log_if_error
 def get_my_articles() -> Response:
     user=au.get_curr_user_or_err()
-    return Response.success_response(data = aq.get_my_articles(int(user.get_id())))
+    return Response.success_response(data = aq.get_my_articles(user.id))
 
-@log_if_error
+@decor.log_if_error
 def get_all_articles_by_editor() -> Response:
-    user_id = au.get_curr_user_or_err().get_id()
-    articles = aq.get_all_articles_by_editor_id(int(user_id))
+    user_id = au.get_curr_user_or_err().id
+    articles = aq.get_all_articles_by_editor_id(user_id)
     return Response.success_response(data=articles)
 
-@log_if_error
+@decor.log_if_error
 def get_article_data_as_editor(article_id: int) -> Response:
     is_editor(article_id)
     return get_article_data(article_id)
 
-@log_if_error
+@decor.log_if_error
 def get_article_data_as_author(article_id: int) -> Response:
     is_author(article_id)
     return get_article_data(article_id)
 
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
-    latest_round = aq.get_latest_round(article_id)
-    if not article or not latest_round:
+    if not article:
+        raise MessageException('Nie znaleziono artykułu', Exception(f'Article with id: {article_id} not found'))
+    latest_round = aq.get_latest_round(article)
+    if not latest_round:
         raise MessageException('Nie znaleziono artykułu', Exception(f'Article with id: {article_id} not found'))
 
     article_content = latest_round.article_content
@@ -110,17 +115,17 @@ def get_article_data(article_id: int) -> Response:
 
     return Response.success_response(data=data)
 
-@log_if_error
+@decor.log_if_error
 def set_article_status_accept(article_id: int) -> Response:
     is_editor(article_id)
     return set_article_status(article_id, ArticleStatusEnum.Accepted)
 
-@log_if_error
+@decor.log_if_error
 def set_article_status_reject(article_id: int) -> Response:
     is_editor(article_id)
     return set_article_status(article_id, ArticleStatusEnum.Rejected)
 
-@log_if_error
+@decor.log_if_error
 def set_article_status_needs_corrections(article_id: int) -> Response:
     is_editor(article_id)
     return set_article_status(article_id, ArticleStatusEnum.NeedsCorrections)
@@ -132,9 +137,10 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     aq.update_article_status(article, status)
     return Response.success_response()
 
-@log_if_error
-def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
+@decor.log_if_error
+def assign_reviewers(article_id: int, question_set_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     is_editor(article_id)
+    lang_pkg=util.get_lang_pkg()
 
     if not assigned_reviewers:
         raise MessageException('No reviewers assigned')
@@ -144,20 +150,33 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
         log_activity(False, {'err': f'Editor attepted to set reviewers to a non-existing article {article_id}.'})
         return Response.error_response(message = f"Article {article_id} does not exist")
 
-    assigned_reviewers_ids = [int(rid) for rid in assigned_reviewers]
+    question_set=sq.get_question_set(question_set_id)
+    if question_set is None:
+        raise MessageException(lang_pkg.QuestionGroupNotFound.value)
+    usr=au.get_curr_user_or_err()
+    if not qc._does_user_has_access(usr, question_set.user_id):
+        raise MessageException(lang_pkg.QuestionGroupNotFound.value, Exception(f'Illegal access attempt on guestion set [id: {question_set_id}]'))
 
+    assigned_reviewers_ids = {int(rid) for rid in assigned_reviewers}
+
+    message=f"Reviewer cannot be assigned to the article."
     if article.editor_id in assigned_reviewers_ids:
         log_activity(False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
-        return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+        return Response.error_response(message)
     
     if article.author_id in assigned_reviewers_ids:
         log_activity(False, {'err': f'Editor attempted to assign author {article.author_id} to the article {article_id}.'})
-        return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+        return Response.error_response(message)
+    
+    usr0=au.get_usr0_or_err()
+    if usr0.id in assigned_reviewers_ids:
+        log_activity(False, {'err': f'Editor attempted to assign default user {usr0.id} to the article {article_id}.'})
+        return Response.error_response(message)
 
-    for reviewer_id in assigned_reviewers_ids:
+    for reviewer_id in list(assigned_reviewers_ids):
         aq.add_reviewer_to_article(article_id, reviewer_id)
         
-    aq.set_deadlines(article_id = article_id, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
+    aq.set_deadlines_and_qs(article_id = article_id, question_set = question_set, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
 
     update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
     if not update_status_result.success:
@@ -183,7 +202,7 @@ def handle_file(file: FileStorage, folder: str) -> str:
     file.save(tex_path)
     return tex_path
 
-@log_if_error
+@decor.log_if_error
 def upload_file(title: str, editor_id: int, file: FileStorage) -> Response:
     # TODO: check if the function handles all possibilities
     response = is_valid_editor(editor_id)
@@ -192,7 +211,7 @@ def upload_file(title: str, editor_id: int, file: FileStorage) -> Response:
     result = aq.create_article(title, editor_id)
     if result:
         user = au.get_curr_user_or_err()
-        article = aq.get_article_by_title(int(user.get_id()), title)
+        article = aq.get_article_by_title(user.id, title)
         if article:
             file_url = f"{upload_folder}/{article.id}/1/"
             tex_path=handle_file(file, file_url)
@@ -213,7 +232,7 @@ def upload_file(title: str, editor_id: int, file: FileStorage) -> Response:
     raise MessageException('Article not created')
 
     
-@log_if_error
+@decor.log_if_error
 def upload_correction(article_id: int, file: FileStorage) -> Response:
     # TODO: check if the function handles all possibilities
     upload_folder=ec.getDocFilesDir()
@@ -245,18 +264,18 @@ def upload_correction(article_id: int, file: FileStorage) -> Response:
             )
     raise MessageException('Correction not uploaded.')
 
-@log_if_error
+@decor.log_if_error
 def __get_file(folder: str, filename: str) -> Response:
     file_path = os.path.join(folder, filename)
     if os.path.exists(file_path):
         return Response.success_response(send_from_directory(folder, filename))
     raise MessageException('Plik nie istnieje')
 
-@log_if_error
+@decor.log_if_error
 def get_uploaded_file(filename: str) -> Response:
     return __get_file.__wrapped__(ec.getDocFilesDir(), filename)
 
-@log_if_error
+@decor.log_if_error
 def generate_preview(file: FileStorage) -> Response:
     tex_path=handle_file(file, ec.getTempDir())
     temp_folder=os.path.dirname(tex_path)
@@ -266,6 +285,6 @@ def generate_preview(file: FileStorage) -> Response:
         return Response.success_response(data={"pdf_url": f"/articles/temp-preview/{filename.replace('.tex', '.pdf')}"})
     raise MessageException('Błąd generowania PDF')
 
-@log_if_error
+@decor.log_if_error
 def temp_preview(filename: str) -> Response:
     return __get_file.__wrapped__(ec.getTempDir(), filename)

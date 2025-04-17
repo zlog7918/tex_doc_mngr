@@ -2,10 +2,11 @@ import sys
 import os.path
 import traceback
 from . import consts as c
-from flask import render_template, g
 from datetime import datetime,timezone
 from .EnvConsts import envConsts as ec
 from models.lang import LangEnum, LangBaseEx
+from flask import render_template, g, url_for
+from typing import Callable, Concatenate, ParamSpec
 from .FormNotFilledException import FormNotFilledException
 from werkzeug.datastructures.structures import ImmutableMultiDict
 
@@ -17,24 +18,37 @@ def url_last_edit(path: str) -> str:
     path_abs=f'{ec.getAppDir()}{path}'
     return f'{path}?t={int(os.path.getmtime(path_abs))}'
 
-def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> tuple[str, ...]:
-    vs: list[str]=[]
-    for k in keys:
-        v=form.get(k)
-        if v is None:
-            raise FormNotFilledException(f'Formularz nie zawiera "{k}"')
-        vs.append(v)
-    return tuple(vs)
-
-def render_base_template(name: str, **kwargs: object) -> str:
-    return render_template(name, url_last_edit=url_last_edit, **kwargs)
-
 def set_lang_pkg(lang: LangEnum) -> None:
     g.lang=lang.value
 def get_lang_pkg() -> type[LangBaseEx]:
     if 'lang' not in g:
         g.lang=LangEnum.en.value
     return g.lang
+
+def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> tuple[str, ...]:
+    vs: list[str]=[]
+    for k in keys:
+        v=form.get(k)
+        if v is None:
+            lang_pkg=get_lang_pkg()
+            raise FormNotFilledException(lang_pkg.FormDoesNotContain.value(k))
+        vs.append(v)
+    return tuple(vs)
+
+P=ParamSpec('P')
+
+def _url_with_lang_for(_: Callable[Concatenate[str, P], str]=url_for) -> Callable[Concatenate[str, P], str]:
+    def func(endpoint: str, *args: P.args, **kwargs: P.kwargs) -> str:
+        path=url_for(endpoint, *args, **kwargs)
+        return url_for('choose_lang', lang=LangEnum(get_lang_pkg()), path=path.removeprefix('/'))
+    return func
+url_with_lang_for=_url_with_lang_for()
+del _url_with_lang_for
+
+def render_base_template(name: str, **kwargs: object) -> str:
+    global url_with_lang_for
+    return render_template(name, url_last_edit=url_last_edit, url_with_lang_for=url_with_lang_for, lang_pkg=get_lang_pkg(), **kwargs)
+
 def get_kwargs_for(t: type, d: dict[object, object]) -> dict[str, object]:
     return {str(k).removeprefix(f'{t.__name__}.'):i for k, i in d.items()}
 

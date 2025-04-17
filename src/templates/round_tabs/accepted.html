@@ -1,6 +1,13 @@
 <div>
     <h2>Assign Reviewers</h2>
-    <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post">
+    <form id="assign-form" method="post">
+        <label for="question_set">Select a question set:</label>
+        <select name="question_set" required>
+            <option value="" selected>--{{ lang_pkg.QuestionSet.value }}--</option>
+            {% for qs in question_sets %}
+                <option value="{{ qs.id }}">{{ qs.name }}</option>
+            {% endfor %}
+        </select><br>
         <label for="reviewer">Select a reviewer:</label>
         <select id="reviewer" name="reviewer" required>
             {% for reviewer_id, reviewer_nick in reviewers.items() %}
@@ -14,8 +21,8 @@
 
         <div id="assignedReviewersInput" name="assigned_reviewers[]">
 
-        <label for="deadline_confirm">Confirmation Deadline:</label>
-        <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required>
+            <label for="deadline_confirm">Confirmation Deadline:</label>
+            <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required><br>
 
         <label for="deadline_submit">Submission Deadline:</label>
         <input type="datetime-local" id="deadline_submit" name="deadline_submit" required>
@@ -55,4 +62,24 @@
         hiddenInput.value = selectedReviewerId;
         assignedReviewersList.appendChild(hiddenInput);
     });
+    let form=document.getElementById('assign-form');
+    form.addEventListener('submit', async ev=>{
+        ev.preventDefault();
+        
+        let formData = new FormData(form);
+
+        let response = await fetch('{{ url_with_lang_for("editor_articles.assign_reviewers", article_id=article.id) }}', {
+            method: "POST",
+            body: formData
+        });
+
+        let data = await response.json();
+
+        if(data['success']) {
+            window.location.href=window.location.href;
+        } else {
+            alert(`Err: ${data['message']}`);
+        }
+        return false;
+    }, false);
 </script>
