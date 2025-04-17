@@ -57,14 +57,16 @@ def approve_user(user: User) -> None:
         user.approve()
         db.session.flush()
     except Exception as e:
-        raise MessageException.from_exception(e, 'Konto nie zostało potwierdzone')
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.UserNotApproved.value)
 
 def delete_user(user: User) -> None:
     try:
         db.session.delete(user)
         db.session.flush()
     except Exception as e:
-        raise MessageException.from_exception(e, 'Konto nie zostało usunięte')
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.UserNotDeleted.value)
 
 def change_user_pass(user: User, passwd: str) -> bool:
     try:
@@ -73,7 +75,8 @@ def change_user_pass(user: User, passwd: str) -> bool:
             return True
         return False
     except Exception as e:
-        raise MessageException.from_exception(e, 'Hasło nie zostało zmienione')
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.PasswordNotChanged.value)
 
 TVT=TypeVarTuple('TVT')
 def map_args(user: User, args: tuple[*TVT]) -> tuple[*TVT]:
@@ -96,7 +99,8 @@ def _exec_funcs(do: Callable[P, object], *args: P.args, **kwargs: P.kwargs) -> N
     try:
         do(*args, **kwargs)
     except Exception as e:
-        raise MessageException.from_exception(e, 'Nie wykonano funkcji')
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.FuncNotExecuted.value)
 
 def set_user_nick(user: User, nick: str) -> None:
     try:
@@ -109,4 +113,5 @@ def set_user_nick(user: User, nick: str) -> None:
             user.do_after_cr=None
         db.session.flush()
     except Exception as e:
-        raise MessageException.from_exception(e, 'Konto nie zostało utworzone')
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.AccountNotCreated.value)
