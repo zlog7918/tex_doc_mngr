@@ -23,7 +23,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 15px 20px;
+            padding: 11px 20px;
             font-size: 18px;
             font-weight: 600;
             flex-shrink: 0;
@@ -153,6 +153,33 @@
         .close:hover {
             color: black;
         }
+
+        .user-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: white;
+            color: #5a3d90;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+
+        .user-nick {
+            font-weight: bold;
+            padding: 8px 10px;
+            font-size: 16px;
+            color: #5a3d90;
+            cursor: default;
+        }
+        .dropdown hr {
+            margin: 5px 0;
+            border: none;
+            border-top: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
@@ -169,12 +196,14 @@
 
             {% if current_user.is_authenticated %}
             <div class="user-settings">
-                User
+                <div class="user-icon">{{ current_user.get_nick()[0]|upper }}</div>
                 <div class="dropdown">
+                    <div class="user-nick">{{ current_user.get_nick() }}</div>
+                    <hr>
                     <button id="toggle-change-password">Zmień hasło</button>
                     <button id="logout-btn">Wyloguj</button>
                 </div>
-            </div>
+            </div>            
             {% endif %}
         </div>
     </div>
