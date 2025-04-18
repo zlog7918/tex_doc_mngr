@@ -27,5 +27,7 @@ class LangBaseEx(Enum):
     UserAlreadyApproved=\
     IncorrectOldPassword=\
     PasswordDoesNotMeetCriteria=\
+    UnknownErr=\
+    UnknownDBErr=\
     CodeSent=\
         member('')

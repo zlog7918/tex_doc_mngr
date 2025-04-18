@@ -25,4 +25,6 @@ class EngLang(LangBase):
     UserAlreadyApproved='Account does not need approval'
     IncorrectOldPassword='Incorrect old password'
     PasswordDoesNotMeetCriteria='Password does not meet criteria'
+    UnknownErr='Occured unpredicted error, sorry for the difficulties'
+    UnknownDBErr='Occured serious unpredicted error, sorry for the difficulties'
     CodeSent='Message successfuly sent'

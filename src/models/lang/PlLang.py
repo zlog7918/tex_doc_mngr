@@ -27,4 +27,6 @@ class PlLang(LangBase):
     UserAlreadyApproved='Konto nie wymaga potwierdzenia'
     IncorrectOldPassword='Nieprawidłowe stare hasło'
     PasswordDoesNotMeetCriteria='Hasło nie spełnia wymagań'
+    UnknownErr='Wystąpił nie przewidziany błąd, przepraszamy za utrudnienia'
+    UnknownDBErr='Wystąpił poważny błąd serwera, przepraszamy za utrudnienia'
     CodeSent='Wiadmość została pomyślnie wysłana'
