@@ -3,6 +3,7 @@ from .LangBase import LangBase
 
 class EngLang(LangBase):
     UserNotFoundErr=member(lambda e: f'User not found: {e}')
+    ConfirmAccountThroughCode=member(lambda time: f'Confirm account through code from email in: {time}min')
     UserNotLogged='No user logged'
     UserNotAdded='User is not added'
     UserNotApproved='User is not approved'
@@ -13,3 +14,15 @@ class EngLang(LangBase):
     CodeNotGenerated='Code has not been generated'
     CodeNotDeactivated='Code is not deactivated'
     CodeNotApproved='Code is not approved'
+    NickDoesNotMeetCriteria='Nick does not meet criteria'
+    IncorrectNickOrPassword='Incorrect nick or password'
+    UnsuccessfulMailSending='Unsuccessful email sending'
+    EmailDoesNotMeetCriteria='Email does not meet criteria'
+    UserCanAcceptInviteThroughMail='User can accept invite through email'
+    UserNotInvited='User not invited'
+    NickExistsOrInvalidPassword='Password does not meet criteria or user with this nick already exists'
+    IncorrectCode='Code is incorrect'
+    UserAlreadyApproved='Account does not need approval'
+    IncorrectOldPassword='Incorrect old password'
+    PasswordDoesNotMeetCriteria='Password does not meet criteria'
+    CodeSent='Message successfuly sent'

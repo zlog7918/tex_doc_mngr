@@ -2,6 +2,7 @@ from enum import Enum, member
 
 class LangBaseEx(Enum):
     UserNotFoundErr=\
+    ConfirmAccountThroughCode=\
         member(lambda e:f'')
     UserNotLogged=\
     UserNotAdded=\
@@ -13,4 +14,18 @@ class LangBaseEx(Enum):
     CodeNotGenerated=\
     CodeNotDeactivated=\
     CodeNotApproved=\
+    NickDoesNotMeetCriteria=\
+    IncorrectNickOrPassword=\
+    PasswordsDoNotMatch=\
+    UnsuccessfulMailSending=\
+    EmailDoesNotMeetCriteria=\
+    UserCanAcceptInviteThroughMail=\
+    UserNotInvited=\
+    NickExistsOrInvalidPassword=\
+    IncorrectCode=\
+    EmailOrNickExists=\
+    UserAlreadyApproved=\
+    IncorrectOldPassword=\
+    PasswordDoesNotMeetCriteria=\
+    CodeSent=\
         member('')
