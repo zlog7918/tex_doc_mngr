@@ -1,10 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %} Podgląd Artykułu {% endblock %}
+{% block title %} {{article.title}} {% endblock %}
 
 {% block body %}
-    {% include 'toolbar.html' %}
-
+{% include 'toolbar.html' %}
     <style>
         .main-content {
             padding: 20px;
@@ -38,10 +37,9 @@
             background-color: #aaa;
         }
 
-        .tab-content {
-            padding: 20px;
-            border-radius: 0 0 5px 5px;
-            background-color: white;
+        .tab.active:hover {
+            background-color: #5a3d90; 
+            color: white; 
         }
 
         .tabs-container {
@@ -49,24 +47,8 @@
             margin-bottom: -1px; 
         }
 
-
         .hidden {
             display: none;
-        }
-
-        button {
-            margin-top: 20px;
-            padding: 10px 20px;
-            background-color: #5a3d90;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
-        button:hover {
-            background-color: #4a1e87;
         }
 
         .author-info {
@@ -74,58 +56,71 @@
             margin-bottom: 10px;
             color: #555;
         }
-    </style>
 
-<div class="main-content">
-    <h1>{{ article.title }}</h1>
-    <p><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
-    <div id="tabs" class="tabs-container">
-        {% for round in article.rounds %}
-            <div class="tab {% if loop.last %}active{% endif %}" 
-                 data-index="{{ loop.index0 }}" 
-                 data-url="{{ round.article_content }}"
-                 data-last="{% if loop.last %}true{% else %}false{% endif %}"
-                 onclick="showTab(this)">
-                Round {{ round.round_number }}
-            </div>
-        {% endfor %}
-    </div>
-    <div class="tab-content" id="tab-content">
-        {{ tab_content|safe }}
-    </div>
-    <div id="old-round-content" class="tab-content hidden">
-        <p>To jest stara wersja artykułu. Aby zobaczyć pełną treść, przejdź do najnowszej rundy.</p>
-    </div>
-
-    <script>
-        let loadedArticles = {};
-
-        function showTab(tabElement) {
-            let url = tabElement.getAttribute('data-url');
-            let isLastRound = tabElement.getAttribute('data-last') === 'true';
-
-            // Zmiana aktywnej zakładki
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            tabElement.classList.add('active');
-
-            // Pokaż odpowiednią zawartość
-            if (isLastRound) {
-                document.getElementById('tab-content').classList.remove('hidden');
-                document.getElementById('old-round-content').classList.add('hidden');
-            } else {
-                document.getElementById('tab-content').classList.add('hidden');
-                document.getElementById('old-round-content').classList.remove('hidden');
-            }
+        .back-button {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #5a3d90;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
         }
 
-        // Automatyczne wczytanie ostatniej rundy na starcie
-        window.onload = function () {
-            let lastTab = document.querySelector('.tab.active');
-            if (lastTab) {
-                showTab(lastTab);
+        .back-button:hover {
+            background-color: #4a2a70;
+        }
+    </style>
+
+    <div class="main-content">
+        <a href="{{ url_for('editor_articles.show_articles') }}" class="back-button">Powrót do listy</a>
+        <h1>{{ article.title }}</h1>
+        <p><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
+        <div id="tabs" class="tabs-container">
+            {% for round in article.rounds %}
+                <div class="tab {% if loop.last %}active{% endif %}" 
+                    data-index="{{ loop.index0 }}" 
+                    data-url="{{ round.article_content }}"
+                    data-last="{% if loop.last %}true{% else %}false{% endif %}"
+                    onclick="showTab(this)">
+                    Runda {{ round.round_number }}
+                </div>
+            {% endfor %}
+        </div>
+        <div class="tab-content" id="tab-content">
+            {{ tab_content|safe }}
+        </div>
+        <div id="old-round-content" class="tab-content hidden">
+            <p>To jest stara wersja artykułu. Aby zobaczyć pełną treść, przejdź do najnowszej rundy.</p>
+        </div>
+
+        <script>
+            let loadedArticles = {};
+
+            function showTab(tabElement) {
+                let url = tabElement.getAttribute('data-url');
+                let isLastRound = tabElement.getAttribute('data-last') === 'true';
+
+                // Zmiana aktywnej zakładki
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                tabElement.classList.add('active');
+
+                // Pokaż odpowiednią zawartość
+                if (isLastRound) {
+                    document.getElementById('tab-content').classList.remove('hidden');
+                    document.getElementById('old-round-content').classList.add('hidden');
+                } else {
+                    document.getElementById('tab-content').classList.add('hidden');
+                    document.getElementById('old-round-content').classList.remove('hidden');
+                }
             }
-        };
-    </script>
-</div>
+            window.onload = function () {
+                let lastTab = document.querySelector('.tab.active');
+                if (lastTab) {
+                    showTab(lastTab);
+                }
+            };
+        </script>
+    </div>
 
 {% endblock %}
