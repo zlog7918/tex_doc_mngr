@@ -1,38 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ article.title }}</title>
+{% extends "base.html" %}
+
+{% block title %} Podgląd Artykułu {% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
     <style>
+        .main-content {
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: black;
+            margin-bottom: 20px;
+        }
+
         .tab {
             display: inline-block;
             margin-right: 5px;
-            padding: 10px;
+            padding: 12px 20px;
             background-color: #ddd;
+            border-radius: 5px 5px 0 0;
             cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
         }
+
         .tab.active {
+            background-color: #5a3d90;
+            color: white;
+        }
+
+        .tab:hover {
             background-color: #aaa;
         }
+
         .tab-content {
-            margin-top: 20px;
-            border: 1px solid #ccc;
-            padding: 10px;
+            padding: 20px;
+            border-radius: 0 0 5px 5px;
+            background-color: white;
         }
+
+        .tabs-container {
+            border-bottom: 2px solid #ccc;
+            margin-bottom: -1px; 
+        }
+
+
         .hidden {
             display: none;
         }
 
         button {
             margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #5a3d90;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #4a1e87;
+        }
+
+        .author-info {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #555;
         }
     </style>
-</head>
-<body>
+
+<div class="main-content">
     <h1>{{ article.title }}</h1>
-    <p><strong>Author:</strong> {{ article.author.nick }}</p>
-    <div id="tabs">
+    <p><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
+    <div id="tabs" class="tabs-container">
         {% for round in article.rounds %}
             <div class="tab {% if loop.last %}active{% endif %}" 
                  data-index="{{ loop.index0 }}" 
@@ -79,5 +126,6 @@
             }
         };
     </script>
-</body>
-</html>
+</div>
+
+{% endblock %}
