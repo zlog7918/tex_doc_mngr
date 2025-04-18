@@ -179,7 +179,7 @@
                     if (data["pdf_url"]) {
                         window.open(data["pdf_url"], '_blank');
                     } else {
-                        alert("Błąd: " + (data.error || "Nie udało się wygenerować podglądu"));
+                        alert("Błąd: " + (data.message || "Nie udało się wygenerować podglądu"));
                     }
                 });
             });
@@ -201,7 +201,7 @@
                     alert("Korekta została dodana.");
                     window.location.reload();
                 } else {
-                    alert("Błąd: " + (data.error || "Nieznany problem"));
+                    alert("Błąd: " + (data.message || "Nieznany problem"));
                 }
             });
         });
