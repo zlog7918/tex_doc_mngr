@@ -42,12 +42,6 @@
             color: white; 
         }
 
-        .tab-content {
-            padding: 20px;
-            border-radius: 0 0 5px 5px;
-            background-color: white;
-        }
-
         .tabs-container {
             border-bottom: 2px solid #ccc;
             margin-bottom: -1px; 
@@ -120,8 +114,6 @@
                     document.getElementById('old-round-content').classList.remove('hidden');
                 }
             }
-
-            // Automatyczne wczytanie ostatniej rundy na starcie
             window.onload = function () {
                 let lastTab = document.querySelector('.tab.active');
                 if (lastTab) {
@@ -130,6 +122,5 @@
             };
         </script>
     </div>
-
 
 {% endblock %}
