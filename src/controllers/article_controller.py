@@ -125,6 +125,11 @@ def set_article_status_needs_corrections(article_id: int) -> Response:
     is_editor(article_id)
     return set_article_status(article_id, ArticleStatusEnum.NeedsCorrections)
 
+@log_if_error
+def set_article_status_final(article_id: int) -> Response:
+    is_editor(article_id)
+    return set_article_status(article_id, ArticleStatusEnum.Final)
+
 def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     article = aq.get_article(article_id)
     if article is None:
