@@ -16,7 +16,7 @@ class PlLang(LangBase):
     CodeNotApproved='Nie można potwierdzić kodu'
     NickDoesNotMeetCriteria='Nick nie spełnia wymagań'
     IncorrectNickOrPassword='Nieprawidłowy login lub hasło'
-    PasswordsDoNotMatch='Podane nowe hasła nie pasują do siebie'
+    PasswordsDoNotMatch='Podane hasło nie zgadza się z powtórzonym'
     UnsuccessfulMailSending='Nie udało sie wysłać e-maila'
     EmailDoesNotMeetCriteria='E-mail nie przeszedł weryfikacji'
     UserCanAcceptInviteThroughMail='Dana osoba będzie mogła przyjąć zaproszenie za pomocą kodu z mail\'a'
