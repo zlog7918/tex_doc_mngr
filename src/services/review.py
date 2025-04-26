@@ -10,6 +10,12 @@ from models.article.Questions import QuestionSet, Answer, Question, QuestionA, Q
 def get_review_by_id(review_id: int) -> Review|None:
     return Review.query.where(Review.id==review_id).first()
 
+def __get_review_status_or_err(review_status: ReviewStatusEnum) -> ReviewStatus:
+    r = ReviewStatus.query.where(ReviewStatus.stat==review_status).first()
+    if r is None:
+        raise ValueError(f'Review status {review_status.value} not found')
+    return r
+
 def get_review(article_id: int, reviewer_id: int) -> Review|None:
     try:
         review = (
@@ -204,10 +210,11 @@ def set_expired_status_for_reviews() -> bool:
             .all()
         )
 
+        review_status = __get_review_status_or_err(ReviewStatusEnum.Expired)
         for review in reviews:
             print(f'Zmieniono status review {review.id} na \'{ReviewStatusEnum.Expired}\'')
             log_activity(get_function(), True, {'details': f'Zmieniono status review {review.id} na \'Expired\''})
-            review.status.stat = ReviewStatusEnum.Expired
+            review.status_id = review_status.id
 
         db.session.commit()
         return True
@@ -228,10 +235,11 @@ def set_not_reviewed_status_for_reviews() -> bool:
             .all()
         )
 
+        review_status = __get_review_status_or_err(ReviewStatusEnum.NotReviewed)
         for review in reviews:
             print(f'Zmieniono status review {review.id} na \'{ReviewStatusEnum.NotReviewed}\'')
             log_activity(get_function(), True, {'details': f'Zmieniono status review {review.id} na \'Not Reviewed\''})
-            review.status.stat = ReviewStatusEnum.NotReviewed
+            review.status_id = review_status.id
 
         db.session.commit()
         return True
