@@ -6,7 +6,7 @@ from models.utils import utils as util
 from models.article import Questions as Q
 from models.utils.MessageException import MessageException
 
-def _cr_or_err(q: Q.Question|Q.QuestionA|Q.QuestionGroup|Q.QuestionGroupQuestions|Q.QuestionSet|Q.QuestionSetGroups, err_str: str) -> None:
+def _cr_or_err(q: Q.Question|Q.QuestionA|Q.QuestionGroup|Q.QuestionGroupQuestions, err_str: str) -> None:
     try:
         db.session.add(q)
         db.session.flush()
@@ -30,21 +30,11 @@ def get_all_question_groups(usr: User) -> list[Q.QuestionGroup]:
         Q.QuestionGroup.user_id==usr0.id,
     )).all()
 
-def get_all_question_sets(usr: User) -> list[Q.QuestionSet]:
-    usr0=su.get_usr0_or_err()
-    return Q.QuestionSet.query.where(or_(
-        Q.QuestionSet.user_id==usr.id,
-        Q.QuestionSet.user_id==usr0.id,
-    )).all()
-
 def get_question(q_id: int) -> Q.Question|None:
     return Q.Question.query.where(Q.Question.id==q_id).first()
 
 def get_question_group(qg_id: int) -> Q.QuestionGroup|None:
     return Q.QuestionGroup.query.where(Q.QuestionGroup.id==qg_id).first()
-
-def get_question_set(qs_id: int) -> Q.QuestionSet|None:
-    return Q.QuestionSet.query.where(Q.QuestionSet.id==qs_id).first()
 
 def get_question_by_q(usr: User, question: str) -> Q.Question|None:
     return Q.Question.query.where(and_(
@@ -56,12 +46,6 @@ def get_question_group_by_n(usr: User, name: str) -> Q.QuestionGroup|None:
     return Q.QuestionGroup.query.where(and_(
         Q.QuestionGroup.user_id==usr.id,
         Q.QuestionGroup.name==name,
-    )).first()
-
-def get_question_set_by_n(usr: User, name: str) -> Q.QuestionSet|None:
-    return Q.QuestionSet.query.where(and_(
-        Q.QuestionSet.user_id==usr.id,
-        Q.QuestionSet.name==name,
     )).first()
 
 def cr_question(usr: User, question: str, abc_s: list[str]|None) -> None:
@@ -102,21 +86,4 @@ def cr_question_group(usr: User, name: str, questions: list[int]) -> None:
         _cr_or_err(
             Q.QuestionGroupQuestions(**util.get_kwargs_for(Q.QuestionGroupQuestions, {Q.QuestionGroupQuestions.question_group_id: qg.id, Q.QuestionGroupQuestions.question_id: q})),
             lang_pkg.QuestionInQuestionGroupAlreadyExists.value,
-        )
-
-def cr_question_set(usr: User, name: str, question_groups: list[int]) -> None:
-    lang_pkg=util.get_lang_pkg()
-    usr_id=usr.id
-    _cr_or_err(
-        Q.QuestionSet(**util.get_kwargs_for(Q.QuestionSet, {Q.QuestionSet.user_id: usr_id, Q.QuestionSet.name: name})),
-        lang_pkg.QuestionSetAlreadyExists.value,
-    )
-    qs=get_question_set_by_n(usr, name)
-    if qs is None:
-        raise MessageException(lang_pkg.QuestionSetNotCreated.value, Exception('Question set not created, but has gone through try...except'))
-    question_groups=list(set(question_groups))
-    for qg in question_groups:
-        _cr_or_err(
-            Q.QuestionSetGroups(**util.get_kwargs_for(Q.QuestionSetGroups, {Q.QuestionSetGroups.question_set_id: qs.id, Q.QuestionSetGroups.question_group_id: qg})),
-            lang_pkg.QuestionGroupInQuestionSetAlreadyExists.value,
         )

@@ -1,13 +1,16 @@
 <div>
     <h2>Assign Reviewers</h2>
     <form id="assign-form" method="post">
-        <label for="question_set">Select a question set:</label>
-        <select name="question_set" required>
-            <option value="" selected>--{{ lang_pkg.QuestionSet.value }}--</option>
-            {% for qs in question_sets %}
-                <option value="{{ qs.id }}">{{ qs.name }}</option>
+        <label>{{ lang_pkg.SelectQuestionSet.value }}</label>
+        <select name="question_group_input">
+            <option value="" selected>--{{ lang_pkg.QuestionGroup.value }}--</option>
+            {% for qg in question_groups %}
+                <option data-id="{{ qg.id }}">{{ qg.name }}</option>
             {% endfor %}
-        </select><br>
+        </select><button type="button" id="add-question-group-btn" class="secondary-btn">{{ lang_pkg.AddQuestionGroup.value }}</button>
+        <h3>{{ lang_pkg.QuestionGroupList.value }}:</h3>
+        <ul id="question-group-list"></ul>
+
         <label for="reviewer">Select a reviewer:</label>
         <select id="reviewer" name="reviewer" required>
             {% for reviewer_id, reviewer_nick in reviewers.items() %}
@@ -32,54 +35,87 @@
 
 </div>
 <script>
-    document.getElementById('addReviewer').addEventListener('click', function () {
-        const reviewerSelect = document.getElementById('reviewer');
-        const selectedReviewerId = reviewerSelect.value;
-        const selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
-        const assignedReviewersList = document.getElementById('assignedReviewers');
+    (function() {
+        let start;
 
-        if (!selectedReviewerId) {
-            alert('Please select a reviewer.');
-            return;
+        start=()=>{
+            let form=document.getElementById('assign-form');
+            let ul=document.getElementById('question-group-list');
+            let question_group_input=form['question_group_input'];
+            let add_question_btn=document.getElementById('add-question-group-btn');
+            let values_dict={};
+            add_question_btn.addEventListener('click', ()=>{
+                let option=question_group_input.selectedOptions[0];
+                if(option.value=='') {
+                    alert('{{ lang_pkg.QuestionGroupIsEmpty.value }}');
+                    return;
+                }
+                let option_id=option.dataset['id'];
+                if(option_id in values_dict) {
+                    alert('{{ lang_pkg.QuestionGroupDuplicate.value }}');
+                    return;
+                }
+                values_dict[option_id]=true;
+                let li=document.createElement('li');
+                let inp=document.createElement('input');
+                inp.type='hidden'; inp.name='question_group'; inp.value=option_id;
+                let span=document.createElement('span');
+                span.innerText=option.value;
+                option.parentElement.removeChild(option)
+                li.appendChild(inp);
+                li.appendChild(span);
+                ul.appendChild(li);
+            }, false);
+            document.getElementById('addReviewer').addEventListener('click', function () {
+                const reviewerSelect = document.getElementById('reviewer');
+                const selectedReviewerId = reviewerSelect.value;
+                const selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
+                const assignedReviewersList = document.getElementById('assignedReviewers');
+
+                if (!selectedReviewerId) {
+                    alert('Please select a reviewer.');
+                    return;
+                }
+
+                const existingItems = assignedReviewersList.querySelectorAll('li');
+                for (let item of existingItems) {
+                    if (item.getAttribute('data-id') === selectedReviewerId) {
+                        alert('Reviewer already added.');
+                        return;
+                    }
+                }
+
+                const newReviewerItem = document.createElement('li');
+                newReviewerItem.textContent = selectedReviewerName;
+                newReviewerItem.setAttribute('data-id', selectedReviewerId);
+                assignedReviewersList.appendChild(newReviewerItem);
+
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'assigned_reviewers[]';
+                hiddenInput.value = selectedReviewerId;
+                assignedReviewersList.appendChild(hiddenInput);
+            });
+            form.addEventListener('submit', async ev=>{
+                ev.preventDefault();
+                
+                let formData = new FormData(form);
+
+                let response = await fetch('{{ url_with_lang_for("editor_articles.assign_reviewers", article_id=article.id) }}', {
+                    method: "POST",
+                    body: formData
+                });
+
+                let data = await response.json();
+
+                if(data['success']) {
+                    window.location.href=window.location.href;
+                } else {
+                    alert(`Err: ${data['message']}`);
+                }
+                return false;
+            }, false);
         }
-
-        const existingItems = assignedReviewersList.querySelectorAll('li');
-        for (let item of existingItems) {
-            if (item.getAttribute('data-id') === selectedReviewerId) {
-                alert('Reviewer already added.');
-                return;
-            }
-        }
-
-        const newReviewerItem = document.createElement('li');
-        newReviewerItem.textContent = selectedReviewerName;
-        newReviewerItem.setAttribute('data-id', selectedReviewerId);
-        assignedReviewersList.appendChild(newReviewerItem);
-
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'assigned_reviewers[]';
-        hiddenInput.value = selectedReviewerId;
-        assignedReviewersList.appendChild(hiddenInput);
-    });
-    let form=document.getElementById('assign-form');
-    form.addEventListener('submit', async ev=>{
-        ev.preventDefault();
-        
-        let formData = new FormData(form);
-
-        let response = await fetch('{{ url_with_lang_for("editor_articles.assign_reviewers", article_id=article.id) }}', {
-            method: "POST",
-            body: formData
-        });
-
-        let data = await response.json();
-
-        if(data['success']) {
-            window.location.href=window.location.href;
-        } else {
-            alert(`Err: ${data['message']}`);
-        }
-        return false;
-    }, false);
+        start();
+    })();
 </script>

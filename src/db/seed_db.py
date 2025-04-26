@@ -63,7 +63,7 @@ def seed_data(db: SQLAlchemy) -> None:
     
     if not Q.QuestionGroup.query.first():
         question_groups = [
-            Q.QuestionGroup(**util.get_kwargs_for(Q.QuestionGroup, {Q.QuestionGroup.user_id: user_0_id, Q.QuestionGroup.name: 'Base Questions'})),
+            Q.QuestionGroup(**util.get_kwargs_for(Q.QuestionGroup, {Q.QuestionGroup.user_id: user_0_id, Q.QuestionGroup.name: 'Default Question Group'})),
         ]
         db.session.add_all(question_groups)
     
@@ -73,18 +73,6 @@ def seed_data(db: SQLAlchemy) -> None:
             Q.QuestionGroupQuestions(**util.get_kwargs_for(Q.QuestionGroupQuestions, {Q.QuestionGroupQuestions.question_group_id: 1, Q.QuestionGroupQuestions.question_id: 2})),
         ]
         db.session.add_all(question_group_questions)
-    
-    if not Q.QuestionSet.query.first():
-        question_sets = [
-            Q.QuestionSet(**util.get_kwargs_for(Q.QuestionSet, {Q.QuestionSet.user_id: user_0_id, Q.QuestionSet.name: 'Default Question Set'})),
-        ]
-        db.session.add_all(question_sets)
-    
-    if not Q.QuestionSetGroups.query.first():
-        question_set_questions = [
-            Q.QuestionSetGroups(**util.get_kwargs_for(Q.QuestionSetGroups, {Q.QuestionSetGroups.question_set_id: 1, Q.QuestionSetGroups.question_group_id: 1})),
-        ]
-        db.session.add_all(question_set_questions)
         
     if not Round.query.first():
         rounds = [

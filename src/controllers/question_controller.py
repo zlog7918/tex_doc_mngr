@@ -64,34 +64,3 @@ def cr_question_group(name: str, questions: list[int]) -> Response:
     sq.cr_question_group(usr, name, questions)
     log_activity(True, {'message': f'Successfully created question group [name: {name}]'})
     return Response.success_response()
-
-@decor.log_if_error
-def get_all_question_sets() -> Response:
-    return Response.success_response(
-        sq.get_all_question_sets(su.get_curr_user_or_err())
-    )
-
-@decor.log_if_error
-def get_question_set(qg_id: int) -> Response:
-    usr=su.get_curr_user_or_err()
-    lang_pkg=util.get_lang_pkg()
-    qs=sq.get_question_set(qg_id)
-    if qs is None:
-        raise MessageException(lang_pkg.QuestionGroupNotFound.value)
-    if not _does_user_has_access(usr, qs.user_id):
-        raise MessageException(lang_pkg.QuestionGroupNotFound.value, Exception(f'Illegal access attempt on guestion set [id: {qg_id}]'))
-    return Response.success_response(qs)
-
-@decor.log_if_error
-def cr_question_set(name: str, questions_groups: list[int]) -> Response:
-    usr=su.get_curr_user_or_err()
-    lang_pkg=util.get_lang_pkg()
-    if not all(
-        False if qg is None else _does_user_has_access(usr, qg.user_id) for qg in (
-            sq.get_question_group(qg_id) for qg_id in questions_groups
-        )
-    ):
-        raise MessageException(lang_pkg.QuestionGroupNotFound.value, Exception(f'Illegal access attempt with guestions [{questions_groups}]'))
-    sq.cr_question_set(usr, name, questions_groups)
-    log_activity(True, {'message': f'Successfully created question set [name: {name}]'})
-    return Response.success_response()

@@ -1,5 +1,8 @@
 from db.db_base import db
 from .Review import Review
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .Review import Round
 from ..usr.User import User
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, UniqueConstraint, Integer, Boolean, Text
@@ -51,30 +54,6 @@ class QuestionGroupQuestions(db.Model):
     q: Mapped[Question] = relationship(foreign_keys=[question_id])
 
     __table_args__ = (UniqueConstraint(question_group_id, question_id),)
-
-class QuestionSet(db.Model):
-    __tablename__ = 'question_set'
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey(User.id), nullable=False)
-    name: Mapped[str] = mapped_column(Text, nullable=False)
-
-    user: Mapped[User] = relationship(foreign_keys=[user_id])
-    qsg: Mapped[list["QuestionSetGroups"]] = relationship(back_populates='qs')
-    
-    __table_args__ = (UniqueConstraint(user_id, name),)
-
-class QuestionSetGroups(db.Model):
-    __tablename__ = 'question_set_questions'
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    question_set_id: Mapped[int] = mapped_column(ForeignKey(QuestionSet.id))
-    question_group_id: Mapped[int] = mapped_column(ForeignKey(QuestionGroup.id))
-
-    qs: Mapped[QuestionSet] = relationship(back_populates='qsg')
-    qg: Mapped[QuestionGroup] = relationship(foreign_keys=[question_group_id])
-    
-    __table_args__ = (UniqueConstraint(question_set_id, question_group_id),)
 
 class Answer(db.Model):
     __tablename__ = 'answers'

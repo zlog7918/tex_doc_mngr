@@ -9,6 +9,7 @@ import services.question_service as sq
 from . import question_controller as qc
 from flask import send_from_directory
 from db.db_base import db, log_activity
+from models.article import Questions as Q
 from models.utils.Response import Response
 from models.utils.EnvConsts import envConsts as ec
 from models.article.Article import ArticleStatusEnum
@@ -138,7 +139,7 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     return Response.success_response()
 
 @decor.log_if_error
-def assign_reviewers(article_id: int, question_set_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
+def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     is_editor(article_id)
     lang_pkg=util.get_lang_pkg()
 
@@ -150,12 +151,16 @@ def assign_reviewers(article_id: int, question_set_id: int, assigned_reviewers: 
         log_activity(False, {'err': f'Editor attepted to set reviewers to a non-existing article {article_id}.'})
         return Response.error_response(message = f"Article {article_id} does not exist")
 
-    question_set=sq.get_question_set(question_set_id)
-    if question_set is None:
-        raise MessageException(lang_pkg.QuestionGroupNotFound.value)
+    question_groups_ids = {int(qg_id) for qg_id in question_set}
+    question_groups: list[Q.QuestionGroup]=[]
+    for qg_id in question_groups_ids:
+        qg=sq.get_question_group(qg_id)
+        if qg is None:
+            raise MessageException(lang_pkg.QuestionGroupNotFound.value)
+        question_groups.append(qg)
     usr=au.get_curr_user_or_err()
-    if not qc._does_user_has_access(usr, question_set.user_id):
-        raise MessageException(lang_pkg.QuestionGroupNotFound.value, Exception(f'Illegal access attempt on guestion set [id: {question_set_id}]'))
+    if any(not qc._does_user_has_access(usr, qg.user_id) for qg in question_groups):
+        raise MessageException(lang_pkg.QuestionGroupNotFound.value, Exception(f'Illegal access attempt on guestion group'))
 
     assigned_reviewers_ids = {int(rid) for rid in assigned_reviewers}
 
@@ -176,7 +181,7 @@ def assign_reviewers(article_id: int, question_set_id: int, assigned_reviewers: 
     for reviewer_id in list(assigned_reviewers_ids):
         aq.add_reviewer_to_article(article_id, reviewer_id)
         
-    aq.set_deadlines_and_qs(article_id = article_id, question_set = question_set, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
+    aq.set_deadlines_and_qs(article_id = article_id, question_set = question_groups, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
 
     update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
     if not update_status_result.success:
