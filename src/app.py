@@ -74,7 +74,7 @@ def request_loader(request: flRequest):
     return user
 
 # async def choose_lang(path: str):
-@app.route('/<lang_enum:lang>', defaults={'path': ''}, methods=['GET', 'POST'])
+@app.route('/<lang_enum:lang>/', defaults={'path': ''}, methods=['GET', 'POST'])
 @app.route('/<lang_enum:lang>/<path:path>', methods=['GET', 'POST'])
 def choose_lang(lang: LangEnum, path: str):
     util.set_lang_pkg(lang)
