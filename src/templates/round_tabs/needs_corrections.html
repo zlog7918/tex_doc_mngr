@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %} {{article.title}} {% endblock %}
+
+{% block body %}
+{% include 'toolbar.html' %}
+
+<style>
+    .main-content {
+        padding: 20px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .info-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            color: #856404;
+            font-size: 16px;
+        }
+
+    .comments-box {
+            background-color: #e9ecef;
+            border-left: 5px solid #5a3d90;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+
+    .comments-box h3 {
+        margin-top: 0;
+        color: #2d1053;
+    }
+</style>
+
+<div class="main-content">
+    <h1>Artykuł {{ article.title }} wymaga poprawek.</h1>
+    <p><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
+    
+    <div class="info-box">
+        Oczekiwanie na przesłanie poprawionej wersji artykułu przez autora.
+    </div>
+
+    <div class="comments-box">
+        <h3>Komentarze recenzenta na temat poprzedniej wersji artykułu:</h3>
+        <ul>
+            <li>Proszę poprawić formatowanie bibliografii zgodnie z wytycznymi.</li>
+            <li>Rozdział 2 zawiera powtórzenia – sugeruję skrócenie.</li>
+            <li>Wykres na stronie 5 jest nieczytelny – zalecam poprawienie opisu osi.</li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}

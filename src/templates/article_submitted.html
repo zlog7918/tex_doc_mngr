@@ -85,7 +85,7 @@
 
         <h1>{{ article.title }}</h1>
         <p class="article-info"><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
-        <p class="article-info"><strong>Treść:</strong> {{ article.content|safe }}</p>
+        <p class="article-info"><strong>Treść:</strong> {{ article_content|safe }}</p>
 
         <div class="action-buttons">
             <button class="accept-btn" onclick="acceptArticle()">Zaakceptuj</button>
@@ -113,8 +113,21 @@
         }
 
         function rejectArticle() {
-            alert('Article Rejected!');
-            window.location.reload();
+            fetch(`/editor/articles/{{ article.id }}/reject`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(data.message);
+                window.location.reload();
+            })
+            .catch(error => {
+                alert('Failed to reject article: ' + error.message);
+                window.location.reload();
+            });
         }
     </script>
 {% endblock %}

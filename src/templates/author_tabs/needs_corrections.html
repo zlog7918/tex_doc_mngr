@@ -1,0 +1,209 @@
+
+    <style>
+        .main-content {
+            padding: 30px;
+            width: 100%;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            border-radius: 10px;
+        }
+
+        h2 {
+            font-size: 26px;
+            font-weight: bold;
+            color: #2d1053;
+            margin-bottom: 20px;
+        }
+
+        .info-box {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            color: #856404;
+            font-size: 16px;
+        }
+
+        .comments-box {
+            background-color: #e9ecef;
+            border-left: 5px solid #5a3d90;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+
+        .comments-box h3 {
+            margin-top: 0;
+            color: #2d1053;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            font-size: 18px;
+            color: #2d1053;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background-color: #5a3d90;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #452d78;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-light {
+            background-color: #ddd3f2;
+            color: #2d1053;
+        }
+
+        .btn-light:hover {
+            background-color: #c8b8ea;
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+            }
+        }
+    </style>
+
+<div>
+    <div class="main-content">
+        <h2>Dodaj korektę do artykułu: "{{ article.title }}"</h2>
+
+        <div class="info-box">
+            Prosimy o przesłanie poprawionej wersji artykułu w formacie LaTeX z uwzględnieniem poniższych komentarzy recenzenta.
+        </div>
+
+        <div class="comments-box">
+            <h3>Komentarze recenzenta:</h3>
+            <ul>
+                <li>Proszę poprawić formatowanie bibliografii zgodnie z wytycznymi.</li>
+                <li>Rozdział 2 zawiera powtórzenia – sugeruję skrócenie.</li>
+                <li>Wykres na stronie 5 jest nieczytelny – zalecam poprawienie opisu osi.</li>
+            </ul>
+        </div>
+
+        <form id="uploadForm" enctype="multipart/form-data" class="upload-form">
+            <div class="form-group">
+                <label for="file">Wybierz poprawiony plik LaTeX (.tex):</label>
+                <input type="file" name="file" id="file" accept=".tex" required>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" id="previewBtn" class="btn btn-light" style="display: none;"> Podgląd PDF</button>
+                <button type="submit" id="sendBtn" class="btn btn-primary" style="display: none;"> Wyślij</button>
+            </div>            
+        </form>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const fileInput = document.getElementById('file');
+            const previewBtn = document.getElementById('previewBtn');
+            const sendBtn = document.getElementById('sendBtn');
+            const uploadForm = document.getElementById('uploadForm');
+
+            fileInput.addEventListener('change', function() {
+                let filename = this.files[0]?.name || "";
+                if (filename.endsWith('.tex')) {
+                    previewBtn.style.display = "inline-block";
+                    sendBtn.style.display = "inline-block";
+                } else {
+                    previewBtn.style.display = "none";
+                    sendBtn.style.display = "none";
+                }
+            });
+
+            previewBtn.addEventListener("click", async function() {
+                let formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+
+                fetch("/articles/generate-preview", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data["pdf_url"]) {
+                        window.open(data["pdf_url"], '_blank');
+                    } else {
+                        alert("Błąd: " + (data.message || "Nie udało się wygenerować podglądu"));
+                    }
+                });
+            });
+
+            uploadForm.addEventListener("submit", async function(event) {
+                event.preventDefault();
+
+                let formData = new FormData();
+                formData.append("file", fileInput.files[0]);
+
+                let response = await fetch("/articles/{{ article.id }}/upload-correction", {
+                    method: "POST",
+                    body: formData
+                });
+
+                let data = await response.json();
+
+                if (data['success']) {
+                    alert("Korekta została dodana.");
+                    window.location.reload();
+                } else {
+                    alert("Błąd: " + (data.message || "Nieznany problem"));
+                }
+            });
+        });
+    </script>
+</div>
