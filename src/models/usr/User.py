@@ -1,3 +1,5 @@
+import time
+import random
 from db.db_base import db
 from enum import Enum, auto
 from flask_login import UserMixin
@@ -46,7 +48,11 @@ class User(db.Model, UserMixin):
     def verify_pass(self, passwd: str) -> bool:
         if (self.passwd is None):
             return False
-        return sha256_crypt.verify(self.__pass(passwd), self.passwd)
+        ret=sha256_crypt.verify(self.__pass(passwd), self.passwd)
+        time.sleep(0.3+(random.random()/4))
+        if not ret:
+            time.sleep(0.3)
+        return ret
     def ch_pass(self, passwd: str) -> bool:
         if not validate_pass(passwd):
             return False
