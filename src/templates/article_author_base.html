@@ -81,7 +81,7 @@
     <div class="main-content">
         <a href="{{ url_for('articles.show_articles') }}" class="back-button">Powrót do listy</a>
         <h1>{{ article.title }}</h1>
-        <p><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
+        <p><strong>Status artykułu:</strong> {{ article.status.stat.value }}</p>
         <div id="tabs" class="tabs-container">
             {% for round in article.rounds %}
                 <div class="tab {% if loop.last %}active{% endif %}" 
