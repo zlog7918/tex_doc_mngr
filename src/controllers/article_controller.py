@@ -1,5 +1,6 @@
 import os
 import subprocess
+import zipfile
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from typing import Any
@@ -123,6 +124,7 @@ def set_article_status_reject(article_id: int) -> Response:
 @log_if_error
 def set_article_status_needs_corrections(article_id: int) -> Response:
     is_editor(article_id)
+    zip_latest_round(article_id)
     return set_article_status(article_id, ArticleStatusEnum.NeedsCorrections)
 
 def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
@@ -130,6 +132,31 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     if article is None:
         raise MessageException('Article not found')
     aq.update_article_status(article, status)
+    return Response.success_response()
+
+def zip_latest_round(article_id: int) -> Response:
+    upload_folder=ec.getDocFilesDir()
+    article = aq.get_article(article_id)
+    if article:
+        round_number = len(article.rounds)
+        folder_path = f"{upload_folder}/{article.id}/{round_number}/"
+        if not os.path.exists(folder_path):
+            raise MessageException('Podany folder nie istnieje')
+
+        zip_name = f"{article_id}_{round_number}.zip"
+        output_zip_path = os.path.join(folder_path, zip_name)
+
+        try:
+            with zipfile.ZipFile(output_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(folder_path):
+                    for file in files:
+                        file_path = os.path.join(root, file)
+                        arcname = os.path.relpath(file_path, start=folder_path)
+                        zipf.write(file_path, arcname)
+        except Exception as e:
+            print(e)
+            raise MessageException.from_exception(e, 'Nie udało się utworzyć pliku ZIP')
+
     return Response.success_response()
 
 @log_if_error
