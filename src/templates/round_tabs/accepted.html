@@ -118,8 +118,20 @@
         </datalist>
         <button type="button" id="addReviewer">Dodaj recenzenta</button>
 
+        <label for="reviewer">Zaproś do recenzowania przez email:</label>
+        <button type="button" id="inviteReviewer">Zaproś</button>
+
+        <div id="inviteForm" style="display: none; margin-top: 10px;" class="hidden">
+            <label for="inviteEmail">Email recenzenta:</label>
+            <input type="email" id="inviteEmail" name="inviteEmail" placeholder="Podaj email">
+            <button type="button" id="addEmail">Dodaj email</button>
+        </div>
+
         <h3>Przypisani recenzenci:</h3>
         <ul id="assignedReviewers"><li id="noReviewers">Nie przypisano recenzentów</li></ul>
+
+        <h3>Lista zapraszanych emaili:</h3>
+        <ul id="invitedEmails"><li id="noEmails">Nie podano emaili</li></ul>
 
         <div class="deadline-row">
             <div>
@@ -206,20 +218,79 @@
             reviewerInput.value = "";  // Resetowanie wartości po dodaniu recenzenta
         });
 
+        document.getElementById('addEmail').addEventListener("click", function () {
+            const email = document.getElementById("inviteEmail").value.trim();
+            const emailList = document.getElementById("invitedEmails");
+            const noEmailsItem = document.getElementById("noEmails");
+
+            if (!email || !validateEmail(email)) {
+                alert("Wprowadź poprawny adres email.");
+                return;
+            }
+
+            // Sprawdzenie, czy email już jest dodany
+            if ([...emailList.children].some(li => li.dataset.email === email)) {
+                alert("Ten email został już dodany.");
+                return;
+            }
+
+            if (noEmailsItem) {
+                noEmailsItem.remove();
+            }
+
+            const newEmailItem = document.createElement("li");
+            newEmailItem.classList.add("reviewer-item");
+            newEmailItem.setAttribute("data-email", email);
+
+            const emailSpan = document.createElement("span");
+            emailSpan.textContent = email;
+            emailSpan.classList.add("reviewer-name");
+
+            const removeButton = document.createElement("button");
+            removeButton.textContent = "Usuń";
+            removeButton.classList.add("remove-reviewer");
+            removeButton.addEventListener("click", function () {
+                newEmailItem.remove();
+                hiddenEmailInput.remove();
+
+                if (emailList.children.length === 0) {
+                    emailList.appendChild(noEmailsItem);
+                }
+            });
+
+            newEmailItem.appendChild(emailSpan);
+            newEmailItem.appendChild(removeButton);
+            emailList.appendChild(newEmailItem);
+
+            const hiddenEmailInput = document.createElement("input");
+            hiddenEmailInput.type = "hidden";
+            hiddenEmailInput.name = "invited_emails[]";
+            hiddenEmailInput.value = email;
+            form.appendChild(hiddenEmailInput);
+
+            document.getElementById("inviteEmail").value = "";
+            inviteForm.style.display = "none";
+        });
+
+        document.getElementById('inviteReviewer').addEventListener('click', function () {
+            const inviteForm = document.getElementById("inviteForm");
+            inviteForm.style.display = inviteForm.style.display === "none" ? "block" : "none";
+        });
+
         function validateForm() {
             const assignedReviewers = document.querySelectorAll('input[name="assigned_reviewers[]"]');
-            if (assignedReviewers.length === 0) {
-                alert("Musisz dodać co najmniej jednego recenzenta.");
+            const invitedEmails = document.querySelectorAll('input[name="invited_emails[]"]');
+            if (assignedReviewers.length === 0 && invitedEmails.length === 0) {
+                alert("Musisz dodać co najmniej jednego recenzenta lub zaprosić przez email.");
                 return false;
             }
             return true;
         }
-
-        form.addEventListener("submit", function (event) {
-            if (!validateForm()) {
-                event.preventDefault();
-            }
-        });
+        
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email.toLowerCase());
+        }
 
         function setMinDate() {
             const tomorrow = new Date();

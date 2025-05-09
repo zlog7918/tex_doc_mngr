@@ -5,6 +5,7 @@ from werkzeug.datastructures import FileStorage
 from typing import Any
 import services.user as au
 import services.article as aq
+import controllers.user_controller as uc
 from flask import send_from_directory
 from models.utils.Response import Response
 from models.utils.decors import log_if_error
@@ -133,10 +134,10 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     return Response.success_response()
 
 @log_if_error
-def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
+def assign_reviewers(article_id: int, assigned_reviewers: list[str], assigned_emails: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
     is_editor(article_id)
 
-    if not assigned_reviewers:
+    if not assigned_reviewers and not assigned_emails:
         raise MessageException('No reviewers assigned')
     
     article = aq.get_article(article_id)
@@ -156,12 +157,38 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
 
     for reviewer_id in assigned_reviewers_ids:
         aq.add_reviewer_to_article(article_id, reviewer_id)
+
+    failed_emails = []
+    invited_ids = []
+    for email in assigned_emails:
+        try:
+            # funcs: list[tuple[Callable[..., object], tuple[object, ...]]]=[(cos, (User_params.nick,))]
+            # funcs.append((cos2, (User_params.nick,)))
+            result = uc.invite_user(email)#, do_after_create=funcs)
+            if result.success:
+                invited_user_id = result.data["user_id"]
+                invited_ids.append(invited_user_id)
+                aq.add_reviewer_to_article(article_id, invited_user_id)
+            else:
+                failed_emails.append(email)
+        except Exception as e:
+            failed_emails.append(email)
+
+    # Czy jakikolwiek recenzent został skutecznie przypisany?
+    if not assigned_reviewers_ids and not invited_ids:
+        return Response.error_response(message="No valid reviewers could be assigned.")
         
     aq.set_deadlines(article_id = article_id, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
 
     update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
     if not update_status_result.success:
         raise MessageException(f'Failed to update article status to {ArticleStatusEnum.InReview.value}.')
+    
+    if failed_emails:
+        return Response.success_response(data={
+            "warning": f"Some invitations failed: {', '.join(failed_emails)}"
+        })
+
     return Response.success_response()
 
 def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
