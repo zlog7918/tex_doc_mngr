@@ -1,12 +1,14 @@
 import sys
-import random
 import os.path
+import traceback
 from . import consts as c
-from flask import render_template
-from datetime import datetime
-from .EnvConsts import envConsts as ec
 from tzlocal import get_localzone
-from datetime import datetime,tzinfo
+from flask import render_template, g
+from datetime import datetime, tzinfo
+from .EnvConsts import envConsts as ec
+from models.lang import LangEnum, LangBaseEx
+from werkzeug.datastructures import ImmutableMultiDict
+from .FormNotFilledException import FormNotFilledException
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):
@@ -16,20 +18,17 @@ def url_last_edit(path: str) -> str:
     path_abs=f'{ec.getAppDir()}{path}'
     return f'{path}?t={int(os.path.getmtime(path_abs))}'
 
-def render_base_template(name: str, **kwargs) -> str:
+def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> tuple[str, ...]:
+    vs: list[str]=[]
+    for k in keys:
+        v=form.get(k)
+        if v is None:
+            raise FormNotFilledException(f'Formularz nie zawiera "{k}"')
+        vs.append(v)
+    return tuple(vs)
+
+def render_base_template(name: str, **kwargs: object) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)
-
-def get_upload_folder() -> str:
-    return os.getenv('DOC_FILES_DIR', '/var/www/uploads')
-
-def get_temp_folder() -> str:
-    return os.getenv('TEMP_FOLDER', '/tmp')
-
-def generate_code() -> tuple[str, int]:
-    r=random.Random()
-    code=r.randint(0, 999999)
-    code=f"{code:06d}"
-    return code, c.TIME_TO_EXPIRE
 
 def unified_timezone() -> tzinfo:
     return get_localzone()
@@ -37,8 +36,21 @@ def unified_timezone() -> tzinfo:
 def get_timestamp(tz: tzinfo=unified_timezone()) -> datetime:
     return datetime.now(tz)
 
+def set_lang_pkg(lang: LangEnum) -> None:
+    g.lang=lang.value
+def get_lang_pkg() -> type[LangBaseEx]:
+    if 'lang' not in g:
+        g.lang=LangEnum.en.value
+    return g.lang
+
+def get_kwargs_for(t: type, d: dict[object, object]) -> dict[str, object]:
+    return {str(k).removeprefix(f'{t.__name__}.'):i for k, i in d.items()}
+
+def get_traceback(err: Exception) -> str:
+    return ''.join(traceback.format_tb(err.__traceback__))
+
 def get_function(back: int=0) -> str:
-    frame=sys._getframe(back+1)
+    frame=sys._getframe(back+1) # type: ignore[private_access]
     return f'{frame.f_code.co_filename}:{frame.f_lineno} {frame.f_code.co_name}()'
 
 def validate_pass(passwd: str) -> bool:

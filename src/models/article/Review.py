@@ -1,9 +1,11 @@
-from db.db_base import db, log_activity, log_err
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .Round import Round
+from db.db_base import db
 from enum import Enum as PyEnum
-from sqlalchemy import ForeignKey, String, Integer, Text, Enum
+from models.usr.User import User
+from sqlalchemy import ForeignKey, Integer, Text, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
-from models.utils.utils import get_function
 
 class ReviewStatusEnum(PyEnum):
     PendingConfirmation='Pending confirmation'
@@ -21,31 +23,19 @@ class ReviewStatus(db.Model):
 
 class Review(db.Model):
     __tablename__ = 'reviews'
-    
+
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     round_id: Mapped[int] = mapped_column(ForeignKey('rounds.id'), nullable=False)
-    reviewer_id: Mapped[int] = mapped_column(ForeignKey('usr.id'), nullable=False)
+    reviewer_id: Mapped[int] = mapped_column(ForeignKey(User.id), nullable=False)
     review_text: Mapped[str] = mapped_column(Text, nullable=True)
-    status_id: Mapped[int] = mapped_column(ForeignKey('review_status.id'), nullable=False)
+    status_id: Mapped[int] = mapped_column(ForeignKey(ReviewStatus.id), nullable=False)
     
-    round = relationship('Round', backref='reviews')
-    reviewer = relationship('User', backref='reviews')
-    status = relationship('ReviewStatus', backref='reviews')
+    round: Mapped["Round"] = relationship(foreign_keys=[round_id])
+    reviewer: Mapped[User] = relationship(foreign_keys=[reviewer_id])
+    status: Mapped[ReviewStatus] = relationship(foreign_keys=[status_id])
 
-    def update_status(self, new_status: ReviewStatusEnum) -> bool:
-        try:
-            status = ReviewStatus.query.where(ReviewStatus.stat == new_status).first()
-            if status:
-                self.status_id = status.id
-                log_activity(get_function(), True, {'details': f'Changed review status with id: {self.id} to: {new_status.value}'})
-                return True
-            log_activity(get_function(), False, {'err': f'Review {self.id} status not changed to: {new_status.value} '})
-            return False
-        except Exception as e:
-            db.session.rollback()
-            log_err(get_function(), e)
-            return False
-
+    def update_status(self, new_status: ReviewStatus) -> None:
+        self.status_id = new_status.id
 
 '''
 Pending confirmation - Oczekiwanie na potwierdzenie recenzenta, że podejmie się recenzowania.

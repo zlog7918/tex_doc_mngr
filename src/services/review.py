@@ -1,9 +1,11 @@
-from datetime import datetime, timedelta
-from db.db_base import db, log_activity, log_err
-from models.article import Article
-from models.utils.utils import get_function
 from . import article as aq
+from sqlalchemy import and_, desc
+from models.utils import utils as util
 from models.article.Round import Round
+from datetime import datetime, timedelta
+from db.db_base import db, log_err, log_activity
+from models.utils.MessageException import MessageException
+from models.article.Article import Article, ArticleStatusEnum
 from models.article.Review import Review, ReviewStatus, ReviewStatusEnum
 from models.article.Questions import QuestionSet, Answer, Question, QuestionA, QuestionSetQuestions
 
@@ -21,98 +23,91 @@ def get_review(article_id: int, reviewer_id: int) -> Review|None:
         review = (
             db.session.query(Review)
             .join(Round, Review.round_id == Round.id)
-            .filter(Round.article_id == article_id, Review.reviewer_id == reviewer_id)
+            .where(and_(Round.article_id == article_id, Review.reviewer_id == reviewer_id))
+            .order_by(desc(Round.round_number))
             .first()
         )
 
         return review
 
     except Exception as e:
-        log_err(get_function(), e)
         return None
 
 
 def check_reviews_and_update_article_status(review_id: int) -> None:
-    try:
-        round_id = (
-            db.session.query(Review.round_id)
-            .filter(Review.id == review_id)
+    round_id = (
+        db.session.query(Review.round_id)
+        .filter(Review.id == review_id)
+        .scalar()
+    )
+
+    if round_id is None:
+        return
+
+    statuses = (
+        db.session.query(Review.status)
+        .where(Review.round_id == round_id)
+        .all()
+    )
+
+    all_reviewed = all(status[0] == 'Reviewed' for status in statuses)
+
+    if all_reviewed:
+        article: Article = (
+            db.session.query(Article)
+            .join(Round, Round.article_id == Article.id)
+            .where(Round.id == round_id)
             .scalar()
         )
+        if article:
+            aq.update_article_status(article, ArticleStatusEnum.Reviewed)
+        else:
+            raise MessageException(f'Article with round id {round_id} not found.')
 
-        if round_id is None:
-            return
 
-        statuses = (
-            db.session.query(ReviewStatus.stat)
-            .filter(Review.round_id == round_id)
-            .all()
+def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, ReviewStatusEnum]]:
+    articles = (
+        db.session.query(Article, ReviewStatus.stat)
+        .join(Round, Round.article_id == Article.id)
+        .join(Review, Review.round_id == Round.id)
+        .join(ReviewStatus, Review.status_id == ReviewStatus.id)
+        .filter(Review.reviewer_id == reviewer_id, ReviewStatus.stat.in_([
+            ReviewStatusEnum.PendingConfirmation,
+            ReviewStatusEnum.AcceptedByReviewer
+            ])
         )
-
-        all_reviewed = all(status[0] == ReviewStatusEnum.Reviewed for status in statuses)
-
-        if all_reviewed:
-            article_id = (
-                db.session.query(Round.article_id)
-                .filter(Round.id == round_id)
-                .scalar()
-            )
-            if article_id:
-                aq.update_article_status(article_id, 4)
-
-    except Exception as e:
-        log_err(get_function(), e)
-
-
-def get_articles_as_reviewer(reviewer_id: int) -> list[tuple[Article, str]]:
-    try:
-        articles = (
-            db.session.query(Article, ReviewStatus.stat)
-            .join(Round, Round.article_id == Article.id)
-            .join(Review, Review.round_id == Round.id)
-            .join(ReviewStatus, Review.status_id == ReviewStatus.id)
-            .filter(Review.reviewer_id == reviewer_id, ReviewStatus.stat.in_([
-                ReviewStatusEnum.PendingConfirmation,
-                ReviewStatusEnum.AcceptedByReviewer
-                ])
-            )
-            .all()
-        )
-
-        return [(row[0], row[1]) for row in articles]
-
-
-    except Exception as e:
-        log_err(get_function(), e)
-        return []
+        .all()
+    )
+    return [row.tuple() for row in articles]
 
 
 def post_review(review: Review) -> bool:
     try:
         # Dodajemy nową recenzję do bazy danych
         db.session.add(review)
-        db.session.commit()
+        db.session.flush()
         return True
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return False
 
 
 def update_review_status(review_id: int, status: ReviewStatusEnum) -> bool:
     try:
         review = get_review_by_id(review_id)
-        if review:
-            result = review.update_status(new_status=status)
-            if result:
-                db.session.commit()
-                return True
-            else:
-                return False
-        log_activity(get_function(), False, {'err': f'Review with id: {review_id} not found'})
-        return False
-    except Exception as e:
-        log_err(get_function(), e)
-        return False
+        if review is None:
+            log_activity(False, {'err': f'Review with id: {review_id} not found'})
+            return False
+
+        if review.status.stat in (ReviewStatusEnum.Reviewed, ReviewStatusEnum.NotReviewed, ReviewStatusEnum.RejectedByReviewer) or aq.is_article_rejected(review.round.article_id):
+            log_activity(False, {'err': f'Attempt to access review: {review_id} which should be unavailable'})
+            return False
+
+        review.update_status(__get_review_status_or_err(status))
+        db.session.flush()
+        return True
+    except Exception as err:
+        raise MessageException.from_exception(err, 'Review status not updated') from None
 
 
 
@@ -136,7 +131,7 @@ def get_questions_with_answers(q_set_id: int) -> list[dict[int, str]]:
             if question.is_abc:
                 answers = (
                     db.session.query(Answer)
-                    .join(QuestionA, Question.question_id == Answer.question_id)
+                    .join(QuestionA, QuestionA.question_id == Answer.question_id)
                     .filter(QuestionA.question_id == question.id)
                     .scalars()
                     .all()
@@ -148,22 +143,22 @@ def get_questions_with_answers(q_set_id: int) -> list[dict[int, str]]:
         return result
 
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return []
 
 
-def save_review_answers(review_id: int, answers: dict[int, str]) -> bool:
-    try:
-        for question_id, answer in answers.items():
-            new_answer = Answer(review_id=review_id, question_id=question_id, answer=answer)
-            db.session.add(new_answer)
+def save_review_answers(review_id: int, answers: dict[int, str]) -> None:
+    for question_id, answer in answers.items():
+        new_answer = Answer(**util.get_kwargs_for(Answer, {
+            Answer.review_id: review_id,
+            Answer.question_id: question_id,
+            Answer.answer: answer,
+        }))
+        db.session.add(new_answer)
+        db.session.flush()
 
-        update_review_status(review_id=review_id, status=4)    # TODO: rollback answer submitting when exception here
-        db.session.commit()
-        return True
-    except Exception as e:
-        log_err(get_function(), e)
-        return False
+    update_review_status(review_id, ReviewStatusEnum.Reviewed)    # TODO: rollback answer submitting when exception here
+    db.session.flush()
 
 
 def get_questions_by_article(article_id: int) -> list[dict[str, str]]|None:
@@ -179,7 +174,7 @@ def get_questions_by_article(article_id: int) -> list[dict[str, str]]|None:
         return [{"id": q.id, "text": q.question, "is_abc": q.is_abc} for q in questions]
 
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return None
 
 
@@ -194,7 +189,7 @@ def get_question_answers(question_id: int) -> list[dict[int, str]]:
         return [{"id": ans.id, "answer": ans.answer} for ans in answers]
 
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return []
     
 def set_expired_status_for_reviews() -> bool:
@@ -213,13 +208,13 @@ def set_expired_status_for_reviews() -> bool:
         review_status = __get_review_status_or_err(ReviewStatusEnum.Expired)
         for review in reviews:
             print(f'Zmieniono status review {review.id} na \'{ReviewStatusEnum.Expired}\'')
-            log_activity(get_function(), True, {'details': f'Zmieniono status review {review.id} na \'Expired\''})
+            log_activity(True, {'details': f'Zmieniono status review {review.id} na \'Expired\''})
             review.status_id = review_status.id
 
         db.session.commit()
         return True
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return False
     
 def set_not_reviewed_status_for_reviews() -> bool:
@@ -238,11 +233,11 @@ def set_not_reviewed_status_for_reviews() -> bool:
         review_status = __get_review_status_or_err(ReviewStatusEnum.NotReviewed)
         for review in reviews:
             print(f'Zmieniono status review {review.id} na \'{ReviewStatusEnum.NotReviewed}\'')
-            log_activity(get_function(), True, {'details': f'Zmieniono status review {review.id} na \'Not Reviewed\''})
+            log_activity(True, {'details': f'Zmieniono status review {review.id} na \'Not Reviewed\''})
             review.status_id = review_status.id
 
         db.session.commit()
         return True
     except Exception as e:
-        log_err(get_function(), e)
+        log_err(e)
         return False

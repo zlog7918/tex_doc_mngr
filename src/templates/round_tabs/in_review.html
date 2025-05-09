@@ -1,30 +1,78 @@
-<div>
+<div class="main-content">
     <style>
+        .main-content {
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: black;
+            margin-bottom: 20px;
+        }
+
+        .above-table-text {
+            text-align: left;
+            font-size: 18px;
+            color: #2d1053;
+            margin-bottom: 10px;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
         }
+
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+            padding: 12px;
             text-align: left;
+            border-bottom: 1px solid #ddd;
         }
+
         th {
-            background-color: #f4f4f4;
+            background: #5a3d90;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f3f1f9;
+        }
+
+        .details-btn {
+            background: #5a3d90;
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .details-btn:hover {
+            background: #4a1e87;
         }
     </style>
+    <div class="above-table-text">Lista recenzentów przypisanych do artykułu:</div>
+
     <table>
         <thead>
             <tr>
-                <th>Reviewer</th>
+                <th>Recenzent</th>
                 <th>Status</th>
             </tr>
         </thead>
         <tbody>
             {% for review in reviews %}
                 <tr>
-                    <td>{{review.reviewer_id}}</td>
-                    <td>{{review.status.stat}}</td>
+                    <td>{{ review.reviewer.get_nick() }}</td>
+                    <td>{{ review.status.stat.value }}</td>
                 </tr>
             {% endfor %}
         </tbody>

@@ -1,7 +1,8 @@
-from models.article.Review import ReviewStatus, ReviewStatusEnum
 from models.usr.User import User
+from models.article.Round import Round
 from flask_sqlalchemy import SQLAlchemy
 from models.usr.Code import CodePurpose, CodePurposeEnum
+from models.article.Review import ReviewStatus, ReviewStatusEnum
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 from models.article.Questions import Question, QuestionA, QuestionSet, QuestionSetQuestions
 
@@ -38,11 +39,11 @@ def seed_data(db: SQLAlchemy) -> None:
     if not Article.query.first():
         status_id=ArticleStatus.query.where(ArticleStatus.stat==ArticleStatusEnum.Submitted).first().id
         articles = [
-            Article(title='Introduction to Flask', author_id=1, content='This is a beginner-friendly guide to Flask.', status_id=status_id, editor_id=2),
-            Article(title='Understanding REST APIs', author_id=2, content='Explores RESTful APIs and their best practices.', status_id=status_id, editor_id=1),
-            Article(title='Advanced Flask Techniques', author_id=3, content='Delves into advanced techniques in Flask.', status_id=status_id, editor_id=1),
-            Article(title='Advanced Flask Techniques2', author_id=3, content='Further techniques in Flask for experienced users.', status_id=status_id, editor_id=1),
-            Article(title='Common Pitfalls', author_id=2, content='Discusses common pitfalls to avoid in Flask.', status_id=status_id, editor_id=1),
+            Article(title='Introduction to Flask', author_id=1, status_id=status_id, editor_id=2),
+            Article(title='Understanding REST APIs', author_id=2, status_id=status_id, editor_id=1),
+            Article(title='Advanced Flask Techniques', author_id=3, status_id=status_id, editor_id=1),
+            Article(title='Advanced Flask Techniques2', author_id=3, status_id=status_id, editor_id=1),
+            Article(title='Common Pitfalls', author_id=2, status_id=status_id, editor_id=1),
         ]
         db.session.add_all(articles)
     
@@ -72,5 +73,15 @@ def seed_data(db: SQLAlchemy) -> None:
             QuestionSetQuestions(question_set_id=1, question_id=2),
         ]
         db.session.add_all(question_set_questions)
+        
+    if not Round.query.first():
+        rounds = [
+            Round(article_content = 'This is a beginner-friendly guide to Flask.', article_id = 1, round_number=1, q_set_id = 1),
+            Round(article_content = 'Explores RESTful APIs and their best practices.', article_id = 2, round_number=1, q_set_id = 1),
+            Round(article_content = 'Delves into advanced techniques in Flask.', article_id = 3, round_number=1, q_set_id = 1),
+            Round(article_content = 'Further techniques in Flask for experienced users.', article_id = 4, round_number=1, q_set_id = 1),
+            Round(article_content = 'Discusses common pitfalls to avoid in Flask.', article_id = 5, round_number=1, q_set_id = 1),
+        ]
+        db.session.add_all(rounds)
     
     db.session.commit()

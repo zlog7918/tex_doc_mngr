@@ -47,6 +47,7 @@
             border-radius: 0 0 5px 5px;
             background-color: white;
         }
+
         .tabs-container {
             border-bottom: 2px solid #ccc;
             margin-bottom: -1px; 
@@ -78,9 +79,9 @@
     </style>
 
     <div class="main-content">
-        <a href="{{ url_for('editor_articles.show_articles') }}" class="back-button">Powrót do listy</a>
+        <a href="{{ url_for('articles.show_articles') }}" class="back-button">Powrót do listy</a>
         <h1>{{ article.title }}</h1>
-        <p><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
+        <p><strong>Status artykułu:</strong> {{ article.status.stat.value }}</p>
         <div id="tabs" class="tabs-container">
             {% for round in article.rounds %}
                 <div class="tab {% if loop.last %}active{% endif %}" 
@@ -119,6 +120,8 @@
                     document.getElementById('old-round-content').classList.remove('hidden');
                 }
             }
+
+            // Automatyczne wczytanie ostatniej rundy na starcie
             window.onload = function () {
                 let lastTab = document.querySelector('.tab.active');
                 if (lastTab) {
@@ -127,5 +130,6 @@
             };
         </script>
     </div>
+
 
 {% endblock %}
