@@ -1,9 +1,10 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Review Questions</title>
-</head>
-<body>
+{% extends "base.html" %}
+
+{% block title %} Recenzja {% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
     <h1>Answer Questions</h1>
     <form method="POST" action="/reviews/{{ review_id }}/submit_review">
         {% for question in questions %}
@@ -19,5 +20,5 @@
         {% endfor %}
         <button type="submit">Submit</button>
     </form>
-</body>
-</html>
+
+{% endblock %}
