@@ -40,7 +40,7 @@ def article_details(article_id):
     elif article.status.stat == ArticleStatusEnum.Reviewed:
         tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.Rejected:
-        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
+        return render_template("author_tabs/rejected.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
         tab_content = util.render_base_template("author_tabs/needs_corrections.html", article=article)
     else:
