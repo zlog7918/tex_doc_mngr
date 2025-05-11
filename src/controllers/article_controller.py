@@ -76,6 +76,12 @@ def get_all_articles_by_editor() -> Response:
     return Response.success_response(data=articles)
 
 @log_if_error
+def get_all_rejected_articles_by_editor() -> Response:
+    user_id = au.get_curr_user_or_err().get_id()
+    articles = aq.get_all_rejected_articles_by_editor_id(int(user_id))
+    return Response.success_response(data=articles)
+
+@log_if_error
 def get_article_data_as_editor(article_id: int) -> Response:
     is_editor(article_id)
     return get_article_data(article_id)
