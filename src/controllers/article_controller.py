@@ -148,17 +148,6 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
     if not assigned_reviewers:
         raise MessageException('No reviewers assigned')
     
-    article = aq.get_article(article_id)
-    if not article:
-        log_activity(False, {'err': f'Editor attepted to set reviewers to a non-existing article {article_id}.'})
-        return Response.error_response(message = f"Article {article_id} does not exist")
-
-    assigned_reviewers_ids = [int(rid) for rid in assigned_reviewers]
-
-    if article.editor_id in assigned_reviewers_ids:
-        log_activity(False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
-        return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
-    
     confirm_date = datetime.strptime(deadline_confirm, "%Y-%m-%d")
     submit_date = datetime.strptime(deadline_submit, "%Y-%m-%d")
     date = get_timestamp().date()
@@ -178,14 +167,22 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
         log_activity(False, {'err': f'Editor attepted to set reviewers to a non-existing article {article_id}.'})
         return Response.error_response(message = f"Article {article_id} does not exist")
 
+    assigned_reviewers_ids = {int(rid) for rid in assigned_reviewers}
+
+    if article.editor_id in assigned_reviewers_ids:
+        log_activity(False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
+        return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+    
+    if article.author_id in assigned_reviewers_ids:
+        log_activity(False, {'err': f'Editor attempted to assign author {article.author_id} to the article {article_id}.'})
+        return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+
     for reviewer_id in assigned_reviewers_ids:
         aq.add_reviewer_to_article(article_id, reviewer_id)
         
     aq.set_deadlines(article_id = article_id, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
 
-    update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
-    if not update_status_result.success:
-        raise MessageException(f'Failed to update article status to {ArticleStatusEnum.InReview.value}.')
+    aq.update_article_status(article, ArticleStatusEnum.InReview)
     return Response.success_response()
 
 def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_tex_name: str|None=None) -> str:
