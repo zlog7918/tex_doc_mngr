@@ -220,7 +220,7 @@
         </div>
     
         <div class="action-buttons">
-            <button class="accept-btn" id="accept">Zaakceptuj</button>
+            <button class="accept-btn" id="accept" onclick="finishArticle()">Zaakceptuj</button>
             <button class="needs-correction-btn" id="needs_correction" onclick="setCorrectionStatus()">Wymaga poprawek</button>
             <button class="reject-btn" id="reject" onclick="rejectArticle()">Odrzuć</button>
         </div>
@@ -242,6 +242,19 @@
     
     <script>
         let currentEditId = null;
+
+        function finishArticle() {
+            fetch('/editor/articles/{{article.id}}/finish', { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data['success']) {
+                        alert("Article successfully finished.");
+                        location.reload();
+                    } else {
+                        alert("Unable to finish the article.");
+                    }
+                });
+        }
     
         function setCorrectionStatus() {
             fetch(`/editor/articles/{{ article.id }}/request_correction`, { method: "POST" })
