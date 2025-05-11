@@ -101,7 +101,7 @@ def update_review_status(review_id: int, status: str) -> bool:
         db.session.flush()
         return True
     except Exception as err:
-        raise MessageException('Review status not updated', err) from None
+        raise MessageException.from_exception(err, 'Review status not updated') from None
 
 
 

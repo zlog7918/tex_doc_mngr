@@ -34,12 +34,12 @@ def login(nick: str, passwd: str) -> Response:
   if user is None:
     raise MessageException(
       message,
-      Exception('Nieprawidłowy login')
+      err=Exception('Nieprawidłowy login')
     )
   if not user.verify_pass(passwd):
     raise MessageException(
       message,
-      Exception(f'Nie prawidłowe hasło dla: {nick}')
+      err=Exception(f'Nie prawidłowe hasło dla: {nick}')
     )
 
   login_user(user)
@@ -88,7 +88,7 @@ def validate_email(email: str) -> str:
     v=emailV.validate_email(email)
     return v.email
   except emailV.EmailNotValidError as e:
-    raise MessageException('E-mail nie przeszedł weryfikacji')
+    raise MessageException.from_exception(e, 'E-mail nie przeszedł weryfikacji')
 
 T_ret=TypeVar('T_ret')
 TVT=TypeVarTuple('TVT')
@@ -207,7 +207,7 @@ def approve(email: str, code: str) -> Response:
   if sc.check_code(user, code, CodePurposeEnum.ApproveUser) is None:
     raise MessageException(
       'Konto nie zostało potwierdzone',
-      Exception(f'Wprowadzono nie prawidłowy kod dla: {user.get_nick()}')
+      err=Exception(f'Wprowadzono nie prawidłowy kod dla: {user.get_nick()}')
     )
   su.approve_user(user)
   log_activity(True, {'details': f'Poprawnie potwierdzono konto: {user.get_nick()}'})
@@ -220,7 +220,7 @@ def change_password(passwd: str, new_passwd: str, rep_passwd: str) -> Response:
   if not user.verify_pass(passwd):
     raise MessageException(
       'Nieprawidłowe stare hasło',
-      Exception(f'Wprowadzono nie prawidłowe stare hasło dla: {user.get_nick()}')
+      err=Exception(f'Wprowadzono nie prawidłowe stare hasło dla: {user.get_nick()}')
     )
   if su.change_user_pass(user, new_passwd):
     log_activity(True, {'details': f'Poprawnie zmieniono hasło konta: {user.get_nick()}'})
@@ -249,7 +249,7 @@ def pass_reset(email: str, code: str) -> Response:
   if user is None:
     raise MessageException(
       message,
-      Exception(f'Próba zmiany hasła konta o nieistniejącym email: {email}')
+      err=Exception(f'Próba zmiany hasła konta o nieistniejącym email: {email}')
     )
   if sc.check_code(user, code, CodePurposeEnum.ResetUserPassReq) is None:
     raise MessageException(message)
@@ -265,7 +265,7 @@ def pass_reset_new_pass(email: str, code: str, passwd: str, rep_passwd: str) -> 
   if user is None:
     raise MessageException(
       message,
-      Exception(f'Próba zmiany hasła konta o nieistniejącym email: {email}')
+      err=Exception(f'Próba zmiany hasła konta o nieistniejącym email: {email}')
     )
   if sc.check_code(user, code, CodePurposeEnum.ResetUserPass) is None:
     raise MessageException(message)
