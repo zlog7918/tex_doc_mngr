@@ -74,9 +74,13 @@
         const confirmDate = new Date(this.value);
         if (!isNaN(confirmDate)) {
             const submitInput = document.getElementById('deadline_submit');
-            submitInput.min = this.value;
 
-            if (submitInput.value < this.value) {
+            date=new Date(this.value)
+            date.setDate(date.getDate()+1);
+
+            submitInput.min = date.toISOString().split('T', 1)[0];
+
+            if (submitInput.value < submitInput.min) {
                 submitInput.value = '';
             }
         }
