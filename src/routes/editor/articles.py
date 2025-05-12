@@ -1,4 +1,3 @@
-from db.db_base import log_err
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from models.utils import decors as decor, utils as util
@@ -87,12 +86,13 @@ def finish_article(article_id: int):
 @decor.handle_form_not_filled
 def assign_reviewers(article_id: int):
     assigned_reviewers = request.form.getlist('assigned_reviewers[]')
-    (deadline_confirm, deadline_submit)=util.get_from_form(request.form, (
+    (deadline_confirm, deadline_submit, tz)=util.get_from_form(request.form, (
         'deadline_confirm',
         'deadline_submit',
+        'tz',
     ))
-    
-    response = ac.assign_reviewers(article_id, assigned_reviewers, deadline_confirm, deadline_submit)
+
+    response = ac.assign_reviewers(article_id, assigned_reviewers, deadline_confirm, deadline_submit, tz)
 
     if response.success:
         return redirect(url_for('editor_articles.article_details', article_id=article_id))

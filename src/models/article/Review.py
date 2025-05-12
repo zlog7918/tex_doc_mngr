@@ -2,9 +2,24 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .Round import Round
 from db.db_base import db
+from enum import Enum as PyEnum
 from models.usr.User import User
-from sqlalchemy import ForeignKey, String, Integer, Text
+from sqlalchemy import ForeignKey, Integer, Text, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+class ReviewStatusEnum(PyEnum):
+    PendingConfirmation='Pending confirmation'
+    RejectedByReviewer='Rejected by reviewer'
+    AcceptedByReviewer='Accepted by reviewer'
+    Reviewed='Reviewed'
+    NotReviewed='Not reviewed'
+    Expired='Expired'
+
+class ReviewStatus(db.Model):
+    __tablename__ = 'review_status'
+    
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    stat: Mapped[ReviewStatusEnum] = mapped_column(Enum(ReviewStatusEnum), nullable=False, unique=True)
 
 class Review(db.Model):
     __tablename__ = 'reviews'
@@ -13,16 +28,20 @@ class Review(db.Model):
     round_id: Mapped[int] = mapped_column(ForeignKey('rounds.id'), nullable=False)
     reviewer_id: Mapped[int] = mapped_column(ForeignKey(User.id), nullable=False)
     review_text: Mapped[str] = mapped_column(Text, nullable=True)
-    status: Mapped[str] = mapped_column(String(50), nullable=False)
-
-    round: Mapped["Round"] = relationship(back_populates='reviews')
+    status_id: Mapped[int] = mapped_column(ForeignKey(ReviewStatus.id), nullable=False)
+    
+    round: Mapped["Round"] = relationship(foreign_keys=[round_id])
     reviewer: Mapped[User] = relationship(foreign_keys=[reviewer_id])
+    status: Mapped[ReviewStatus] = relationship(foreign_keys=[status_id])
 
+    def update_status(self, new_status: ReviewStatus) -> None:
+        self.status_id = new_status.id
 
 '''
 Pending confirmation - Oczekiwanie na potwierdzenie recenzenta, że podejmie się recenzowania.
-Rejected by reviewer - Odrzucone przez recenzenta (nie będzie recenzować lub nie zdąży zrecenzować).
+Rejected by reviewer - Odrzucone przez recenzenta.
 Accepted by reviewer - Zaakceptowane przez recenzenta, który zobowiązał się przygotować recenzję.
 Reviewed - Recenzja została zakończona (dostarczona przez recenzenta).
-Not reviewed - Brak recenzji, ponieważ recenzent nie zdążył przygotować jej na czas.
+Not reviewed - Brak recenzji, ponieważ recenzent nie zdążył przygotować jej na czas pomimo akceptacji.
+Expired - Nie potwierdził w wyznaczonym terminie czy będize recenzować.
 '''

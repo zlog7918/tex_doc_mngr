@@ -72,7 +72,7 @@
             {% for review in reviews %}
                 <tr>
                     <td>{{ review.reviewer.get_nick() }}</td>
-                    <td>{{ review.status }}</td>
+                    <td>{{ review.status.stat.value }}</td>
                 </tr>
             {% endfor %}
         </tbody>

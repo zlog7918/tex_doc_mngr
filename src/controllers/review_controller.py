@@ -3,7 +3,7 @@ import services.review as rs
 import services.article as aq
 from models.utils.Response import Response
 from models.utils.decors import log_if_error
-from db.db_base import log_activity
+from models.article.Review import ReviewStatusEnum
 from models.utils.MessageException import MessageException
 
 
@@ -33,12 +33,12 @@ def is_reviewer_of_review(review_id: int) -> None:
 @log_if_error
 def set_review_status_accept(review_id: int) -> Response:
     is_reviewer_of_review(review_id)
-    return set_review_status(review_id, "Accepted by reviewer")
+    return set_review_status(review_id, ReviewStatusEnum.AcceptedByReviewer)
 
 @log_if_error
 def set_review_status_reject(review_id: int) -> Response:
     is_reviewer_of_review(review_id)
-    return set_review_status(review_id, "Rejected by reviewer")
+    return set_review_status(review_id, ReviewStatusEnum.RejectedByReviewer)
 
 @log_if_error
 def submit_review(review_id: int, answers) -> Response:
@@ -49,7 +49,7 @@ def submit_review(review_id: int, answers) -> Response:
         return Response.success_response()
     raise MessageException("Error submitting review")
 
-def set_review_status(review_id: int, status: str) -> Response:
+def set_review_status(review_id: int, status: ReviewStatusEnum) -> Response:
     review = rs.get_review_by_id(review_id)
     if review is None:
         raise MessageException('Review not found')

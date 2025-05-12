@@ -4,6 +4,7 @@ passlib
 psycopg2
 # psycopg2-binary
 sqlalchemy
+apscheduler
 Flask-Login
 Flask-Migrate
 email-validator

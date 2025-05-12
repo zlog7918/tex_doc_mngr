@@ -2,11 +2,14 @@ import os
 import shutil
 from typing import Any
 import services.user as au
+from zoneinfo import ZoneInfo
 import services.article as aq
 from db.db_base import log_activity
 from models.utils import utils as util
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from models.utils.Response import Response
+from models.utils.utils import get_timestamp
 from latex.latex_service import LatexService
 from models.utils.decors import log_if_error
 from werkzeug.datastructures import FileStorage
@@ -145,18 +148,32 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     return Response.success_response()
 
 @log_if_error
-def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
+def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str, tz: str) -> Response:
     is_editor(article_id)
 
     if not assigned_reviewers:
         raise MessageException('No reviewers assigned')
     
+    confirm_date = datetime.strptime(deadline_confirm, "%Y-%m-%d")
+    submit_date = datetime.strptime(deadline_submit, "%Y-%m-%d")
+    date = get_timestamp(ZoneInfo(tz)).date()
+
+    min_date = date + timedelta(days=2)
+    if confirm_date.date() < min_date:
+        return Response.error_response(message=f"Confirmation deadline must be at least {min_date}.")
+
+    if submit_date.date() < min_date:
+        return Response.error_response(message=f"Submission deadline must be at least {min_date}.")
+
+    if submit_date <= confirm_date:
+        return Response.error_response(message="Submission deadline cannot be earlier than confirmation deadline.")
+
     article = aq.get_article(article_id)
     if not article:
         log_activity(False, {'err': f'Editor attepted to set reviewers to a non-existing article {article_id}.'})
         return Response.error_response(message = f"Article {article_id} does not exist")
 
-    assigned_reviewers_ids = [int(rid) for rid in assigned_reviewers]
+    assigned_reviewers_ids = {int(rid) for rid in assigned_reviewers}
 
     if article.editor_id in assigned_reviewers_ids:
         log_activity(False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
@@ -171,9 +188,7 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
         
     aq.set_deadlines(article_id = article_id, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
 
-    update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
-    if not update_status_result.success:
-        raise MessageException(f'Failed to update article status to {ArticleStatusEnum.InReview.value}.')
+    aq.update_article_status(article, ArticleStatusEnum.InReview)
     return Response.success_response()
 
 def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_tex_name: str|None=None) -> str:
@@ -215,7 +230,6 @@ def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_
         raise MessageException('Nie znaleziono pliku .tex')
 
     file=os.path.basename(tex_file_path)
-    # file=tex_file_path.removeprefix(dir_path)
     if not LatexService.convert_tex_to_pdf(tex_file_path, dir_path):
         raise MessageException(lang_pkg.LaTeXtoPDFconvertError.value)
     file_url = f"{url_start}/{file.replace('.tex', '.pdf')}"

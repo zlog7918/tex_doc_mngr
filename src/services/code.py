@@ -1,8 +1,8 @@
+from db.db_base import db
 from sqlalchemy import and_
 from datetime import timedelta
 from models.usr.User import User
 from models.utils import utils as util
-from db.db_base import db, log_activity
 from models.utils.MessageException import MessageException
 from models.usr.Code import Code, CodePurpose, CodePurposeEnum
 
