@@ -2,6 +2,7 @@ import os
 import shutil
 from typing import Any
 import services.user as au
+from zoneinfo import ZoneInfo
 import services.article as aq
 from db.db_base import log_activity
 from models.utils import utils as util
@@ -142,7 +143,7 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     return Response.success_response()
 
 @log_if_error
-def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
+def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str, tz: str) -> Response:
     is_editor(article_id)
 
     if not assigned_reviewers:
@@ -150,7 +151,7 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
     
     confirm_date = datetime.strptime(deadline_confirm, "%Y-%m-%d")
     submit_date = datetime.strptime(deadline_submit, "%Y-%m-%d")
-    date = get_timestamp().date()
+    date = get_timestamp(ZoneInfo(tz)).date()
 
     min_date = date + timedelta(days=2)
     if confirm_date.date() < min_date:

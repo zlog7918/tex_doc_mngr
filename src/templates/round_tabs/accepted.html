@@ -1,6 +1,7 @@
 <div>
     <h2>Assign Reviewers</h2>
     <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post">
+        <input type="hidden" name="tz" value="">
         <label for="reviewer">Select a reviewer:</label>
         <select id="reviewer" name="reviewer" required>
             {% for reviewer_id, reviewer_nick in reviewers.items() %}
@@ -35,6 +36,8 @@
 
     setMinDate('deadline_confirm');
     setMinDate('deadline_submit');
+
+    document.getElementsByName('tz')[0].value=Intl.DateTimeFormat().resolvedOptions().timeZone
 
     document.getElementById('addReviewer').addEventListener('click', function () {
         const reviewerSelect = document.getElementById('reviewer');
