@@ -62,11 +62,11 @@
 </style>
 
 <div class="main-content">
-    <a href="{{ url_for('articles.show_articles') }}" class="back-button">Powrót do listy</a>
-    <h1 class="status-header">Artykuł "Tutaj tytuł tego odrzuconego artykułu" został odrzucony</h1>
+    <a href="{{ url_for('editor_articles.show_articles') }}" class="back-button">Powrót do listy</a>
+    <h1 class="status-header">Artykuł "{{article.title}}" został odrzucony</h1>
     
     <div class="meta-info">
-        <p><strong>Autor:</strong> Autor artykułu</p>
+        <p><strong>Autor:</strong> {{article.author.get_nick()}}</p>
         <p><strong>Data decyzji:</strong> 28.04.2025</p>
         <p><strong>Autor decyzji:</strong> Edytor odrzucający</p>
     </div>
