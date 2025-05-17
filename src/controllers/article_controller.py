@@ -157,14 +157,13 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], assigned_em
 
     for reviewer_id in assigned_reviewers_ids:
         aq.add_reviewer_to_article(article_id, reviewer_id)
+    db.session.commit()
 
     failed_emails = []
     invited_ids = []
     for email in assigned_emails:
         try:
-            # funcs: list[tuple[Callable[..., object], tuple[object, ...]]]=[(cos, (User_params.nick,))]
-            # funcs.append((cos2, (User_params.nick,)))
-            result = uc.invite_user(email)#, do_after_create=funcs)
+            result = uc.invite_user(email)
             if result.success:
                 invited_user_id = result.data["user_id"]
                 invited_ids.append(invited_user_id)
@@ -182,12 +181,11 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], assigned_em
 
     update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
     if not update_status_result.success:
+        db.session.rollback()
         raise MessageException(f'Failed to update article status to {ArticleStatusEnum.InReview.value}.')
     
     if failed_emails:
-        return Response.success_response(data={
-            "warning": f"Some invitations failed: {', '.join(failed_emails)}"
-        })
+        return Response.success_response(message=f"Some invitations failed: {', '.join(failed_emails)}")
 
     return Response.success_response()
 
