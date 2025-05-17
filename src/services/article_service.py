@@ -1,12 +1,12 @@
-from . import user_service as uq
-from sqlalchemy import and_, select
-from db.db_base import db, log_activity, log_err
 from models.usr.User import User
+from sqlalchemy import and_, select
 from models.article import Round as R
 from models.utils import utils as util
 from models.article import Review as Rv
 from models.article import Questions as Q
+from db.db_base import db, log_activity, log_err
 from models.utils.MessageException import MessageException
+from services import user_service as uq, review_service as rs
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
 def __get_status_or_err(status: ArticleStatusEnum) -> ArticleStatus:
@@ -15,13 +15,9 @@ def __get_status_or_err(status: ArticleStatusEnum) -> ArticleStatus:
         raise ValueError(f'Podany status artykułu: {status.name} nie istnieje w bazie danych')
     return _status
 
-def create_article(title: str, editor_id: int) -> bool:
+def create_article(title: str, editor_id: int) -> Article:
     try:
-        user_id = uq.get_curr_user_or_err().id
-        if not editor_id:
-            log_activity(False, {'err': f'Nie znaleziono edytora o id: {editor_id}'})
-            return False
-
+        user_id=int(uq.get_curr_user_or_err().get_id())
         status = __get_status_or_err(ArticleStatusEnum.Submitted)
 
         new_article = Article(**util.get_kwargs_for(Article, {
@@ -33,12 +29,11 @@ def create_article(title: str, editor_id: int) -> bool:
         db.session.add(new_article)
         db.session.flush()
         article = get_article_by_title(user_id, title)
-        if not article:
+        if article is None:
             raise MessageException(f'Nie udało się pobrać artykułu "{title}" po zapisaniu')
 
         log_activity(True, {'msg': f'Created article "{title}" with id {article.id} by user {user_id}'})
-        return True
-
+        return article
     except MessageException as e:
         raise MessageException.from_exception(e, 'Article not created')
 
@@ -247,14 +242,14 @@ def get_answers_as_editor(article_id: int) -> dict[str, list[dict]]:
 #         raise MessageException.from_exception(err, 'Error while: finding last round number')
 
 
-def create_round(article_id: int, article_content: str, round_number: int, deadline_confirm: str|None = None, deadline_submit: str|None = None) -> bool:
+def create_round(article_id: int, article_content: str, round_number: int, deadline_confirm: str|None = None, deadline_submit: str|None = None) -> None:
     try:
         article = get_article(article_id)
         if not article:
-            return False
+            raise MessageException(f'Article with id {article_id} has not been found')
         
         if article.status.stat != ArticleStatusEnum.NeedsCorrections and not (article.status.stat == ArticleStatusEnum.Submitted and round_number == 1):
-            return False
+            raise MessageException(f'Article has incorrect status')
 
         new_round = R.Round(**util.get_kwargs_for(R.Round, {
             R.Round.article_id: article_id,
@@ -265,7 +260,6 @@ def create_round(article_id: int, article_content: str, round_number: int, deadl
         }))
         db.session.add(new_round)
         db.session.flush()
-        return True
     except Exception as err:
         raise MessageException.from_exception(err, 'Round was not created')
 
@@ -315,7 +309,7 @@ def add_reviewer_to_article(article_id: int, reviewer_id: int) -> None:
             new_review = Rv.Review(**util.get_kwargs_for(Rv.Review, {
                 Rv.Review.round_id: round_id,
                 Rv.Review.reviewer_id: reviewer_id,
-                Rv.Review.status: 'Pending confirmation',
+                Rv.Review.status_id: rs.__get_review_status_or_err(Rv.ReviewStatusEnum.PendingConfirmation).id,
             }))
             db.session.add(new_review)
             db.session.flush()
@@ -332,4 +326,7 @@ def update_article_status(article: Article, status: ArticleStatusEnum) -> None:
         db.session.commit()
     except Exception as err:
         print(err)
-        raise MessageException('Article status not updated', err)
+        raise MessageException.from_exception(err, 'Article status not updated')
+
+def article_exists_for_author(title: str, author_id: int) -> bool:
+    return db.session.query(Article).filter_by(title=title, author_id=author_id).first() is not None

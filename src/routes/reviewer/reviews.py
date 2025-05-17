@@ -1,8 +1,9 @@
-from models.article.Article import ArticleStatusEnum
 from db.db_base import log_err
 from models.utils.Response import Response
 import controllers.review_controller as rc
 from models.utils.decors import approve_required
+from models.article.Review import Review, ReviewStatusEnum
+from models.article.Article import Article, ArticleStatusEnum
 from flask import Blueprint, render_template, request, redirect, url_for
 
 review_bp = Blueprint("review", __name__)
@@ -26,16 +27,16 @@ def article_details(article_id: int):
         return response.to_dict()
     
     data = response.data
-    article = data["article"]
-    review = data["review"]
+    article: Article = data["article"]
+    review: Review = data["review"]
 
     if article.status.stat == ArticleStatusEnum.Rejected:
         return render_template("round_tabs/rejected.html")
 
-    if review.status == "Pending confirmation":
+    if review.status.stat == ReviewStatusEnum.PendingConfirmation:
         article_content = data["article_content"]
         return render_template("review_tabs/pending_confirmation.html", article=article, article_content=article_content, review_id=review.id)
-    elif review.status == "Accepted by reviewer":
+    elif review.status.stat == ReviewStatusEnum.AcceptedByReviewer:
         questions = data["questions"]
         return render_template("review_tabs/review_form.html", review_id=review.id, questions=questions)
     else:

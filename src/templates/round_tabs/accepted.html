@@ -1,6 +1,7 @@
 <div>
     <h2>Assign Reviewers</h2>
     <form id="assign-form" method="post">
+        <input type="hidden" name="tz" value="">
         <label>{{ lang_pkg.SelectQuestionSet.value }}</label>
         <select name="question_group_input">
             <option value="" selected>--{{ lang_pkg.QuestionGroup.value }}--</option>
@@ -24,11 +25,11 @@
 
         <div id="assignedReviewersInput" name="assigned_reviewers[]">
 
-            <label for="deadline_confirm">Confirmation Deadline:</label>
-            <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required><br>
+        <label for="deadline_confirm">Confirmation Deadline:</label>
+        <input type="date" id="deadline_confirm" name="deadline_confirm" required><br>
 
         <label for="deadline_submit">Submission Deadline:</label>
-        <input type="datetime-local" id="deadline_submit" name="deadline_submit" required>
+        <input type="date" id="deadline_submit" name="deadline_submit" required>
 
         <button type="submit">Save</button>
     </form>
@@ -36,9 +37,14 @@
 </div>
 <script>
     (function() {
-        let start;
+        let start, setMinDate;
 
         start=()=>{
+            setMinDate('deadline_confirm');
+            setMinDate('deadline_submit');
+
+            document.getElementsByName('tz')[0].value=Intl.DateTimeFormat().resolvedOptions().timeZone
+
             let form=document.getElementById('assign-form');
             let ul=document.getElementById('question-group-list');
             let question_group_input=form['question_group_input'];
@@ -66,18 +72,19 @@
                 li.appendChild(span);
                 ul.appendChild(li);
             }, false);
+
             document.getElementById('addReviewer').addEventListener('click', function () {
-                const reviewerSelect = document.getElementById('reviewer');
-                const selectedReviewerId = reviewerSelect.value;
-                const selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
-                const assignedReviewersList = document.getElementById('assignedReviewers');
+                let reviewerSelect = document.getElementById('reviewer');
+                let selectedReviewerId = reviewerSelect.value;
+                let selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
+                let assignedReviewersList = document.getElementById('assignedReviewers');
 
                 if (!selectedReviewerId) {
                     alert('Please select a reviewer.');
                     return;
                 }
 
-                const existingItems = assignedReviewersList.querySelectorAll('li');
+                let existingItems = assignedReviewersList.querySelectorAll('li');
                 for (let item of existingItems) {
                     if (item.getAttribute('data-id') === selectedReviewerId) {
                         alert('Reviewer already added.');
@@ -85,16 +92,32 @@
                     }
                 }
 
-                const newReviewerItem = document.createElement('li');
+                let newReviewerItem = document.createElement('li');
                 newReviewerItem.textContent = selectedReviewerName;
                 newReviewerItem.setAttribute('data-id', selectedReviewerId);
                 assignedReviewersList.appendChild(newReviewerItem);
 
-                const hiddenInput = document.createElement('input');
+                let hiddenInput = document.createElement('input');
                 hiddenInput.type = 'hidden';
                 hiddenInput.name = 'assigned_reviewers[]';
                 hiddenInput.value = selectedReviewerId;
                 assignedReviewersList.appendChild(hiddenInput);
+            });
+
+            document.getElementById('deadline_confirm').addEventListener('change', function () {
+                let confirmDate = new Date(this.value);
+                if (!isNaN(confirmDate)) {
+                    let submitInput = document.getElementById('deadline_submit');
+
+                    date=new Date(this.value)
+                    date.setDate(date.getDate()+1);
+
+                    submitInput.min = date.toISOString().split('T', 1)[0];
+
+                    if (submitInput.value < submitInput.min) {
+                        submitInput.value = '';
+                    }
+                }
             });
             form.addEventListener('submit', async ev=>{
                 ev.preventDefault();
@@ -116,6 +139,15 @@
                 return false;
             }, false);
         }
+
+        setMinDate=inputId=>{
+            let input=document.getElementById(inputId);
+            let today=new Date();
+            today.setDate(today.getDate() + 2);
+            let minDate=today.toISOString().split('T')[0];
+            input.min=minDate;
+        }
+
         start();
     })();
 </script>

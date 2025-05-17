@@ -1,4 +1,6 @@
 import time
+import atexit
+from flask import Flask
 from db.db_base import db
 from typing import Awaitable
 from db.seed_db import seed_data
@@ -15,6 +17,7 @@ from routes.author.articles import articles_bp
 from routes.editor.questions import questions_bp
 from models.utils.EnvConsts import envConsts as ec
 from routes.editor.articles import editor_articles_bp
+from models.utils.scheduled_tasks import create_scheduler
 from flask import abort, Flask, Request as flRequest, request, current_app
 from werkzeug.routing import RequestRedirect, MapAdapter, BaseConverter, ValidationError
 
@@ -76,7 +79,7 @@ def request_loader(request: flRequest):
     return user
 
 # async def choose_lang(path: str):
-@app.route('/<lang_enum:lang>', defaults={'path': ''}, methods=['GET', 'POST'])
+@app.route('/<lang_enum:lang>/', defaults={'path': ''}, methods=['GET', 'POST'])
 @app.route('/<lang_enum:lang>/<path:path>', methods=['GET', 'POST'])
 def choose_lang(lang: LangEnum, path: str):
     util.set_lang_pkg(lang)
@@ -110,5 +113,7 @@ def index():
     user=su.get_curr_user()
     return util.render_base_template('login_form.html' if user is None else ('logged.html' if user.approved else 'check_approval.html'))
 
+scheduler = create_scheduler(app.app_context)
+atexit.register(lambda: scheduler.shutdown())
 if __name__=='__main__':
     app.run(debug=True)

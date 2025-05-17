@@ -1,83 +1,131 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ article.title }}</title>
+{% extends "base.html" %}
+
+{% block title %} {{article.title}} {% endblock %}
+
+{% block body %}
+{% include 'toolbar.html' %}
     <style>
+        .main-content {
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: black;
+            margin-bottom: 20px;
+        }
+
         .tab {
             display: inline-block;
             margin-right: 5px;
-            padding: 10px;
+            padding: 12px 20px;
             background-color: #ddd;
+            border-radius: 5px 5px 0 0;
             cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.3s ease;
         }
+
         .tab.active {
+            background-color: #5a3d90;
+            color: white;
+        }
+
+        .tab:hover {
             background-color: #aaa;
         }
-        .tab-content {
-            margin-top: 20px;
-            border: 1px solid #ccc;
-            padding: 10px;
+
+        .tab.active:hover {
+            background-color: #5a3d90; 
+            color: white; 
         }
+
+        .tab-content {
+            padding: 20px;
+            border-radius: 0 0 5px 5px;
+            background-color: white;
+        }
+        .tabs-container {
+            border-bottom: 2px solid #ccc;
+            margin-bottom: -1px; 
+        }
+
         .hidden {
             display: none;
         }
 
-        button {
+        .author-info {
+            font-size: 16px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .back-button {
             margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #5a3d90;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+        }
+
+        .back-button:hover {
+            background-color: #4a2a70;
         }
     </style>
-</head>
-<body>
-    <h1>{{ article.title }}</h1>
-    <p><strong>Author:</strong> {{ article.author.nick }}</p>
-    <div id="tabs">
-        {% for round in article.rounds %}
-            <div class="tab {% if loop.last %}active{% endif %}" 
-                 data-index="{{ loop.index0 }}" 
-                 data-url="{{ round.article_content }}"
-                 data-last="{% if loop.last %}true{% else %}false{% endif %}"
-                 onclick="showTab(this)">
-                Round {{ round.round_number }}
-            </div>
-        {% endfor %}
-    </div>
-    <div class="tab-content" id="tab-content">
-        {{ tab_content|safe }}
-    </div>
-    <div id="old-round-content" class="tab-content hidden">
-        <p>To jest stara wersja artykułu. Aby zobaczyć pełną treść, przejdź do najnowszej rundy.</p>
-    </div>
 
-    <script>
-        let loadedArticles = {};
+    <div class="main-content">
+        <a href="{{ url_for('editor_articles.show_articles') }}" class="back-button">Powrót do listy</a>
+        <h1>{{ article.title }}</h1>
+        <p><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
+        <div id="tabs" class="tabs-container">
+            {% for round in article.rounds %}
+                <div class="tab {% if loop.last %}active{% endif %}" 
+                    data-index="{{ loop.index0 }}" 
+                    data-url="{{ round.article_content }}"
+                    data-last="{% if loop.last %}true{% else %}false{% endif %}"
+                    onclick="showTab(this)">
+                    Runda {{ round.round_number }}
+                </div>
+            {% endfor %}
+        </div>
+        <div class="tab-content" id="tab-content">
+            {{ tab_content|safe }}
+        </div>
+        <div id="old-round-content" class="tab-content hidden">
+            <p>To jest stara wersja artykułu. Aby zobaczyć pełną treść, przejdź do najnowszej rundy.</p>
+        </div>
 
-        function showTab(tabElement) {
-            let url = tabElement.getAttribute('data-url');
-            let isLastRound = tabElement.getAttribute('data-last') === 'true';
+        <script>
+            let loadedArticles = {};
 
-            // Zmiana aktywnej zakładki
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            tabElement.classList.add('active');
+            function showTab(tabElement) {
+                let url = tabElement.getAttribute('data-url');
+                let isLastRound = tabElement.getAttribute('data-last') === 'true';
 
-            // Pokaż odpowiednią zawartość
-            if (isLastRound) {
-                document.getElementById('tab-content').classList.remove('hidden');
-                document.getElementById('old-round-content').classList.add('hidden');
-            } else {
-                document.getElementById('tab-content').classList.add('hidden');
-                document.getElementById('old-round-content').classList.remove('hidden');
+                // Zmiana aktywnej zakładki
+                document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+                tabElement.classList.add('active');
+
+                // Pokaż odpowiednią zawartość
+                if (isLastRound) {
+                    document.getElementById('tab-content').classList.remove('hidden');
+                    document.getElementById('old-round-content').classList.add('hidden');
+                } else {
+                    document.getElementById('tab-content').classList.add('hidden');
+                    document.getElementById('old-round-content').classList.remove('hidden');
+                }
             }
-        }
+            window.onload = function () {
+                let lastTab = document.querySelector('.tab.active');
+                if (lastTab) {
+                    showTab(lastTab);
+                }
+            };
+        </script>
+    </div>
 
-        // Automatyczne wczytanie ostatniej rundy na starcie
-        window.onload = function () {
-            let lastTab = document.querySelector('.tab.active');
-            if (lastTab) {
-                showTab(lastTab);
-            }
-        };
-    </script>
-</body>
-</html>
+{% endblock %}

@@ -3,6 +3,7 @@ import services.review_service as rs
 import services.article_service as aq
 from models.utils.Response import Response
 from models.utils.decors import log_if_error
+from models.article.Review import ReviewStatusEnum
 from models.utils.MessageException import MessageException
 
 
@@ -11,7 +12,7 @@ def is_reviewer(article_id: int, user_id: int) -> None:
     if not review:
         raise MessageException(
             'You are not a reviewer of this article',
-            Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+            err=Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
         )
 
 def is_reviewer_of_review(review_id: int) -> None:
@@ -20,24 +21,24 @@ def is_reviewer_of_review(review_id: int) -> None:
     if not review:
         raise MessageException(
             'You are not a reviewer of this review',
-            Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}')
+            err=Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}')
         )
     if int(review.reviewer_id) == int(user_id):
         return
     raise MessageException(
         'You are not a reviewer of this review',
-        Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do review o id: {review_id}')
+        err=Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do review o id: {review_id}')
     )
 
 @log_if_error
 def set_review_status_accept(review_id: int) -> Response:
     is_reviewer_of_review(review_id)
-    return set_review_status(review_id, "Accepted by reviewer")
+    return set_review_status(review_id, ReviewStatusEnum.AcceptedByReviewer)
 
 @log_if_error
 def set_review_status_reject(review_id: int) -> Response:
     is_reviewer_of_review(review_id)
-    return set_review_status(review_id, "Rejected by reviewer")
+    return set_review_status(review_id, ReviewStatusEnum.RejectedByReviewer)
 
 @log_if_error
 def submit_review(review_id: int, answers: dict[tuple[int, int], str]) -> Response:
@@ -48,7 +49,7 @@ def submit_review(review_id: int, answers: dict[tuple[int, int], str]) -> Respon
         return Response.success_response()
     raise MessageException("Error submitting review")
 
-def set_review_status(review_id: int, status: str) -> Response:
+def set_review_status(review_id: int, status: ReviewStatusEnum) -> Response:
     review = rs.get_review_by_id(review_id)
     if review is None:
         raise MessageException('Review not found')
@@ -74,19 +75,19 @@ def get_article_details_as_reviewer(article_id: int) -> Response:
     if not article:
         raise MessageException(
             'Article not found',
-            Exception(f'Article with id: {article_id} not found')
+            err=Exception(f'Article with id: {article_id} not found')
         )
 
     review = rs.get_review(article_id, reviewer_id)
     if not review:
         raise MessageException(
             'Review not found',
-            Exception(f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found')
+            err=Exception(f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found')
         )
     
     questions=None
     article_content=None
-    if review.status == "Pending confirmation":
+    if review.status.stat == ReviewStatusEnum.PendingConfirmation:
         latest_round = aq.get_latest_round(article)
         article_content = ""
         if article and latest_round:
@@ -94,7 +95,7 @@ def get_article_details_as_reviewer(article_id: int) -> Response:
             if article_content.startswith('/'):
                 article_content = f'<br><embed src="{f"/articles/uploads/{article.id}/{latest_round.round_number}/{article_content}"}" width="800" height="500" type="application/pdf">'
 
-    elif review.status == "Accepted by reviewer":
+    elif review.status.stat == ReviewStatusEnum.AcceptedByReviewer:
         touple_questions = rs.get_questions_by_article(article)
         if not touple_questions:
             raise MessageException("No questions found for the article.")

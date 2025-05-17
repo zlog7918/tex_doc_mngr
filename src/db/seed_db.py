@@ -1,10 +1,11 @@
-from sqlalchemy import and_
 from models.usr.User import User
+from sqlalchemy import and_, select
 from models.article.Round import Round
 from models.utils import utils as util
 from flask_sqlalchemy import SQLAlchemy
 from models.article import Questions as Q
 from models.usr.Code import CodePurpose, CodePurposeEnum
+from models.article.Review import ReviewStatus, ReviewStatusEnum
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
 def seed_data(db: SQLAlchemy) -> None:
@@ -33,9 +34,18 @@ def seed_data(db: SQLAlchemy) -> None:
             ArticleStatus(**util.get_kwargs_for(ArticleStatus, {ArticleStatus.stat: e})) for e in ArticleStatusEnum
         ]
         db.session.add_all(statuses)
+
+    if not ReviewStatus.query.first():
+        statuses = [
+            ReviewStatus(**util.get_kwargs_for(ReviewStatus, {ReviewStatus.stat: e})) for e in ReviewStatusEnum
+        ]
+        db.session.add_all(statuses)
     
     if not Article.query.first():
-        status_id=ArticleStatus.query.where(ArticleStatus.stat==ArticleStatusEnum.Submitted).first().id
+        status_id=db.session.execute(select(ArticleStatus.id).where(ArticleStatus.stat==ArticleStatusEnum.Submitted).limit(1)).first()
+        if status_id is None:
+            raise Exception('Status not found')
+        status_id=status_id.tuple()[0]
         articles = [
             Article(**util.get_kwargs_for(Article, {Article.title: 'Introduction to Flask', Article.author_id: 1, Article.status_id: status_id, Article.editor_id: 2})),
             Article(**util.get_kwargs_for(Article, {Article.title: 'Understanding REST APIs', Article.author_id: 2, Article.status_id: status_id, Article.editor_id: 1})),

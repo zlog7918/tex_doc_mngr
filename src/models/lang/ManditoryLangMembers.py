@@ -3,6 +3,7 @@ from enum import Enum, member
 class LangBaseEx(Enum):
     UserNotFoundErr=\
     FormDoesNotContain=\
+    ConfirmAccountThroughCode=\
         member(lambda _:f'')
     UserNotLogged=\
     UserNotAdded=\
@@ -43,4 +44,30 @@ class LangBaseEx(Enum):
     CorrectQuestionGroupCreation=\
     QuestionGroupIsEmpty=\
     QuestionGroupDuplicate=\
+    UserNotApproved=\
+    UserNotDeleted=\
+    PasswordNotChanged=\
+    FuncNotExecuted=\
+    AccountNotCreated=\
+    CodeNotGenerated=\
+    CodeNotDeactivated=\
+    CodeNotApproved=\
+    NickDoesNotMeetCriteria=\
+    IncorrectNickOrPassword=\
+    PasswordsDoNotMatch=\
+    UnsuccessfulMailSending=\
+    EmailDoesNotMeetCriteria=\
+    UserCanAcceptInviteThroughMail=\
+    UserNotInvited=\
+    NickExistsOrInvalidPassword=\
+    IncorrectCode=\
+    EmailOrNickExists=\
+    UserAlreadyApproved=\
+    IncorrectOldPassword=\
+    PasswordDoesNotMeetCriteria=\
+    UnknownErr=\
+    UnknownDBErr=\
+    CodeSent=\
+    PasswordNotSetThoughFlagTrue=\
+    LaTeXtoPDFconvertError=\
         member('')
