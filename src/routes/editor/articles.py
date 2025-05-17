@@ -1,4 +1,3 @@
-from db.db_base import log_err
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from models.utils import decors as decor, utils as util
@@ -59,6 +58,8 @@ def article_details(article_id: int):
         return util.render_base_template("round_tabs/rejected.html")
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
         return util.render_base_template("round_tabs/needs_corrections.html", article=article)
+    elif article.status.stat == ArticleStatusEnum.Final:
+        return util.render_base_template("round_tabs/final.html", article=article)
     else:
         return Response.error_response(message="Not found").to_dict()
 
@@ -75,18 +76,23 @@ def accept_article(article_id: int):
 def request_article_correction(article_id: int):
     return ac.set_article_status_needs_corrections(article_id).to_dict()
 
+@editor_articles_bp.route('/<int:article_id>/finish', methods=['POST'])
+@decor.approve_required
+def finish_article(article_id: int):
+    return ac.set_article_status_final(article_id).to_dict()
 
 @editor_articles_bp.route('<int:article_id>/assign_reviewers/', methods=['POST'])
 @decor.approve_required
 @decor.handle_form_not_filled
 def assign_reviewers(article_id: int):
     assigned_reviewers = request.form.getlist('assigned_reviewers[]')
-    (deadline_confirm, deadline_submit)=util.get_from_form(request.form, (
+    (deadline_confirm, deadline_submit, tz)=util.get_from_form(request.form, (
         'deadline_confirm',
         'deadline_submit',
+        'tz',
     ))
-    
-    response = ac.assign_reviewers(article_id, assigned_reviewers, deadline_confirm, deadline_submit)
+
+    response = ac.assign_reviewers(article_id, assigned_reviewers, deadline_confirm, deadline_submit, tz)
 
     if response.success:
         return redirect(url_for('editor_articles.article_details', article_id=article_id))

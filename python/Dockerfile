@@ -9,7 +9,6 @@ ENV APP_DIR=${APP_MAIN_DIR}/app
 
 RUN apk add --no-cache build-base linux-headers pcre-dev libpq-dev
 
-
 RUN apk add --no-cache texlive-full
 
 RUN apk add --no-cache python3 py3-pygments

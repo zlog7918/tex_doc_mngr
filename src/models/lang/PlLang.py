@@ -30,3 +30,4 @@ class PlLang(LangBase):
     UnknownErr='Wystąpił nie przewidziany błąd, przepraszamy za utrudnienia'
     UnknownDBErr='Wystąpił poważny błąd serwera, przepraszamy za utrudnienia'
     CodeSent='Wiadmość została pomyślnie wysłana'
+    LaTeXtoPDFconvertError='Błąd konwertowania LaTeX to PDF'

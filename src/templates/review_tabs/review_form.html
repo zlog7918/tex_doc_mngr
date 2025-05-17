@@ -1,23 +1,147 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Review Questions</title>
-</head>
-<body>
-    <h1>Answer Questions</h1>
-    <form method="POST" action="/reviews/{{ review_id }}/submit_review">
-        {% for question in questions %}
-            <label>{{ question["text"] }}</label><br>
-            {% if question["is_abc"] %}
-                {% for option in question["answers"] %}
-                    <input type="radio" id="option{{ option["id"] }}" name="question_{{ question['id'] }}" value="{{ option['answer'] }}" required>
-                    <label for="option{{ option["id"] }}">{{ option["answer"] }}</label><br>
-                {% endfor %}
-            {% else %}
-                <input type="text" name="question_{{ question['id'] }}" required><br>
-            {% endif %}
-        {% endfor %}
-        <button type="submit">Submit</button>
-    </form>
-</body>
-</html>
+{% extends "base.html" %}
+
+{% block title %} Recenzja {% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
+    <style>
+        .review-wrapper {
+            padding: 40px 80px;
+            font-family: "Segoe UI", sans-serif;
+            color: #222;
+        }
+
+        .review-wrapper h1 {
+            font-size: 32px;
+            margin-bottom: 30px;
+        }
+
+        .question-block {
+            margin-bottom: 35px;
+        }
+
+        .question-block label.question-text {
+            display: block;
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 12px;
+        }
+
+        .question-block input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        .question-block .option-label {
+            display: block;
+            margin-bottom: 8px;
+            cursor: pointer;
+            padding-left: 5px;
+        }
+
+        .question-block input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .submit-btn {
+            padding: 12px 24px;
+            background-color: #5a3d90;
+            color: white;
+            border: none;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .submit-btn:hover {
+            background-color: #4a2c7f;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .action-buttons a {
+            text-decoration: none;
+            padding: 10px 20px;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 6px;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-back {
+            background-color: #ddd3f2;
+            color: #2d1053;
+        }
+
+        .btn-back:hover {
+            background-color: #c6b5ea;
+        }
+
+        .btn-view {
+            background-color: #5a3d90;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background-color: #442a73;
+        }
+
+        @media (max-width: 768px) {
+            .review-wrapper {
+                padding: 20px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+
+    <div class="review-wrapper">
+        <div class="action-buttons">
+            <a href="/reviews" class="btn-back">Wróć do listy recenzji</a>
+            <a href="#" class="btn-view" target="_blank">Zobacz artykuł</a>
+        </div>
+
+        <form method="POST" action="/reviews/{{ review_id }}/submit_review">
+            <h1>Odpowiedz na pytania dotyczące artykułu</h1>
+
+            {% for question in questions %}
+                <div class="question-block">
+                    <label class="question-text">{{ question["text"] }}</label>
+
+                    {% if question["is_abc"] %}
+                        {% for option in question["answers"] %}
+                            <label class="option-label">
+                                <input type="radio"
+                                       id="option{{ option["id"] }}"
+                                       name="question_{{ question['id'] }}"
+                                       value="{{ option['answer'] }}"
+                                       required>
+                                {{ option["answer"] }}
+                            </label>
+                        {% endfor %}
+                    {% else %}
+                        <input type="text" name="question_{{ question['id'] }}" required>
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            <button type="submit" class="submit-btn">Wyślij recenzję</button>
+        </form>
+    </div>
+{% endblock %}

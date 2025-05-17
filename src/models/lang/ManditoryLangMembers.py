@@ -30,4 +30,5 @@ class LangBaseEx(Enum):
     UnknownErr=\
     UnknownDBErr=\
     CodeSent=\
+    LaTeXtoPDFconvertError=\
         member('')

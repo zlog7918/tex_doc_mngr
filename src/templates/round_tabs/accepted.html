@@ -1,6 +1,7 @@
 <div>
     <h2>Assign Reviewers</h2>
     <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post">
+        <input type="hidden" name="tz" value="">
         <label for="reviewer">Select a reviewer:</label>
         <select id="reviewer" name="reviewer" required>
             {% for reviewer_id, reviewer_nick in reviewers.items() %}
@@ -15,16 +16,29 @@
         <div id="assignedReviewersInput" name="assigned_reviewers[]">
 
         <label for="deadline_confirm">Confirmation Deadline:</label>
-        <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required>
+        <input type="date" id="deadline_confirm" name="deadline_confirm" required>
 
         <label for="deadline_submit">Submission Deadline:</label>
-        <input type="datetime-local" id="deadline_submit" name="deadline_submit" required>
+        <input type="date" id="deadline_submit" name="deadline_submit" required>
 
         <button type="submit">Save</button>
     </form>
 
 </div>
 <script>
+    function setMinDate(inputId) {
+        const input = document.getElementById(inputId);
+        const today = new Date();
+        today.setDate(today.getDate() + 2);
+        const minDate = today.toISOString().split('T')[0];
+        input.min = minDate;
+    }
+
+    setMinDate('deadline_confirm');
+    setMinDate('deadline_submit');
+
+    document.getElementsByName('tz')[0].value=Intl.DateTimeFormat().resolvedOptions().timeZone
+
     document.getElementById('addReviewer').addEventListener('click', function () {
         const reviewerSelect = document.getElementById('reviewer');
         const selectedReviewerId = reviewerSelect.value;
@@ -55,4 +69,21 @@
         hiddenInput.value = selectedReviewerId;
         assignedReviewersList.appendChild(hiddenInput);
     });
+
+    document.getElementById('deadline_confirm').addEventListener('change', function () {
+        const confirmDate = new Date(this.value);
+        if (!isNaN(confirmDate)) {
+            const submitInput = document.getElementById('deadline_submit');
+
+            date=new Date(this.value)
+            date.setDate(date.getDate()+1);
+
+            submitInput.min = date.toISOString().split('T', 1)[0];
+
+            if (submitInput.value < submitInput.min) {
+                submitInput.value = '';
+            }
+        }
+    });
+
 </script>

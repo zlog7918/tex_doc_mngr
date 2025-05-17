@@ -37,12 +37,12 @@ def login(nick: str, passwd: str) -> Response:
   if user is None:
     raise MessageException(
       message,
-      Exception('Incorrect login')
+      err=Exception('Incorrect login')
     )
   if not user.verify_pass(passwd):
     raise MessageException(
       message,
-      Exception(f'Incorrect password for {nick}')
+      err=Exception(f'Incorrect password for: {nick}')
     )
 
   login_user(user)
@@ -215,7 +215,7 @@ def approve(email: str, code: str) -> Response:
   if sc.check_code(user, code, CodePurposeEnum.ApproveUser) is None:
     raise MessageException(
       lang_pkg.UserNotApproved.value,
-      Exception(f'Incorrect code given for: {user.get_nick()}')
+      err=Exception(f'Incorrect code given for: {user.get_nick()}')
     )
   su.approve_user(user)
   log_activity(True, {'details': f'Account succesfully approved: {user.get_nick()}'})
@@ -229,7 +229,7 @@ def change_password(passwd: str, new_passwd: str, rep_passwd: str) -> Response:
   if not user.verify_pass(passwd):
     raise MessageException(
       lang_pkg.IncorrectOldPassword.value,
-      Exception(f'Incorrect old password for: {user.get_nick()}')
+      err=Exception(f'Incorrect old password for: {user.get_nick()}')
     )
   if su.change_user_pass(user, new_passwd):
     log_activity(True, {'details': f'Successful password change for: {user.get_nick()}'})
@@ -258,7 +258,7 @@ def pass_reset(email: str, code: str) -> Response:
   if user is None:
     raise MessageException(
       message,
-      Exception(f'Requested code for account of not known email: {email}')
+      err=Exception(f'Requested code for account of not known email: {email}')
     )
   if sc.check_code(user, code, CodePurposeEnum.ResetUserPassReq) is None:
     raise MessageException(message)
@@ -275,7 +275,7 @@ def pass_reset_new_pass(email: str, code: str, passwd: str, rep_passwd: str) -> 
   if user is None:
     raise MessageException(
       message,
-      Exception(f'Requested code for account of not known email: {email}')
+      err=Exception(f'Requested code for account of not known email: {email}')
     )
   if sc.check_code(user, code, CodePurposeEnum.ResetUserPass) is None:
     raise MessageException(message)

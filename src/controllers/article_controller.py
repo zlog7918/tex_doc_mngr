@@ -1,17 +1,21 @@
 import os
-import subprocess
-from werkzeug.utils import secure_filename
-from werkzeug.datastructures import FileStorage
+import shutil
 from typing import Any
 import services.user as au
+from zoneinfo import ZoneInfo
 import services.article as aq
-from flask import send_from_directory
+from db.db_base import log_activity
+from models.utils import utils as util
+from datetime import datetime, timedelta
+from werkzeug.utils import secure_filename
 from models.utils.Response import Response
+from models.utils.utils import get_timestamp
+from latex.latex_service import LatexService
 from models.utils.decors import log_if_error
-from db.db_base import db, log_activity
+from werkzeug.datastructures import FileStorage
 from models.utils.EnvConsts import envConsts as ec
-from models.utils.MessageException import MessageException
 from models.article.Article import ArticleStatusEnum
+from models.utils.MessageException import MessageException
 
 
 def get_available_editors() -> dict[int, str]:
@@ -20,14 +24,20 @@ def get_available_editors() -> dict[int, str]:
 def get_available_reviewers(article_id: int) -> dict[int, str]:
     return aq.get_available_reviewers(article_id)
 
-def is_valid_editor(editor_id: int) -> Response:
-    user = au.get_curr_user_or_err()
-    if editor_id == user.id:
-        return Response.error_response(message="An author cannot assign themselves as an editor.")
-    elif not au.get_user(editor_id):
-        return Response.error_response(message="Editor does not exist.")
-    else:
-        return Response.success_response()
+def _get_user_temp_dir() -> str:
+    user_id = au.get_curr_user_or_err().get_id()
+    user_temp_path = os.path.join(ec.getTempDir(), user_id)
+    return user_temp_path
+
+def is_valid_editor(editor_id: int) -> None:
+    try:
+        user = au.get_curr_user_or_err()
+        if editor_id == user.id:
+            raise MessageException('An author cannot assign themselves as an editor.')
+        if not au.get_user(editor_id):
+            raise MessageException('Editor does not exist.')
+    except Exception as e:
+        raise MessageException.from_exception(e, 'Not valid editor.')
 
 def is_author(article_id: int) -> None:
     try:
@@ -36,12 +46,12 @@ def is_author(article_id: int) -> None:
         if not article:
             raise MessageException(
                 'You are not an author of this article.',
-                Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+                err=Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
         if int(article.author_id) != int(user.get_id()):
             raise MessageException(
                 'You are not an author of this article.',
-                Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+                err=Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
     except Exception as e:
         raise MessageException.from_exception(e, 'You are not an author of this article.')
@@ -53,13 +63,13 @@ def is_editor(article_id: int) -> None:
         if not article or not article.editor_id:
             raise MessageException(
                 'You are not an editor of this article.',
-                Exception(f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+                err=Exception(f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
         
         if int(article.editor_id) != int(user.get_id()):
             raise MessageException(
                 'You are not an author of this article.',
-                Exception(f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+                err=Exception(f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
     except Exception as e:
         raise MessageException.from_exception(e, 'You are not an editor of this article.')
@@ -125,6 +135,11 @@ def set_article_status_needs_corrections(article_id: int) -> Response:
     is_editor(article_id)
     return set_article_status(article_id, ArticleStatusEnum.NeedsCorrections)
 
+@log_if_error
+def set_article_status_final(article_id: int) -> Response:
+    is_editor(article_id)
+    return set_article_status(article_id, ArticleStatusEnum.Final)
+
 def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     article = aq.get_article(article_id)
     if article is None:
@@ -133,18 +148,32 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     return Response.success_response()
 
 @log_if_error
-def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str) -> Response:
+def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str, tz: str) -> Response:
     is_editor(article_id)
 
     if not assigned_reviewers:
         raise MessageException('No reviewers assigned')
     
+    confirm_date = datetime.strptime(deadline_confirm, "%Y-%m-%d")
+    submit_date = datetime.strptime(deadline_submit, "%Y-%m-%d")
+    date = get_timestamp(ZoneInfo(tz)).date()
+
+    min_date = date + timedelta(days=2)
+    if confirm_date.date() < min_date:
+        return Response.error_response(message=f"Confirmation deadline must be at least {min_date}.")
+
+    if submit_date.date() < min_date:
+        return Response.error_response(message=f"Submission deadline must be at least {min_date}.")
+
+    if submit_date <= confirm_date:
+        return Response.error_response(message="Submission deadline cannot be earlier than confirmation deadline.")
+
     article = aq.get_article(article_id)
     if not article:
         log_activity(False, {'err': f'Editor attepted to set reviewers to a non-existing article {article_id}.'})
         return Response.error_response(message = f"Article {article_id} does not exist")
 
-    assigned_reviewers_ids = [int(rid) for rid in assigned_reviewers]
+    assigned_reviewers_ids = {int(rid) for rid in assigned_reviewers}
 
     if article.editor_id in assigned_reviewers_ids:
         log_activity(False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
@@ -159,113 +188,123 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
         
     aq.set_deadlines(article_id = article_id, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
 
-    update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
-    if not update_status_result.success:
-        raise MessageException(f'Failed to update article status to {ArticleStatusEnum.InReview.value}.')
+    aq.update_article_status(article, ArticleStatusEnum.InReview)
     return Response.success_response()
 
-def convert_tex_to_pdf(tex_path: str, output_dir: str) -> bool:
-    try:
-        for _ in range(2):
-            subprocess.run(
-                ["pdflatex", "--shell-escape", "-interaction=nonstopmode", "-output-directory", output_dir, tex_path],
-                cwd=output_dir,
-                check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-        return os.path.exists(tex_path.replace('.tex', '.pdf'))
-    except subprocess.CalledProcessError as e:
-        raise MessageException(str(e))
+def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_tex_name: str|None=None) -> str:
+    lang_pkg=util.get_lang_pkg()
+    dir_path=os.path.join(dir_path, '')
+    if os.path.exists(dir_path):
+        shutil.rmtree(dir_path)
+    os.makedirs(dir_path, exist_ok=True)
+    saved_paths: list[str] = []
 
-def handle_file(file: FileStorage, folder: str) -> str:
-    os.makedirs(folder, exist_ok=True)
-    filename = secure_filename(file.filename)
-    tex_path = os.path.join(folder, filename)
-    file.save(tex_path)
-    return tex_path
+    allowed_archives = ('.zip', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2')
 
-@log_if_error
-def upload_file(title: str, editor_id: int, file: FileStorage) -> Response:
-    # TODO: check if the function handles all possibilities
-    response = is_valid_editor(editor_id)
-    upload_folder=ec.getDocFilesDir()
+    for file in files:
+        filename = file.filename.lower() if file.filename else ''
 
-    result = aq.create_article(title, editor_id)
-    if result:
-        user = au.get_curr_user_or_err()
-        article = aq.get_article_by_title(int(user.get_id()), title)
-        if article:
-            file_url = f"{upload_folder}/{article.id}/1/"
-            tex_path=handle_file(file, file_url)
-            filename=os.path.basename(tex_path)
-            # Konwersja LaTeX do PDF
-            if filename.endswith('.tex'):
-                conversion_success = convert_tex_to_pdf(tex_path, file_url)
-                if not conversion_success:
-                    raise MessageException('Error converting LaTeX to PDF')
+        if filename.endswith(allowed_archives):
+            extracted_tex_files = LatexService.extract_tex_files_from_archive(file, dir_path)
+            saved_paths.extend(extracted_tex_files)
+        else:
+            saved_path = LatexService.save_file(file, dir_path)
+            if saved_path.endswith(".tex"):
+                saved_paths.append(saved_path)
 
-            filename=f'/{filename.replace('.tex', '.pdf')}'
-            if aq.create_round(int(article.id), filename, 1):
-                db.session.commit()
-                return Response.success_response(
-                    message=f"File {filename} uploaded successfully",
-                    data={"pdf_url": file_url}
-                )
-    raise MessageException('Article not created')
+    tex_file_path=None
+    if main_tex_name:
+        for path in saved_paths:
+            if os.path.basename(path) == main_tex_name:
+                tex_file_path = path
+                break
+    elif len(saved_paths) == 1:
+        tex_file_path = saved_paths[0]
+    elif len(saved_paths) > 1:
+        raise MessageException('Nie wybrano głównego pliku', {
+            "need_main_tex": True,
+            "tex_files": [os.path.basename(p) for p in saved_paths]
+        })
 
+    if not tex_file_path:
+        raise MessageException('Nie znaleziono pliku .tex')
+
+    file=os.path.basename(tex_file_path)
+    if not LatexService.convert_tex_to_pdf(tex_file_path, dir_path):
+        raise MessageException(lang_pkg.LaTeXtoPDFconvertError.value)
+    file_url = f"{url_start}/{file.replace('.tex', '.pdf')}"
+    return file_url
     
 @log_if_error
-def upload_correction(article_id: int, file: FileStorage) -> Response:
+def upload_correction(article_id: int, files: list[FileStorage], main_tex_name: str|None=None) -> Response:
     # TODO: check if the function handles all possibilities
-    upload_folder=ec.getDocFilesDir()
-    
     article = aq.get_article(article_id)
+    if article is None:
+        raise MessageException('Article not created')
+    is_author(article_id)
+    if article.status.stat != ArticleStatusEnum.NeedsCorrections:
+        raise MessageException('Correction had already been uploaded.')
 
-    if article:
-        is_author(article_id)
-        if article.status.stat != ArticleStatusEnum.NeedsCorrections:
-            raise MessageException('Correction had already been uploaded.')
+    round_number=len(article.rounds)+1
+    sub_dir=f'{article.id}/{round_number}'
+    prefix=f'/articles/uploads/{sub_dir}'
+    file_url=_handle_files(prefix, f'{ec.getDocFilesDir()}/{sub_dir}', files, main_tex_name)
 
-        round_number = len(article.rounds) + 1
-        file_url = f"{upload_folder}/{article.id}/{round_number}/"
-        tex_path=handle_file(file, file_url)
-        filename=os.path.basename(tex_path)
-        # Konwersja LaTeX do PDF
-        if filename.endswith('.tex'):
-            conversion_success = convert_tex_to_pdf(tex_path, file_url)
-            if not conversion_success:
-                raise MessageException('Error converting LaTeX to PDF')
-                
-        filename=f'/{filename.replace('.tex', '.pdf')}'
-        if aq.create_round(article.id, filename, round_number):
-            status = aq.__get_status_or_err(ArticleStatusEnum.Submitted)
-            article.update_status(status)
-            return Response.success_response(
-                message=f"File {filename} uploaded successfully",
-                data={"pdf_url": file_url}
-            )
-    raise MessageException('Correction not uploaded.')
+    filename=file_url.removeprefix(prefix)
+    aq.create_round(article.id, filename, round_number)
+    aq.update_article_status(article, ArticleStatusEnum.Submitted)
+    log_activity(True, {
+        'message': f'Uploaded files: {files} with "{main_tex_name}" as main successfully',
+        'data': {'pdf_url': file_url}
+    })
+    return Response.success_response(
+        message=f'File {filename} uploaded successfully',
+        data={'pdf_url': file_url}
+    )
+
 
 @log_if_error
-def __get_file(folder: str, filename: str) -> Response:
-    file_path = os.path.join(folder, filename)
-    if os.path.exists(file_path):
-        return Response.success_response(send_from_directory(folder, filename))
-    raise MessageException('Plik nie istnieje')
+def upload_file(title: str, editor_id: int, files: list[FileStorage], main_tex_name: str | None = None) -> Response:
+    user = au.get_curr_user_or_err()
+
+    if aq.article_exists_for_author(title, user.id):
+        return Response.error_response(message="Masz już artykuł o tym tytule. Zmień tytuł i spróbuj ponownie.")
+
+    is_valid_editor(editor_id)
+    article = aq.create_article(title, editor_id)
+
+    sub_dir = f'{article.id}/1'
+    prefix = f'/articles/uploads/{sub_dir}'
+    file_url = _handle_files(prefix, f'{ec.getDocFilesDir()}/{sub_dir}', files, main_tex_name)
+
+    filename = file_url.removeprefix(prefix)
+    aq.create_round(int(article.id), filename, 1)
+
+    log_activity(True, {
+        'message': f'Uploaded files: {files} with \"{main_tex_name}\" as main successfully',
+        'data': {'pdf_url': file_url}
+    })
+
+    return Response.success_response(
+        message=f'File {filename} uploaded successfully',
+        data={'pdf_url': file_url}
+    )
+
 
 @log_if_error
-def get_uploaded_file(filename: str) -> Response:
-    return __get_file.__wrapped__(ec.getDocFilesDir(), filename)
-
-@log_if_error
-def generate_preview(file: FileStorage) -> Response:
-    tex_path=handle_file(file, ec.getTempDir())
-    temp_folder=os.path.dirname(tex_path)
-    filename=os.path.basename(tex_path)
-    conversion_success = convert_tex_to_pdf(tex_path, temp_folder)
-    if conversion_success:
-        return Response.success_response(data={"pdf_url": f"/articles/temp-preview/{filename.replace('.tex', '.pdf')}"})
-    raise MessageException('Błąd generowania PDF')
+def generate_preview(files: list[FileStorage], main_tex_name: str | None = None) -> Response:
+    user_temp_dir = _get_user_temp_dir()
+    ret = _handle_files(f'/articles/temp-preview', user_temp_dir, files, main_tex_name)
+    return Response.success_response(data={
+        'pdf_url': ret
+    })
 
 @log_if_error
 def temp_preview(filename: str) -> Response:
-    return __get_file.__wrapped__(ec.getTempDir(), filename)
+    filename=secure_filename(filename)
+    user_temp_dir=_get_user_temp_dir()
+    return LatexService.get_file(user_temp_dir, filename)
+
+@log_if_error
+def get_uploaded_file(article_id: int, round_num: int, filename: str) -> Response:
+    return LatexService.get_file(f'{ec.getDocFilesDir()}/{article_id}/{round_num}', filename)

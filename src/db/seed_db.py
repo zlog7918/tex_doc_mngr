@@ -1,7 +1,8 @@
-from models.article.Round import Round
 from models.usr.User import User
+from models.article.Round import Round
 from flask_sqlalchemy import SQLAlchemy
 from models.usr.Code import CodePurpose, CodePurposeEnum
+from models.article.Review import ReviewStatus, ReviewStatusEnum
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 from models.article.Questions import Question, QuestionA, QuestionSet, QuestionSetQuestions
 
@@ -26,6 +27,12 @@ def seed_data(db: SQLAlchemy) -> None:
     if not ArticleStatus.query.first():
         statuses = [
             ArticleStatus(stat=e) for e in ArticleStatusEnum
+        ]
+        db.session.add_all(statuses)
+
+    if not ReviewStatus.query.first():
+        statuses = [
+            ReviewStatus(stat=e) for e in ReviewStatusEnum
         ]
         db.session.add_all(statuses)
     

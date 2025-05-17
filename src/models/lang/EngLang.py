@@ -30,3 +30,4 @@ class EngLang(LangBase):
     UnknownErr='Occured unpredicted error, sorry for the difficulties'
     UnknownDBErr='Occured serious unpredicted error, sorry for the difficulties'
     CodeSent='Message successfuly sent'
+    LaTeXtoPDFconvertError='Error converting LaTeX to PDF'

@@ -1,4 +1,6 @@
 import time
+import atexit
+from flask import Flask
 from db.db_base import db
 from typing import Awaitable
 from services import user as su
@@ -14,6 +16,7 @@ from routes.reviewer.reviews import review_bp
 from routes.author.articles import articles_bp
 from models.utils.EnvConsts import envConsts as ec
 from routes.editor.articles import editor_articles_bp
+from models.utils.scheduled_tasks import create_scheduler
 from flask import Flask, Request as flRequest, request, current_app
 from werkzeug.routing import RequestRedirect, MapAdapter, BaseConverter, ValidationError
 
@@ -106,5 +109,7 @@ def index():
     user=su.get_curr_user()
     return util.render_base_template('login_form.html' if user is None else ('logged.html' if user.is_approved() else 'check_approval.html'))
 
+scheduler = create_scheduler(app.app_context)
+atexit.register(lambda: scheduler.shutdown())
 if __name__=='__main__':
     app.run(debug=True)
