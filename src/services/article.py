@@ -93,7 +93,7 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
 
         latest_round_subquery = (
             db.session.query(Round.id)
-            .filter(Round.article_id == article_id)
+            .where(Round.article_id == article_id)
             .order_by(Round.round_number.desc())
             .limit(1)
             .subquery()
@@ -101,7 +101,7 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
 
         assigned_reviewers_subquery = (
             db.session.query(Review.reviewer_id)
-            .filter(Review.round_id.in_(select(latest_round_subquery)))
+            .where(Review.round_id.in_(select(latest_round_subquery)))
             .subquery()
         )
 
@@ -110,7 +110,8 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
             .where(and_(
                 ~User.id.in_(select(assigned_reviewers_subquery)),
                 User.id != user_id,
-                User.id != author_id
+                User.id != author_id,
+                User.nick != None
             ))
             .all()
         )
