@@ -1,4 +1,5 @@
 from db.db_base import log_err
+from models.article.Review import ReviewStatusEnum
 from models.utils.Response import Response
 import controllers.review_controller as rc
 from models.utils.decors import approve_required
@@ -32,10 +33,10 @@ def article_details(article_id: int):
     if article.status.stat == ArticleStatusEnum.Rejected:
         return render_template("round_tabs/rejected.html")
 
-    if review.status == "Pending confirmation":
+    if review.status.stat == ReviewStatusEnum.PendingConfirmation:
         article_content = data["article_content"]
         return render_template("review_tabs/pending_confirmation.html", article=article, article_content=article_content, review_id=review.id)
-    elif review.status == "Accepted by reviewer":
+    elif review.status.stat == ReviewStatusEnum.AcceptedByReviewer:
         questions = data["questions"]
         return render_template("review_tabs/review_form.html", review_id=review.id, questions=questions)
     else:

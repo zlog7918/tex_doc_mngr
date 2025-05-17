@@ -44,10 +44,9 @@ def set_review_status_reject(review_id: int) -> Response:
 def submit_review(review_id: int, answers) -> Response:
     is_reviewer_of_review(review_id)
     
-    if rs.save_review_answers(review_id, answers):
-        rs.check_reviews_and_update_article_status(review_id)
-        return Response.success_response()
-    raise MessageException("Error submitting review")
+    rs.save_review_answers(review_id, answers)
+    rs.check_reviews_and_update_article_status(review_id)
+    return Response.success_response()
 
 def set_review_status(review_id: int, status: ReviewStatusEnum) -> Response:
     review = rs.get_review_by_id(review_id)
@@ -87,7 +86,7 @@ def get_article_details_as_reviewer(article_id: int) -> Response:
     
     questions=None
     article_content=None
-    if review.status == "Pending confirmation":
+    if review.status.stat == ReviewStatusEnum.PendingConfirmation:
         latest_round = aq.get_latest_round(article_id)
         article_content = ""
         if article and latest_round:
@@ -95,7 +94,7 @@ def get_article_details_as_reviewer(article_id: int) -> Response:
             if article_content.startswith('/'):
                 article_content = f'<br><embed src="{f"/articles/uploads/{article.id}/{latest_round.round_number}/{article_content}"}" width="800" height="500" type="application/pdf">'
 
-    elif review.status == "Accepted by reviewer":
+    elif review.status.stat == ReviewStatusEnum.AcceptedByReviewer:
         questions = rs.get_questions_by_article(article_id)
         if not questions:
             raise MessageException("No questions found for the article.")
