@@ -12,7 +12,7 @@ def is_reviewer(article_id: int, user_id: int) -> None:
     if not review:
         raise MessageException(
             'You are not a reviewer of this article',
-            Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+            err=Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do artykułu o id: {article_id}')
         )
 
 def is_reviewer_of_review(review_id: int) -> None:
@@ -21,13 +21,13 @@ def is_reviewer_of_review(review_id: int) -> None:
     if not review:
         raise MessageException(
             'You are not a reviewer of this review',
-            Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}')
+            err=Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do nieisteniejącego review o id: {review_id}')
         )
     if int(review.reviewer_id) == int(user_id):
         return
     raise MessageException(
         'You are not a reviewer of this review',
-        Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do review o id: {review_id}')
+        err=Exception(f'Reviewer {user_id} usiłował uzyskać dostęp do review o id: {review_id}')
     )
 
 @log_if_error
@@ -75,14 +75,14 @@ def get_article_details_as_reviewer(article_id: int) -> Response:
     if not article:
         raise MessageException(
             'Article not found',
-            Exception(f'Article with id: {article_id} not found')
+            err=Exception(f'Article with id: {article_id} not found')
         )
 
     review = rs.get_review(article_id, reviewer_id)
     if not review:
         raise MessageException(
             'Review not found',
-            Exception(f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found')
+            err=Exception(f'Review with article_id: {article_id} and reviewer_id: {reviewer_id} not found')
         )
     
     questions=None

@@ -6,8 +6,8 @@ from flask import render_template, g
 from datetime import datetime,timezone
 from .EnvConsts import envConsts as ec
 from models.lang import LangEnum, LangBaseEx
+from werkzeug.datastructures import ImmutableMultiDict
 from .FormNotFilledException import FormNotFilledException
-from werkzeug.datastructures.structures import ImmutableMultiDict
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):

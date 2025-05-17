@@ -29,7 +29,7 @@ class Log(db.Model):
 
 def __get_action_name(action: str|None) -> str:
     return (util.get_function(2) if action is None else action)
-def log_activity(is_success: bool, log: dict, action: str|None=None) -> None:
+def log_activity(is_success: bool, log: dict[str, object], action: str|None=None) -> None:
     db.session.add(
         Log(**util.get_kwargs_for(Log, {
             Log.ip: request.environ['REMOTE_ADDR'],

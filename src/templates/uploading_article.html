@@ -93,8 +93,9 @@
 
         <form id="uploadForm" enctype="multipart/form-data" class="upload-form">
             <div class="form-group">
-                <label for="file">Wybierz plik LaTeX (.tex):</label>
-                <input type="file" name="file" id="file" accept=".tex" required>
+                <label for="file">Wybierz pliki:</label>
+                <input type="file" name="files" id="file" multiple>
+                <ul id="fileList" style="margin-top: 10px; font-size: 14px; color: #333; list-style: none; padding: 0;"></ul>
             </div>
 
             <div class="form-group">
@@ -112,6 +113,11 @@
                 </select>
             </div>
 
+            <div class="form-group" id="mainTexSelector" style="display: none;">
+                <label for="mainTex">Wybierz główny plik .tex:</label>
+                <select id="mainTex" name="mainTex"></select>
+            </div>
+
             <div class="form-actions">
                 <button type="button" id="previewBtn" class="btn" style="display: none;">Podgląd PDF</button>
                 <button type="submit" id="sendBtn" class="btn" style="display: none;">Wyślij</button>
@@ -120,69 +126,205 @@
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let fileInput = document.getElementById('file');
-            let title = document.querySelector('#uploadForm input[name="title"]');
-            let editor = document.getElementById("editor");
-            let previewBtn = document.getElementById('previewBtn');
-            let sendBtn = document.getElementById('sendBtn');
-            let uploadForm = document.getElementById('uploadForm');
+        document.addEventListener("DOMContentLoaded", function () {
+            const fileInput = document.getElementById('file');
+            const title = document.querySelector('#uploadForm input[name="title"]');
+            const editor = document.getElementById("editor");
+            const previewBtn = document.getElementById('previewBtn');
+            const sendBtn = document.getElementById('sendBtn');
+            const uploadForm = document.getElementById('uploadForm');
+            const mainTexDiv = document.getElementById('mainTexSelector');
+            const mainTexSelect = document.getElementById('mainTex');
 
-            fileInput.addEventListener('change', function() {
-                let filename = this.files[0]?.name || "";
-                if (filename.endsWith('.tex')) {
-                    previewBtn.style.display = "inline-block";
-                    sendBtn.style.display = "inline-block";
-                } else {
-                    previewBtn.style.display = "none";
-                    sendBtn.style.display = "none";
+            function updateFileList() {
+                const label = document.querySelector('label[for="file"]');
+                const fileList = document.getElementById("fileList");
+
+                label.innerText = `Wybierz pliki: (Liczba plików: ${selectedFiles.length})`;
+
+                fileList.innerHTML = "";
+
+                selectedFiles.forEach(file => {
+                    const li = document.createElement("li");
+                    li.style.display = "flex";
+                    li.style.justifyContent = "space-between";
+                    li.style.alignItems = "center";
+                    li.style.padding = "4px 0";
+
+                    const fileName = document.createElement("span");
+                    fileName.textContent = file.name;
+
+                    const removeBtn = document.createElement("button");
+                    removeBtn.textContent = "Usuń";
+                    removeBtn.style.background = "#e74c3c";
+                    removeBtn.style.color = "white";
+                    removeBtn.style.border = "none";
+                    removeBtn.style.padding = "4px 8px";
+                    removeBtn.style.borderRadius = "4px";
+                    removeBtn.style.cursor = "pointer";
+
+                    removeBtn.addEventListener("click", function () {
+                        const idx = selectedFiles.findIndex(f => f.name === file.name);
+                        if (idx !== -1) {
+                            selectedFiles.splice(idx, 1);
+                            updateFileList();
+                        }
+                    });
+
+                    li.appendChild(fileName);
+                    li.appendChild(removeBtn);
+                    fileList.appendChild(li);
+                });
+
+                const showButtons = selectedFiles.length > 0;
+                previewBtn.style.display = showButtons ? "inline-block" : "none";
+                sendBtn.style.display = showButtons ? "inline-block" : "none";
+
+                const hasTexFile = selectedFiles.some(file => file.name.endsWith('.tex'));
+
+                // Jeśli mainTexDiv JEST widoczny (czyli user już raz go uruchomił)
+                if (mainTexDiv.style.display !== 'none') {
+                    mainTexSelect.innerHTML = '';
+
+                    if (hasTexFile) {
+                        selectedFiles
+                            .filter(file => file.name.endsWith('.tex'))
+                            .forEach(file => {
+                                const option = document.createElement('option');
+                                option.value = file.name;
+                                option.textContent = file.name;
+                                mainTexSelect.appendChild(option);
+                            });
+
+                        // Resetuj wartość, jeśli obecnie wybrany plik nie istnieje
+                        const availableTexNames = Array.from(mainTexSelect.options).map(opt => opt.value);
+                        if (!availableTexNames.includes(mainTexSelect.value)) {
+                            mainTexSelect.value = '';
+                        }
+
+                        mainTexDiv.style.display = 'block';
+                    } else {
+                        mainTexDiv.style.display = 'none';
+                        mainTexSelect.required = false;
+                    }
                 }
+
+            }
+
+            let selectedFiles = [];
+
+            fileInput.addEventListener('change', function () {
+                for (const file of this.files) {
+                    if (!selectedFiles.some(f => f.name === file.name)) {
+                        selectedFiles.push(file);
+                    }
+                }
+
+                updateFileList();
+                fileInput.value = '';
             });
 
             previewBtn.addEventListener("click", async function() {
                 let formData = new FormData();
-                formData.append("file", fileInput.files[0]);
+                for (const file of selectedFiles)
+                    formData.append("files", file);
+                if (mainTexDiv.style.display !== "none" && mainTexSelect.value)
+                    formData.append("mainTex", mainTexSelect.value);
 
                 let response = await fetch("/articles/generate-preview", {
                     method: "POST",
                     body: formData
                 });
 
-                let data = await response.json();
+                const data = await response.json();
 
-                if (data.pdf_url) {
-                    window.open(data.pdf_url, '_blank');
+                if (data.data?.need_main_tex && data.data?.tex_files) {
+                    mainTexSelect.innerHTML = '';
+                    data.data.tex_files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file;
+                        option.textContent = file;
+                        mainTexSelect.appendChild(option);
+                    });
+                    mainTexDiv.style.display = 'block';
+                    mainTexSelect.required = true;
+                    alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'View PDF'.");
+                } else if (data.data?.pdf_url) {
+                    window.open(data.data.pdf_url, '_blank');
                 } else {
-                    alert("Błąd: " + (data.error || "Nie udało się wygenerować podglądu"));
+                    alert("❌ Błąd generowania podglądu: " + (data.message || "Nieznany błąd"));
                 }
             });
 
-            uploadForm.addEventListener("submit", async function(event) {
+            // Obsługa zapisu pliku
+            uploadForm.addEventListener("submit", async function (event) {
                 event.preventDefault();
 
-                let editorId = editor.value;
+                const editorId = editor.value;
                 if (!editorId) {
                     alert("Proszę wybrać edytora.");
                     return;
                 }
 
-                let formData = new FormData();
-                formData.append("file", fileInput.files[0]);
+                if (selectedFiles.length === 0) {
+                    alert("Nie wybrano żadnych plików.");
+                    return;
+                }
+
+                const formData = new FormData();
+                for (const file of selectedFiles) {
+                    formData.append("files", file);
+                }
+
                 formData.append("title", title.value);
                 formData.append("editor", editorId);
 
-                let response = await fetch("/articles/upload", {
-                    method: "POST",
-                    body: formData
-                });
+                // Dodaj wybrany plik mainTex
+                if (mainTexDiv.style.display !== "none" && mainTexSelect.value) {
+                    formData.append("mainTex", mainTexSelect.value);
+                }
 
-                let data = await response.json();
+                try {
+                    const response = await fetch("/articles/upload", {
+                        method: "POST",
+                        body: formData
+                    });
 
-                if (data['message']) {
-                    alert("Plik został pomyślnie załadowany!");
-                    window.location.reload();
-                } else {
-                    alert("Wystąpił problem: " + (data.error || "Nieznany błąd"));
+                    const data = await response.json();
+
+                    // Jeśli backend prosi o wybór głównego pliku
+                    if (data.data?.need_main_tex && data.data?.tex_files) {
+                        mainTexSelect.innerHTML = '';
+                        data.data.tex_files.forEach(file => {
+                            const option = document.createElement('option');
+                            option.value = file;
+                            option.textContent = file;
+                            mainTexSelect.appendChild(option);
+                        });
+                        mainTexDiv.style.display = 'block';
+                        mainTexSelect.required = true;
+
+                        alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'Send'.");
+                        return;
+                    }
+
+                    // Przesłano i wygenerowano PDF
+                    if (!data.data?.need_main_tex && data.data?.pdf_url) {
+                        alert("✅ Plik przesłany pomyślnie!");
+                        window.location.href = window.location.href;
+                        selectedFiles = [];
+                        updateFileList(); // też aktualizuje UI
+                        mainTexSelect.innerHTML = '';
+                        mainTexDiv.style.display = 'none';
+                        fileInput.value = ''; // czyści input plików
+
+                    } else {
+
+                        alert("❌ Błąd przesyłania: " + (data.message || "Nieznany błąd"));
+                    }
+
+                } catch (error) {
+                    alert("🚨 Błąd podczas przesyłania: " + error.message);
                 }
             });
         });
