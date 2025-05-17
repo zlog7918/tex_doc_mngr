@@ -1,8 +1,34 @@
 from enum import Enum, member
 
 class LangBaseEx(Enum):
-    UserNotFoundErr=member(lambda e:f'')
+    UserNotFoundErr=\
+    ConfirmAccountThroughCode=\
+        member(lambda e:f'')
     UserNotLogged=\
-    LaTeXtoPDFconvertError=\
     UserNotAdded=\
+    UserNotApproved=\
+    UserNotDeleted=\
+    PasswordNotChanged=\
+    FuncNotExecuted=\
+    AccountNotCreated=\
+    CodeNotGenerated=\
+    CodeNotDeactivated=\
+    CodeNotApproved=\
+    NickDoesNotMeetCriteria=\
+    IncorrectNickOrPassword=\
+    PasswordsDoNotMatch=\
+    UnsuccessfulMailSending=\
+    EmailDoesNotMeetCriteria=\
+    UserCanAcceptInviteThroughMail=\
+    UserNotInvited=\
+    NickExistsOrInvalidPassword=\
+    IncorrectCode=\
+    EmailOrNickExists=\
+    UserAlreadyApproved=\
+    IncorrectOldPassword=\
+    PasswordDoesNotMeetCriteria=\
+    UnknownErr=\
+    UnknownDBErr=\
+    CodeSent=\
+    LaTeXtoPDFconvertError=\
         member('')
