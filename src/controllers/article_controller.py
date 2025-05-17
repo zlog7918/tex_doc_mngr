@@ -155,6 +155,7 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
 def zip_latest_round(article_id: int) -> Response:
     upload_folder=ec.getDocFilesDir()
     article = aq.get_article(article_id)
+
     if article:
         round_number = len(article.rounds)
         folder_path = f"{upload_folder}/{article.id}/{round_number}/"
@@ -163,6 +164,22 @@ def zip_latest_round(article_id: int) -> Response:
 
         zip_name = f"{article_id}_{round_number}.zip"
         output_zip_path = os.path.join(folder_path, zip_name)
+        
+        existing_zips = [f for f in os.listdir(folder_path) if f.lower().endswith('.zip')]
+        if len(existing_zips) == 1:
+            for root, dirs, files in os.walk(folder_path):
+                for file in files:
+                    if not file.lower().endswith('.zip'):
+                        os.remove(os.path.join(root, file))
+                for dir_name in dirs:
+                    if dir_name.startswith("_minted"):
+                        shutil.rmtree(os.path.join(root, dir_name))
+            return Response.success_response(message="ZIP already exists; cleaned up other files.")
+        
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                if file.endswith(('.aux', '.log', '.pdf', '.synctex.gz')):
+                    os.remove(os.path.join(root, file))
 
         try:
             with zipfile.ZipFile(output_zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
