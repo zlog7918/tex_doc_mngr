@@ -4,14 +4,14 @@ include:
     project_directory: .
     env_file:
       - ./.env
-      - ./.nginx.env
+      - ./.env.nginx
   - path: python/docker-compose.yml
     project_directory: .
     env_file:
       - ./.env
-      - ./.python.env
+      - ./.env.python
   - path: psql/docker-compose.yml
     project_directory: .
     env_file:
-      - ./.psql.env
+      - ./.env.psql
   # - path: ./compose.commons.yml

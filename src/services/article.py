@@ -1,11 +1,11 @@
-from services import user as uq
 from models.usr.User import User
 from sqlalchemy import and_, select
 from models.article.Round import Round
 from models.utils import utils as util
-from models.article.Review import Review
+from services import user as uq, review as rs
 from db.db_base import db, log_activity, log_err
 from models.article.Questions import Answer, Question
+from models.article.Review import Review, ReviewStatusEnum
 from models.utils.MessageException import MessageException
 from models.article.Article import Article, ArticleStatus, ArticleStatusEnum
 
@@ -273,10 +273,11 @@ def add_reviewer_to_article(article_id: int, reviewer_id: int) -> None:
         )
 
         if round_id:
+            
             new_review = Review(**util.get_kwargs_for(Review, {
                 Review.round_id: round_id,
                 Review.reviewer_id: reviewer_id,
-                Review.status: 'Pending confirmation',
+                Review.status_id: rs.__get_review_status_or_err(ReviewStatusEnum.PendingConfirmation).id,
             }))
             db.session.add(new_review)
             db.session.flush()

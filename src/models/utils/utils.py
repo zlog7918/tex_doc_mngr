@@ -2,8 +2,9 @@ import sys
 import os.path
 import traceback
 from . import consts as c
+from tzlocal import get_localzone
 from flask import render_template, g
-from datetime import datetime,timezone
+from datetime import datetime, tzinfo
 from .EnvConsts import envConsts as ec
 from models.lang import LangEnum, LangBaseEx
 from werkzeug.datastructures import ImmutableMultiDict
@@ -29,20 +30,24 @@ def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> 
 def render_base_template(name: str, **kwargs: object) -> str:
     return render_template(name, url_last_edit=url_last_edit, **kwargs)
 
+def unified_timezone() -> tzinfo:
+    return get_localzone()
+
+def get_timestamp(tz: tzinfo=unified_timezone()) -> datetime:
+    return datetime.now(tz)
+
 def set_lang_pkg(lang: LangEnum) -> None:
     g.lang=lang.value
 def get_lang_pkg() -> type[LangBaseEx]:
     if 'lang' not in g:
         g.lang=LangEnum.en.value
     return g.lang
+
 def get_kwargs_for(t: type, d: dict[object, object]) -> dict[str, object]:
     return {str(k).removeprefix(f'{t.__name__}.'):i for k, i in d.items()}
 
 def get_traceback(err: Exception) -> str:
     return ''.join(traceback.format_tb(err.__traceback__))
-
-def get_timestamp() -> datetime:
-    return datetime.now(timezone.utc)
 
 def get_function(back: int=0) -> str:
     frame=sys._getframe(back+1) # type: ignore[private_access]
