@@ -44,10 +44,9 @@ def set_review_status_reject(review_id: int) -> Response:
 def submit_review(review_id: int, answers: dict[tuple[int, int], str]) -> Response:
     is_reviewer_of_review(review_id)
     
-    if rs.save_review_answers(review_id, answers):
-        rs.check_reviews_and_update_article_status(review_id)
-        return Response.success_response()
-    raise MessageException("Error submitting review")
+    rs.save_review_answers(review_id, answers)
+    rs.check_reviews_and_update_article_status(review_id)
+    return Response.success_response()
 
 def set_review_status(review_id: int, status: ReviewStatusEnum) -> Response:
     review = rs.get_review_by_id(review_id)
@@ -87,6 +86,7 @@ def get_article_details_as_reviewer(article_id: int) -> Response:
     
     questions=None
     article_content=None
+    
     if review.status.stat == ReviewStatusEnum.PendingConfirmation:
         latest_round = aq.get_latest_round(article)
         article_content = ""
@@ -96,11 +96,11 @@ def get_article_details_as_reviewer(article_id: int) -> Response:
                 article_content = f'<br><embed src="{f"/articles/uploads/{article.id}/{latest_round.round_number}/{article_content}"}" width="800" height="500" type="application/pdf">'
 
     elif review.status.stat == ReviewStatusEnum.AcceptedByReviewer:
-        touple_questions = rs.get_questions_by_article(article)
-        if not touple_questions:
+        tuple_questions = rs.get_questions_by_article(article)
+        if not tuple_questions:
             raise MessageException("No questions found for the article.")
         questions=[]
-        for question in touple_questions:
+        for question in tuple_questions:
             question={'group_id': question[0], 'id': question[1], 'text': question[2], 'is_abc': question[3]}
             if question['is_abc']:
                 answers = rs.get_question_answers(question['id'])

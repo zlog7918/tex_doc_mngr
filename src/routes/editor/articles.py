@@ -1,9 +1,9 @@
+from flask import request, Blueprint
 from models.utils.Response import Response
 import controllers.article_controller as ac
 import controllers.question_controller as qc
 from models.utils import decors as decor, utils as util
 from models.article.Article import ArticleStatusEnum, Article
-from flask import request, redirect, url_for, Blueprint, render_template
 
 editor_articles_bp=Blueprint("editor_articles", __name__)
 
@@ -69,7 +69,7 @@ def article_details(article_id: int):
     else:
         return Response.error_response(message="Not found").to_dict()
 
-    return render_template("article_round_base.html", tab_content=tab_content, article=article, data=data)
+    return util.render_base_template("article_round_base.html", tab_content=tab_content, article=article, data=data)
 
 
 @editor_articles_bp.route('/<int:article_id>/accept', methods=['POST'])
