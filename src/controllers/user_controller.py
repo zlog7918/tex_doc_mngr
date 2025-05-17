@@ -9,10 +9,10 @@ from models.utils import utils as util
 from models.mail.SendMail import SendMail
 from models.utils.Response import Response
 from models.usr.Code import CodePurposeEnum
-from services import user as su, code as sc
 from models.utils.decors import log_if_error
 from flask_login import login_user, logout_user
 from models.utils.MessageException import MessageException
+from services import user_service as su, code_service as sc
 from typing import Callable, ParamSpec, Concatenate, TypeVar, TypeVarTuple
 
 P=ParamSpec('P')
@@ -27,7 +27,6 @@ def validate_nick(nick: str) -> None:
     pass
   if re.match(r'^[a-zA-z][a-zA-Z0-9_-]{1,78}[a-zA-Z0-9]$', nick) is None:
     raise MessageException(ret_mess)
-
 
 @log_if_error
 def login(nick: str, passwd: str) -> Response:
@@ -59,11 +58,14 @@ def validate_passwords(passwd: str, rep_passwd: str) -> None:
     raise MessageException(util.get_lang_pkg().NickDoesNotMeetCriteria.value)
 
 def check_password(passwd: str) -> str:
+  lang_pkg=util.get_lang_pkg()
   user=User()
   flag=user.ch_pass(passwd)
   if flag is False:
-    raise MessageException(util.get_lang_pkg().AccountNotCreated.value)
-  return user.get_passwd()
+    raise MessageException(lang_pkg.AccountNotCreated.value)
+  if user.passwd is None:
+    raise Exception(lang_pkg.PasswordNotSetThoughFlagTrue.value)
+  return user.passwd
 
 def send_code_by_email(send_func: Callable[Concatenate[SendMail, str, P], None], email, *args: P.args, **kwargs: P.kwargs) -> None:
   try:
@@ -210,7 +212,7 @@ def approve(email: str, code: str) -> Response:
   user=su.get_user_by_email(email)
   if user is None:
     raise MessageException(lang_pkg.UserAlreadyApproved.value)
-  if user.is_approved():
+  if user.approved:
     raise MessageException(lang_pkg.UserAlreadyApproved.value)
   if sc.check_code(user, code, CodePurposeEnum.ApproveUser) is None:
     raise MessageException(

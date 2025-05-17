@@ -24,7 +24,8 @@ def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> 
     for k in keys:
         v=form.get(k)
         if v is None:
-            raise FormNotFilledException(f'Formularz nie zawiera "{k}"')
+            lang_pkg=get_lang_pkg()
+            raise FormNotFilledException(lang_pkg.FormDoesNotContain.value(k))
         vs.append(v)
     return tuple(vs)
 

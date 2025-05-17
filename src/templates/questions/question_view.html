@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %} {{ lang_pkg.Question.value }} {% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
+    <style>
+        .main-content {
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: black;
+            margin-bottom: 20px;
+        }
+
+        .above-table-text {
+            text-align: left;
+            font-size: 18px;
+            color: #2d1053;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%; 
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #5a3d90;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f3f1f9;
+        }
+
+        .details-btn {
+            background: #5a3d90;
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .details-btn:hover {
+            background: #4a1e87;
+        }
+
+    </style>
+
+    <div class="main-content">
+        <h1>{{ lang_pkg.Name.value }}: {{ question.question }}</h1>
+        {{ lang_pkg.Author.value }}: {{ question.user.get_nick() }}<br>
+        ABCD?: {{ lang_pkg.YES.value if question.is_abc else lang_pkg.NO.value }}<br>
+        {% if question.is_abc %}
+            <table>
+                <thead>
+                    <tr><th>{{ lang_pkg.Name.value }}</th></tr>
+                </thead>
+                <tbody>
+                    {% for ga in question.qa_s %}
+                        <tr><td>{{ ga.answer }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+
+{% endblock %}

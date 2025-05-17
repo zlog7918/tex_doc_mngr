@@ -44,6 +44,13 @@ def get_curr_user_or_err() -> User:
         raise MessageException(lang_pkg.UserNotLogged.value)
     return u
 
+def get_usr0_or_err() -> User:
+    u=get_user(0)
+    if u is None:
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException(lang_pkg.User0NotFound.value, Exception('User id: 0 is not found'))
+    return u
+
 def add_user(user: User):
     try:
         db.session.add(user)
