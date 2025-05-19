@@ -11,11 +11,13 @@ func_start() {
         # openssl req -new -key "$CERT_DIR/$CERT_NAME.key" -out "$CERT_DIR/$CERT_NAME.csr" -subj "$SUBJ_TXT"
     fi
 }
+
 func_if_exists() {
     [ ! -e "$CERT_DIR/$CERT_NAME.crt" ] && return 0
     [ ! -e "$CERT_DIR/$CERT_NAME.key" ] && return 0
     # [ ! -e "$CERT_DIR/$CERT_NAME.csr" ] && return 0
     return 1
 }
+
 func_start
 sh /docker-entrypoint.sh nginx -g 'daemon off;'

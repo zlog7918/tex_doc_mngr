@@ -1,307 +1,382 @@
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet" />
 <style>
-    .reviewer-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #e0e0e0;
-        padding: 5px 10px;
-        margin-bottom: 5px;
-        border-radius: 5px;
-    }
+.reviewers-section {
+  padding: 1.5rem;
+  background-color: white;
+  margin: 0 auto;
+  border: 1px solid #ddd;
+}
 
-    .reviewer-name {
-        flex-grow: 1;
-        display: flex;
-        align-items: center;
-    }
+.reviewers-section h2,
+.reviewers-section h3 {
+  margin-bottom: 1rem;
+  color: #333;
+}
 
-    .remove-reviewer {
-        background: red;
-        color: white;
-        border: none;
-        padding: 5px 10px;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: 0.3s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 30px;
-    }
+label {
+  display: block;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: #444;
+}
 
-    .remove-reviewer:hover {
-        background: darkred;
-    }
+.ts-control {
+  border-radius: 6px !important;
+  border: 1px solid #ccc !important;
+  font-size: 1rem !important;
+  padding: 0.5rem !important;
+  box-sizing: border-box;
+  width: 100% !important;
+  background-color: white;
+}
 
-    .reviewers-section {
-        background: #f9f9f9;
-        padding: 20px;
-        border-radius: 10px;
-        border: 1px solid #ddd;
-        margin-top: 30px;
-    }
+input[type="text"],
+input[type="email"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
 
-    .reviewers-section h2, .reviewers-section h3 {
-        color: #2d1053;
-        margin-bottom: 10px;
-    }
+input[type="datetime-local"] {
+  background-color: #fffefc;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  font-family: inherit;
+  width: 280px;
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
 
-    .reviewers-section label {
-        display: block;
-        margin: 10px 0 5px;
-        font-weight: bold;
-    }
+input[type="datetime-local"]:focus {
+  border-color: #5a3d90;
+  outline: none;
+}
 
-    .reviewers-section input[type="text"],
-    .reviewers-section input[type="datetime-local"] {
-        padding: 6px 10px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-        box-sizing: border-box;
-        font-size: 14px;
-        width: 100%;
-        max-width: 400px; /* Możesz dostosować szerokość */
-        margin-bottom: 10px;
-    }
+button {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: #5a3d90;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
 
-    .reviewers-section input[type="text"] {
-        color: rgba(0, 0, 0, 0.5);
-        font-style: italic;
-    }
+button:hover {
+  background-color: #4a2a70;
+}
 
-    .reviewers-section input[type="text"]::placeholder {
-        font-style: italic;
-    }
+ul {
+  list-style-type: none;
+  padding: 0;
+}
 
-    .reviewers-section button {
-        background: #5a3d90;
-        color: white;
-        padding: 8px 16px;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: 0.3s;
-    }
+.reviewer-item {
+  background-color: #eee;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 
-    .reviewers-section button:hover {
-        background: #4a1e87;
-    }
+.remove-reviewer {
+  background-color: #d9534f;
+  margin-top: 0 !important;
+  margin-left: 1rem;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
 
-    #assignedReviewers {
-        list-style: none;
-        padding: 0;
-        margin-top: 5px;
-    }
+.remove-reviewer:hover {
+  background-color: #c9302c;
+}
 
-    .deadline-row {
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-top: 15px;
-    }
+.deadline-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
 
-    .deadline-row > div {
-        flex: 1;
-        min-width: 200px;
-    }
+.hidden {
+  display: none;
+}
+
+.ts-placeholder {
+  color: #999 !important;
+  font-style: italic;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #5a3d90;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.link-button:hover {
+  background: none;
+  border: none;
+  color: #4a2a70;
+}
+
+#inviteForm {
+  padding: 1rem;
+  background-color: #f4f4f9;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#inviteForm input {
+  margin-bottom: 1rem;
+}
+
+/* Wyróżnienie sekcji z recenzentami i zaproszonymi mailami */
+#assignedReviewers, #invitedEmails {
+  background-color: #f9f9f9;  /* Jaśniejsze tło dla tych sekcji */
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);  /* Cień dla sekcji */
+}
+
+#assignedReviewers li, #invitedEmails li {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+#assignedReviewers li:last-child, #invitedEmails li:last-child {
+  border-bottom: none;
+}
+
+#assignedReviewers li span, #invitedEmails li span {
+  font-weight: bold;
+  color: #444;
+}
+
+#assignedReviewers li button, #invitedEmails li button {
+  background-color: #5a3d90;
+  color: white;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-left: 1rem;
+}
+
+#assignedReviewers li button:hover, #invitedEmails li button:hover {
+  background-color: #4a2a70;
+}
 </style>
 
 <div class="reviewers-section">
-    <h2>Przypisz recenzentów</h2>
-    <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post" onsubmit="return validateForm()">
-        <label for="reviewer">Wybierz recenzenta:</label>
-        <input list="reviewers" id="reviewer" name="reviewer" autocomplete="off" placeholder="Wpisz lub wybierz recenzenta">
-        <datalist id="reviewers">
-            {% for reviewer_id, reviewer_nick in reviewers.items() %}
-                <option data-id="{{ reviewer_id }}" value="{{ reviewer_nick }}"></option>
-            {% endfor %}
-        </datalist>
-        <button type="button" id="addReviewer">Dodaj recenzenta</button>
-
-        <label for="reviewer">Zaproś do recenzowania przez email:</label>
-        <button type="button" id="inviteReviewer">Zaproś</button>
-
-        <div id="inviteForm" style="display: none; margin-top: 10px;" class="hidden">
-            <label for="inviteEmail">Email recenzenta:</label>
-            <input type="email" id="inviteEmail" name="inviteEmail" placeholder="Podaj email">
-            <button type="button" id="addEmail">Dodaj email</button>
-        </div>
-
-        <h3>Przypisani recenzenci:</h3>
-        <ul id="assignedReviewers"><li id="noReviewers">Nie przypisano recenzentów</li></ul>
-
-        <h3>Lista zapraszanych emaili:</h3>
-        <ul id="invitedEmails"><li id="noEmails">Nie podano emaili</li></ul>
-
-        <div class="deadline-row">
-            <div>
-                <label for="deadline_confirm">Deadline potwierdzenia:</label>
-                <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required>
-            </div>
-            <div>
-                <label for="deadline_submit">Deadline oddania recenzji:</label>
-                <input type="datetime-local" id="deadline_submit" name="deadline_submit" required>
-            </div>
-        </div>
-
-        <button type="submit">Zapisz</button>
-    </form>
+  <h2>Przypisz recenzentów</h2>
+  <div class="question-set-row" style="margin-bottom:1rem;">
+    <label for="questionSet">Wybierz zestaw pytań:</label>
+    <select id="questionSet" name="questionSet">
+      <option value=""> Wybierz zestaw pytań... </option>
+      <option value="setA">Zestaw A</option>
+      <option value="setB">Zestaw B</option>
+    </select>
+  </div>
+  <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post" onsubmit="return validateForm()">
+    <label for="reviewer">Wybierz recenzenta:</label>
+    <select id="reviewer" name="reviewer" placeholder="Wybierz recenzenta...">
+      <option value="" disabled selected> Wybierz recenzenta... </option>
+      {% for reviewer_id, reviewer_nick in reviewers.items() %}
+        <option value="{{ reviewer_id }}">{{ reviewer_nick }}</option>
+      {% endfor %}
+    </select>
+    <button type="button" id="addReviewer">Dodaj recenzenta</button>
+    <button type="button" id="inviteReviewer" class="link-button">lub zaproś przez email</button>
+    <div id="inviteForm" class="hidden" style="margin-top: 10px;">
+      <label for="inviteReviewer">Zaproś do recenzowania przez email:</label>
+      <label for="inviteEmail">Email recenzenta:</label>
+      <input type="email" id="inviteEmail" name="inviteEmail" placeholder="Podaj email" />
+      <button type="button" id="addEmail">Dodaj email</button>
+    </div>
+    <h3>Przypisani recenzenci:</h3>
+    <ul id="assignedReviewers"><li id="noReviewers">Nie przypisano recenzentów</li></ul>
+    <h3>Lista zapraszanych emaili:</h3>
+    <ul id="invitedEmails"><li id="noEmails">Nie podano emaili</li></ul>
+    <div class="deadline-row">
+      <div>
+        <label for="deadline_confirm">Deadline potwierdzenia:</label>
+        <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required />
+      </div>
+      <div>
+        <label for="deadline_submit">Deadline oddania recenzji:</label>
+        <input type="datetime-local" id="deadline_submit" name="deadline_submit" required />
+      </div>
+    </div>
+    <button type="submit">Zapisz</button>
+  </form>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const reviewerInput = document.getElementById("reviewer");
-        const reviewerDatalist = document.getElementById("reviewers");
-        const assignedReviewersList = document.getElementById("assignedReviewers");
-        const noReviewersItem = document.getElementById("noReviewers");
-        const form = document.querySelector("form");
-
-        document.getElementById('addReviewer').addEventListener('click', function () {
-            const enteredReviewer = reviewerInput.value.trim();
-            let selectedReviewerId = null;
-
-            // Sprawdzenie, czy wpisany tekst pasuje do dostępnych opcji
-            for (let option of reviewerDatalist.options) {
-                if (option.value === enteredReviewer) {
-                    selectedReviewerId = option.getAttribute("data-id");
-                    break;
-                }
-            }
-
-            // Jeśli nie znaleziono recenzenta, wyświetl komunikat
-            if (!selectedReviewerId) {
-                alert("Wybierz recenzenta z listy.");
-                return;
-            }
-
-            // Sprawdzanie, czy recenzent już został dodany
-            if ([...assignedReviewersList.children].some(li => li.dataset.id === selectedReviewerId)) {
-                alert("Recenzent już został dodany.");
-                return;
-            }
-
-            if (noReviewersItem) {
-                noReviewersItem.remove();
-            }
-
-            // Dodanie recenzenta do listy
-            const newReviewerItem = document.createElement("li");
-            newReviewerItem.classList.add("reviewer-item");
-            newReviewerItem.setAttribute("data-id", selectedReviewerId);
-
-            const reviewerNameSpan = document.createElement("span");
-            reviewerNameSpan.textContent = enteredReviewer;
-            reviewerNameSpan.classList.add("reviewer-name");
-
-            const removeButton = document.createElement("button");
-            removeButton.textContent = "Usuń";
-            removeButton.classList.add("remove-reviewer");
-            removeButton.addEventListener("click", function () {
-                newReviewerItem.remove();
-                hiddenInput.remove();
-
-                if (assignedReviewersList.children.length === 0) {
-                    assignedReviewersList.appendChild(noReviewersItem);
-                }
-            });
-
-            newReviewerItem.appendChild(reviewerNameSpan);
-            newReviewerItem.appendChild(removeButton);
-            assignedReviewersList.appendChild(newReviewerItem);
-
-            const hiddenInput = document.createElement("input");
-            hiddenInput.type = "hidden";
-            hiddenInput.name = "assigned_reviewers[]";
-            hiddenInput.value = selectedReviewerId;
-            form.appendChild(hiddenInput);
-
-            reviewerInput.value = "";  // Resetowanie wartości po dodaniu recenzenta
-        });
-
-        document.getElementById('addEmail').addEventListener("click", function () {
-            const email = document.getElementById("inviteEmail").value.trim();
-            const emailList = document.getElementById("invitedEmails");
-            const noEmailsItem = document.getElementById("noEmails");
-
-            if (!email || !validateEmail(email)) {
-                alert("Wprowadź poprawny adres email.");
-                return;
-            }
-
-            // Sprawdzenie, czy email już jest dodany
-            if ([...emailList.children].some(li => li.dataset.email === email)) {
-                alert("Ten email został już dodany.");
-                return;
-            }
-
-            if (noEmailsItem) {
-                noEmailsItem.remove();
-            }
-
-            const newEmailItem = document.createElement("li");
-            newEmailItem.classList.add("reviewer-item");
-            newEmailItem.setAttribute("data-email", email);
-
-            const emailSpan = document.createElement("span");
-            emailSpan.textContent = email;
-            emailSpan.classList.add("reviewer-name");
-
-            const removeButton = document.createElement("button");
-            removeButton.textContent = "Usuń";
-            removeButton.classList.add("remove-reviewer");
-            removeButton.addEventListener("click", function () {
-                newEmailItem.remove();
-                hiddenEmailInput.remove();
-
-                if (emailList.children.length === 0) {
-                    emailList.appendChild(noEmailsItem);
-                }
-            });
-
-            newEmailItem.appendChild(emailSpan);
-            newEmailItem.appendChild(removeButton);
-            emailList.appendChild(newEmailItem);
-
-            const hiddenEmailInput = document.createElement("input");
-            hiddenEmailInput.type = "hidden";
-            hiddenEmailInput.name = "invited_emails[]";
-            hiddenEmailInput.value = email;
-            form.appendChild(hiddenEmailInput);
-
-            document.getElementById("inviteEmail").value = "";
-            inviteForm.style.display = "none";
-        });
-
-        document.getElementById('inviteReviewer').addEventListener('click', function () {
-            const inviteForm = document.getElementById("inviteForm");
-            inviteForm.style.display = inviteForm.style.display === "none" ? "block" : "none";
-        });
-
-        function validateForm() {
-            const assignedReviewers = document.querySelectorAll('input[name="assigned_reviewers[]"]');
-            const invitedEmails = document.querySelectorAll('input[name="invited_emails[]"]');
-            if (assignedReviewers.length === 0 && invitedEmails.length === 0) {
-                alert("Musisz dodać co najmniej jednego recenzenta lub zaprosić przez email.");
-                return false;
-            }
-            return true;
+document.addEventListener("DOMContentLoaded", function () {
+  new TomSelect("#questionSet", {
+    create: false,
+    maxItems: 1,
+    allowEmptyOption: true,
+    placeholder: "Wybierz zestaw pytań",
+    onChange: function() { this.blur(); },
+    onFocus: function() { this.clear(); }
+  });
+  const tsReviewer = new TomSelect("#reviewer", {
+    create: false,
+    maxItems: 1,
+    allowEmptyOption: true,
+    placeholder: "Wybierz recenzenta...",
+    onChange: function() { this.blur(); },
+    onFocus: function() { this.clear(); }
+  });
+  const reviewerSelect = document.getElementById("reviewer");
+  const assignedReviewersList = document.getElementById("assignedReviewers");
+  let noReviewersItem = document.getElementById("noReviewers");
+  const form = document.querySelector("form");
+  document.getElementById('addReviewer').addEventListener('click', function () {
+    const selectedOption = reviewerSelect.options[reviewerSelect.selectedIndex];
+    const selectedId = selectedOption.value;
+    const selectedText = selectedOption.textContent;
+    if (!selectedId) {
+      alert("Wybierz recenzenta z listy.");
+      return;
+    }
+    if ([...assignedReviewersList.children].some(li => li.dataset.id === selectedId)) {
+      alert("Recenzent już został dodany.");
+      return;
+    }
+    if (noReviewersItem) {
+      noReviewersItem.remove();
+      noReviewersItem = null;
+    }
+    const newReviewerItem = document.createElement("li");
+    newReviewerItem.classList.add("reviewer-item");
+    newReviewerItem.setAttribute("data-id", selectedId);
+    const reviewerNameSpan = document.createElement("span");
+    reviewerNameSpan.textContent = selectedText;
+    const removeButton = document.createElement("button");
+    removeButton.textContent = "Usuń";
+    removeButton.classList.add("remove-reviewer");
+    removeButton.addEventListener("click", function () {
+      newReviewerItem.remove();
+      hiddenInput.remove();
+      if (assignedReviewersList.children.length === 0) {
+        if (!noReviewersItem) {
+          noReviewersItem = document.createElement("li");
+          noReviewersItem.id = "noReviewers";
+          noReviewersItem.textContent = "Nie przypisano recenzentów";
+          assignedReviewersList.appendChild(noReviewersItem);
         }
-        
-        function validateEmail(email) {
-            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return re.test(email.toLowerCase());
-        }
-
-        function setMinDate() {
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(0, 0, 0, 0);
-
-            const minDate = tomorrow.toISOString().slice(0, 16); // Format 'YYYY-MM-DDTHH:mm'
-            document.getElementById("deadline_confirm").min = minDate;
-            document.getElementById("deadline_submit").min = minDate;
-        }
-
-        setMinDate();
+      }
     });
+    newReviewerItem.appendChild(reviewerNameSpan);
+    newReviewerItem.appendChild(removeButton);
+    assignedReviewersList.appendChild(newReviewerItem);
+    const hiddenInput = document.createElement("input");
+    hiddenInput.type = "hidden";
+    hiddenInput.name = "assigned_reviewers[]";
+    hiddenInput.value = selectedId;
+    form.appendChild(hiddenInput);
+    tsReviewer.clear();
+  });
+  const emailInput = document.getElementById("inviteEmail");
+  const emailList = document.getElementById("invitedEmails");
+  let noEmailsItem = document.getElementById("noEmails");
+  document.getElementById('addEmail').addEventListener('click', function () {
+    const email = emailInput.value.trim();
+    if (!email || !validateEmail(email)) {
+      alert("Wprowadź poprawny adres email.");
+      return;
+    }
+    if ([...emailList.children].some(li => li.dataset.email === email)) {
+      alert("Ten email został już dodany.");
+      return;
+    }
+    if (noEmailsItem) {
+      noEmailsItem.remove();
+      noEmailsItem = null;
+    }
+    const newEmailItem = document.createElement("li");
+    newEmailItem.classList.add("reviewer-item");
+    newEmailItem.setAttribute("data-email", email);
+    const emailSpan = document.createElement("span");
+    emailSpan.textContent = email;
+    const removeButton = document.createElement("button");
+    removeButton.textContent = "Usuń";
+    removeButton.classList.add("remove-reviewer");
+    removeButton.addEventListener("click", function () {
+      newEmailItem.remove();
+      hiddenEmailInput.remove();
+      if (emailList.children.length === 0) {
+        if (!noEmailsItem) {
+          noEmailsItem = document.createElement("li");
+          noEmailsItem.id = "noEmails";
+          noEmailsItem.textContent = "Nie podano emaili";
+          emailList.appendChild(noEmailsItem);
+        }
+      }
+    });
+    newEmailItem.appendChild(emailSpan);
+    newEmailItem.appendChild(removeButton);
+    emailList.appendChild(newEmailItem);
+    const hiddenEmailInput = document.createElement("input");
+    hiddenEmailInput.type = "hidden";
+    hiddenEmailInput.name = "invited_emails[]";
+    hiddenEmailInput.value = email;
+    form.appendChild(hiddenEmailInput);
+    emailInput.value = "";
+    document.getElementById("inviteForm").style.display = "none";
+  });
+  document.getElementById('inviteReviewer').addEventListener('click', function () {
+    const inviteForm = document.getElementById("inviteForm");
+    inviteForm.style.display = inviteForm.style.display === "none" ? "block" : "none";
+  });
+  function validateForm() {
+    const assignedReviewers = document.querySelectorAll('input[name="assigned_reviewers[]"]');
+    const invitedEmails = document.querySelectorAll('input[name="invited_emails[]"]');
+    if (assignedReviewers.length === 0 && invitedEmails.length === 0) {
+      alert("Musisz dodać co najmniej jednego recenzenta lub zaprosić przez email.");
+      return false;
+    }
+    return true;
+  }
+  function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email.toLowerCase());
+  }
+  function setMinDate() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
+    const minDate = tomorrow.toISOString().slice(0, 16);
+    document.getElementById("deadline_confirm").min = minDate;
+    document.getElementById("deadline_submit").min = minDate;
+  }
+  setMinDate();
+});
 </script>
+
