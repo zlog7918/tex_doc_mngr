@@ -49,7 +49,7 @@ def check_reviews_and_update_article_status(review_id: int) -> None:
         .where(Rv.Review.round_id == round_id)
     ).all()
 
-    all_reviewed = all(status.tuple() == Rv.ReviewStatusEnum.Reviewed for status in statuses)
+    all_reviewed = all(status.tuple()[0] == Rv.ReviewStatusEnum.Reviewed for status in statuses)
 
     if all_reviewed:
         article: Article|None = db.session.execute(
