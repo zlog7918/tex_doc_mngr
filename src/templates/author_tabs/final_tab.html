@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %} {{article.title}} {% endblock %}
+
+{% block body %}
+{% include 'toolbar.html' %}
+
+<style>
+    .main-content {
+        padding: 20px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .info-box {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        color: #155724;
+        font-size: 16px;
+    }
+
+    .comments-box {
+        background-color: #e9ecef;
+        border-left: 5px solid #28a745;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 5px;
+    }
+
+    .comments-box h3 {
+        margin-top: 0;
+        color: #1c582a;
+    }
+
+    .back-button {
+            margin-top: 20px;
+            padding: 10px 15px;
+            background-color: #5a3d90;
+            color: white;
+            border-radius: 5px;
+            text-decoration: none;
+            transition: background-color 0.3s ease;
+    }
+
+    .back-button:hover {
+        background-color: #4a2a70;
+    }
+</style>
+
+<div class="main-content">
+    <a href="{{ url_for('articles.show_articles') }}" class="back-button">Powrót do listy</a>
+    <h1>Artykuł {{ article.title }} został zaakceptowany do publikacji</h1>
+    <p><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
+
+    <div class="info-box">
+        Z radością informujemy, że Twój artykuł został pozytywnie oceniony przez recenzenta i zostanie opublikowany w czasopiśmie o tematyce zgodnej z jego treścią.
+    </div>
+
+    <div class="comments-box">
+        <h3>Uwagi recenzenta:</h3>
+        <ul>
+            <li>Artykuł prezentuje wysoki poziom merytoryczny.</li>
+            <li>Tematyka doskonale wpisuje się w profil czasopisma.</li>
+            <li>Drobne poprawki zostały uwzględnione w końcowej wersji.</li>
+        </ul>
+    </div>
+</div>
+
+{% endblock %}
