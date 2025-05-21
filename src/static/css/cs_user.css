@@ -1,0 +1,57 @@
+.container {
+    text-align: center;
+    padding: 20px;
+    max-width: 400px;
+    margin: auto;
+}
+
+.actions {
+    margin: 20px 0;
+}
+
+.primary-btn, .secondary-btn {
+    width: 100%;
+    padding: 10px;
+    margin-top: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.primary-btn {
+    background: #5a3d90;
+    color: white;
+}
+
+.secondary-btn {
+    background: #2d1053;
+    color: white;
+}
+
+.primary-btn:hover, .secondary-btn:hover {
+    opacity: 0.9;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    margin-top: 20px;
+}
+
+.form-group {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+label {
+    font-weight: bold;
+}

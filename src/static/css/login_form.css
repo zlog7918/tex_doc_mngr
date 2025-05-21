@@ -1,0 +1,40 @@
+
+body {
+    margin: 0;
+    padding: 0;
+}
+
+
+.container.gap {
+    gap: 50px;
+}
+
+
+.info {
+    max-width: 600px;
+    text-align: left;
+}
+
+.info h1 {
+    font-size: 48px; 
+    font-weight: 700;
+    color: #2d1053;
+    margin-bottom: 10px;
+}
+
+.info p {
+    font-size: 20px;
+    color: #333;
+    line-height: 1.5;
+}
+
+.forgot-password {
+    display: block;
+    text-align: right;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+    color: #5a3d90;
+}
+
+
+

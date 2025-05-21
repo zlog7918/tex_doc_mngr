@@ -1,0 +1,26 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+.confirmation-box h2 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #2d1053;
+    margin-bottom: 15px;
+    margin-top: 0;
+}
+
+.confirmation-box p {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+hr {
+    margin: 20px 0;
+    border: none;
+    height: 1px;
+    background: #ddd;
+}

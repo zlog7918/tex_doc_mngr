@@ -1,8 +1,13 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/pass_reset.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+{% endblock %}
+
 {% block body %}
 <div class="container">
-    <div class="reset-box">
+    <div class="box">
         <h2>Resetowanie hasła</h2>
         <p class="instructions">
             Podaj swój adres e-mail, a wyślemy Ci link do zresetowania hasła.
@@ -17,96 +22,6 @@
         <a href="/"><button class="secondary-btn">Powrót do logowania</button></a>
     </div>
 </div>
-
-<style>
-    /* Układ strony */
-    body {
-        font-family: 'Poppins', sans-serif;
-        background: #f9f9f9;
-        margin: 0;
-        padding: 0;
-    }
-
-    .container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        padding: 20px;
-    }
-
-    /* Formularz resetowania hasła */
-    .reset-box {
-        background: white;
-        padding: 30px;
-        border-radius: 10px;
-        box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-        width: 350px;
-        text-align: center;
-    }
-
-    /* Instrukcje */
-    .instructions {
-        font-size: 16px;
-        color: #555;
-        margin-bottom: 15px;
-    }
-
-    /* Formularz */
-    label {
-        font-weight: bold;
-        display: block;
-        margin-bottom: 5px;
-        font-size: 16px;
-        color: #2d1053;
-        text-align: left;
-    }
-
-    input {
-        width: 90%;
-        padding: 12px;
-        border-radius: 5px;
-        border: 1px solid #ccc;
-        font-size: 16px;
-        margin-bottom: 15px;
-    }
-
-    /* Przyciski */
-    .primary-btn {
-        width: 100%;
-        padding: 12px;
-        background: #5a3d90;
-        color: white;
-        font-size: 18px;
-        font-weight: 600;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: 0.3s;
-    }
-
-    .primary-btn:hover {
-        background: #4a1e87;
-    }
-
-    .secondary-btn {
-        width: 100%;
-        padding: 12px;
-        background: #2d1053;
-        color: white;
-        font-size: 16px;
-        font-weight: 600;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: 0.3s;
-    }
-
-    .secondary-btn:hover {
-        background: #1f083c;
-    }
-
-</style>
 
 <script>
     document.getElementById("change-password-btn").addEventListener("click", function () {

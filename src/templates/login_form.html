@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/login_form.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+{% endblock %}
+
 {% block body %}
 <div class="container">
     <div class="info">
@@ -8,7 +13,7 @@
     </div>
 
     <!-- LOGOWANIE -->
-    <div class="login-box" id="login-box">
+    <div class="box" id="login-box">
         <h2>Logowanie</h2>
         <form id="login-form">
             <label>Login:</label>
@@ -26,7 +31,7 @@
     </div>
 
     <!-- REJESTRACJA -->
-    <div class="register-box" id="register-box" style="display: none;">
+    <div class="box" id="register-box" style="display: none;">
         <h2>Rejestracja</h2>
         <form id="register-form">
             <label>Nick:</label>
@@ -47,111 +52,6 @@
         <button type="button" id="back-to-login" class="secondary-btn">Mam już konto</button>
     </div>
 </div>
-
-<style>
-    /* Globalne ustawienia */
-body {
-    font-family: 'Poppins', sans-serif;
-    background: #f9f9f9;
-    margin: 0;
-    padding: 0;
-}
-
-/* Układ kontenera */
-.container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    padding: 20px;
-    gap: 50px;
-}
-
-/* Sekcja z informacją */
-.info {
-    max-width: 600px;
-    text-align: left;
-}
-
-.info h1 {
-    font-size: 48px; /* Duży nagłówek */
-    font-weight: 700;
-    color: #2d1053; /* Kolor pasujący do przycisków */
-    margin-bottom: 10px;
-}
-
-.info p {
-    font-size: 20px;
-    color: #333;
-    line-height: 1.5;
-}
-
-/* Boxy logowania i rejestracji */
-.login-box, .register-box {
-    background: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
-    width: 350px;
-    text-align: center;
-}
-
-/* Formularze */
-input {
-    width: 90%;
-    margin-top: 10px;
-    margin-bottom: 10px;
-    padding: 12px;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    font-size: 16px;
-}
-
-/* Link do resetowania hasła */
-.forgot-password {
-    display: block;
-    text-align: right;
-    margin-bottom: 10px;
-    font-size: 0.9em;
-    color: #5a3d90;
-}
-
-/* Przyciski */
-button {
-    width: 100%;
-    margin-top: 10px;
-    padding: 12px;
-    border-radius: 5px;
-    border: none;
-    font-size: 16px;
-    cursor: pointer;
-}
-
-/* Główne przyciski akcji */
-.primary-btn {
-    background: #5a3d90;
-    color: white;
-    font-weight: 600;
-    transition: 0.3s;
-}
-
-.primary-btn:hover {
-    background: #4a1e87;
-}
-
-/* Drugorzędne przyciski */
-.secondary-btn {
-    background: #2d1053;
-    color: white;
-    font-weight: 600;
-    transition: 0.3s;
-}
-
-.secondary-btn:hover {
-    background: #1f083c;
-}
-
-</style>
 
 <script>
     document.getElementById("show-register").addEventListener("click", function () {

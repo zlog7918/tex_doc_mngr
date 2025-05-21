@@ -1,5 +1,5 @@
 body {
-    font-family: Arial, sans-serif;
+    font-family: Arial, sans-serif, 'Poppins';
     margin: 20px;
     background-color: #f9f9f9;
 }
@@ -25,3 +25,160 @@ body {
     font-weight: bold;
     color: #00796b;
 }
+
+.main-content {
+    padding: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+h1 {
+    font-size: 32px;
+    font-weight: bold;
+    color: black;
+    margin-bottom: 20px;
+}
+
+.tab {
+    display: inline-block;
+    margin-right: 5px;
+    padding: 12px 20px;
+    background-color: #ddd;
+    border-radius: 5px 5px 0 0;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.tab.active {
+    background-color: #5a3d90;
+    color: white;
+}
+
+.tab:hover {
+    background-color: #aaa;
+}
+
+.tab.active:hover {
+    background-color: #5a3d90; 
+    color: white; 
+}
+
+.tab-content {
+    padding: 20px;
+    border-radius: 0 0 5px 5px;
+    background-color: white;
+}
+
+.tabs-container {
+    border-bottom: 2px solid #ccc;
+    margin-bottom: -1px; 
+}
+
+.hidden {
+    display: none;
+}
+
+.author-info {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+.back-btn {
+    margin-top: 20px;
+    padding: 10px 15px;
+    background-color: #5a3d90;
+    color: white;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.back-btn:hover {
+    background-color: #4a2a70;
+}
+
+.above-table-text {
+    text-align: left;
+    font-size: 18px;
+    color: #2d1053;
+    margin-bottom: 10px;
+}
+
+table {
+    width: 100%; 
+    border-collapse: collapse;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+}
+
+th, td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background: #5a3d90;
+    color: white;
+    font-weight: 600;
+}
+
+tr:hover {
+    background: #f3f1f9;
+}
+
+.details-btn {
+    background: #5a3d90;
+    color: white;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 5px;
+    font-size: 14px;
+    transition: 0.3s;
+}
+
+.details-btn:hover {
+    background: #4a1e87;
+}
+
+.article-info {
+    font-size: 18px;
+    color: #2d1053;
+    margin-bottom: 10px;
+}
+
+.action-buttons {
+    margin-top: 30px;
+    display: flex;
+    gap: 10px;
+}
+
+.action-buttons button {
+    padding: 10px 20px;
+    border: none;
+    color: white;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.accept-btn {
+    background: #5a3d90;
+}
+
+.accept-btn:hover {
+    background: #4a1e87;
+}
+
+.reject-btn {
+    background: #a8a8a8;
+}
+
+.reject-btn:hover {
+    background: #8c8c8c;
+}
+
