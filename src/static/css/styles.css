@@ -46,6 +46,20 @@ h2 {
     margin-bottom: 20px;
 }
 
+h3, h4 {
+    color: #2c2c2c;
+    margin: 0 0 10px 0;
+    font-weight: 600;
+}
+
+h3 {
+    font-size: 18px;
+}
+
+h4 {
+    font-size: 17px;
+}
+
 .tab {
     display: inline-block;
     margin-right: 5px;
@@ -206,4 +220,5 @@ tr:hover {
 .reject-btn:hover {
     background: #8c8c8c;
 }
+
 

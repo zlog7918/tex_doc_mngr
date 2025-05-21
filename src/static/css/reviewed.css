@@ -1,0 +1,149 @@
+.review-section {
+    margin-bottom: 30px;
+    padding: 25px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.review-section:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.review-section h3 {
+    background-color: #5a3d90;
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.question-block {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f6ff;
+    border-left: 5px solid #5a3d90;
+    border-radius: 8px;
+}
+
+.response-text {
+    font-style: italic;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #444;
+    margin-bottom: 8px;
+}
+
+.comments-section {
+    margin-top: 50px;
+    padding: 25px;
+    background-color: #ffffff;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.comment-block {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #f4f2fa;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+}
+
+.comment-text, .suggestion-text {
+    background: #fff;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+    margin-bottom: 10px;
+    line-height: 1.5;
+}
+
+.edit-button {
+    background: #5a3d90;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.edit-button:hover {
+    background: #4a1e87;
+}
+
+.action-buttons {
+    margin-top: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.action-buttons button {
+    padding: 10px 24px;
+    border: none;
+    color: white;
+    font-size: 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.needs-correction-btn {
+    background: #a8a8a8;
+}
+
+.needs-correction-btn:hover {
+    background: #8c8c8c;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+}
+
+.modal textarea {
+    width: 95%;
+    height: 100px;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+}
+
+.modal .modal-buttons {
+    margin-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.reject-btn {
+    background: #d9534f;
+}
+
+.reject-btn:hover {
+    background: #c9302c;
+}
+

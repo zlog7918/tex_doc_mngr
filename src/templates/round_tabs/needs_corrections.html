@@ -1,40 +1,13 @@
 {% extends "base.html" %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/needs_corrections.css') }}">
+{% endblock %}
+
 {% block title %} {{article.title}} {% endblock %}
 
 {% block body %}
 {% include 'toolbar.html' %}
-
-<style>
-    .main-content {
-        padding: 20px;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    .info-box {
-            background-color: #fff3cd;
-            border: 1px solid #ffeeba;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            color: #856404;
-            font-size: 16px;
-        }
-
-    .comments-box {
-            background-color: #e9ecef;
-            border-left: 5px solid #5a3d90;
-            padding: 20px;
-            margin-bottom: 30px;
-            border-radius: 5px;
-        }
-
-    .comments-box h3 {
-        margin-top: 0;
-        color: #2d1053;
-    }
-</style>
 
 <div class="main-content">
     <h1>Artykuł {{ article.title }} wymaga poprawek.</h1>
