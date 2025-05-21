@@ -39,6 +39,13 @@ h1 {
     margin-bottom: 20px;
 }
 
+h2 {
+    font-size: 26px;
+    font-weight: bold;
+    color: #2d1053;
+    margin-bottom: 20px;
+}
+
 .tab {
     display: inline-block;
     margin-right: 5px;
