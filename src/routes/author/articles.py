@@ -1,9 +1,9 @@
 from flask import abort
 from db.db_base import log_err
+from flask import request, Blueprint
 from models.utils.Response import Response
 import controllers.article_controller as ac
 from models.article.Article import ArticleStatusEnum
-from flask import request, Blueprint, render_template
 from models.utils import decors as decor, utils as util
 from werkzeug.datastructures import ImmutableMultiDict, FileStorage
 
@@ -40,18 +40,18 @@ def article_details(article_id):
     elif article.status.stat == ArticleStatusEnum.Reviewed:
         tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.Rejected:
-        return render_template("author_tabs/rejected.html", article=article, article_content=article_content)
+        return util.render_base_template("author_tabs/rejected.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
         tab_content = util.render_base_template("author_tabs/needs_corrections.html", article=article)
     else:
         return Response.error_response(message="Not found").to_dict()
-    return render_template("article_author_base.html", tab_content=tab_content, article=article, data=data)
+    return util.render_base_template("article_author_base.html", tab_content=tab_content, article=article, data=data)
 
 @articles_bp.route('/upload-form')
 @decor.approve_required
 def upload_form():
     editors = ac.get_available_editors()
-    return render_template('uploading_article.html', editors = editors)
+    return util.render_base_template('uploading_article.html', editors = editors)
 
 def _get_files(req_files: ImmutableMultiDict[str, FileStorage], name: str) -> list[FileStorage]|Response:
     files=req_files.getlist(name)

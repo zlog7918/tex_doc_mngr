@@ -5,20 +5,22 @@ import zipfile
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 from typing import Any
-import services.user as au
 from zoneinfo import ZoneInfo
-import services.article as aq
+import services.user_service as au
 from db.db_base import log_activity
-from models.utils import utils as util
+import services.article_service as aq
+import services.question_service as sq
+from . import question_controller as qc
 from datetime import datetime, timedelta
+from models.article import Questions as Q
 from werkzeug.utils import secure_filename
 from models.utils.Response import Response
 from models.utils.utils import get_timestamp
 from latex.latex_service import LatexService
-from models.utils.decors import log_if_error
 from werkzeug.datastructures import FileStorage
 from models.utils.EnvConsts import envConsts as ec
 from models.article.Article import ArticleStatusEnum
+from models.utils import utils as util, decors as decor
 from models.utils.MessageException import MessageException
 
 
@@ -33,15 +35,14 @@ def _get_user_temp_dir() -> str:
     user_temp_path = os.path.join(ec.getTempDir(), user_id)
     return user_temp_path
 
-def is_valid_editor(editor_id: int) -> None:
-    try:
-        user = au.get_curr_user_or_err()
-        if editor_id == user.id:
-            raise MessageException('An author cannot assign themselves as an editor.')
-        if not au.get_user(editor_id):
-            raise MessageException('Editor does not exist.')
-    except Exception as e:
-        raise MessageException.from_exception(e, 'Not valid editor.')
+def is_valid_editor(editor_id: int) -> Response:
+    user = au.get_curr_user_or_err()
+    user0_id = au.get_usr0_or_err().id
+    if editor_id == user.id or  user.id == user0_id:
+        return Response.error_response(message="An author cannot assign themselves as an editor.")
+    elif not au.get_user(editor_id):
+        return Response.error_response(message="Editor does not exist.")
+    return Response.success_response()
 
 def is_author(article_id: int) -> None:
     try:
@@ -52,7 +53,7 @@ def is_author(article_id: int) -> None:
                 'You are not an author of this article.',
                 err=Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
-        if int(article.author_id) != int(user.get_id()):
+        if int(article.author_id) != int(user.id):
             raise MessageException(
                 'You are not an author of this article.',
                 err=Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
@@ -70,7 +71,7 @@ def is_editor(article_id: int) -> None:
                 err=Exception(f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
         
-        if int(article.editor_id) != int(user.get_id()):
+        if int(article.editor_id) != user.id:
             raise MessageException(
                 'You are not an author of this article.',
                 err=Exception(f'Edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
@@ -78,31 +79,33 @@ def is_editor(article_id: int) -> None:
     except Exception as e:
         raise MessageException.from_exception(e, 'You are not an editor of this article.')
 
-@log_if_error
+@decor.log_if_error
 def get_my_articles() -> Response:
     user=au.get_curr_user_or_err()
-    return Response.success_response(data = aq.get_my_articles(int(user.get_id())))
+    return Response.success_response(data = aq.get_my_articles(user.id))
 
-@log_if_error
+@decor.log_if_error
 def get_all_articles_by_editor() -> Response:
-    user_id = au.get_curr_user_or_err().get_id()
-    articles = aq.get_all_articles_by_editor_id(int(user_id))
+    user_id = au.get_curr_user_or_err().id
+    articles = aq.get_all_articles_by_editor_id(user_id)
     return Response.success_response(data=articles)
 
-@log_if_error
+@decor.log_if_error
 def get_article_data_as_editor(article_id: int) -> Response:
     is_editor(article_id)
     return get_article_data(article_id)
 
-@log_if_error
+@decor.log_if_error
 def get_article_data_as_author(article_id: int) -> Response:
     is_author(article_id)
     return get_article_data(article_id)
 
 def get_article_data(article_id: int) -> Response:
     article = aq.get_article(article_id)
-    latest_round = aq.get_latest_round(article_id)
-    if not article or not latest_round:
+    if not article:
+        raise MessageException('Nie znaleziono artykułu', Exception(f'Article with id: {article_id} not found'))
+    latest_round = aq.get_latest_round(article)
+    if not latest_round:
         raise MessageException('Nie znaleziono artykułu', Exception(f'Article with id: {article_id} not found'))
 
     article_content = latest_round.article_content
@@ -124,23 +127,23 @@ def get_article_data(article_id: int) -> Response:
 
     return Response.success_response(data=data)
 
-@log_if_error
+@decor.log_if_error
 def set_article_status_accept(article_id: int) -> Response:
     is_editor(article_id)
     return set_article_status(article_id, ArticleStatusEnum.Accepted)
 
-@log_if_error
+@decor.log_if_error
 def set_article_status_reject(article_id: int) -> Response:
     is_editor(article_id)
     return set_article_status(article_id, ArticleStatusEnum.Rejected)
 
-@log_if_error
+@decor.log_if_error
 def set_article_status_needs_corrections(article_id: int) -> Response:
     is_editor(article_id)
     zip_latest_round(article_id)
     return set_article_status(article_id, ArticleStatusEnum.NeedsCorrections)
 
-@log_if_error
+@decor.log_if_error
 def set_article_status_final(article_id: int) -> Response:
     is_editor(article_id)
     return set_article_status(article_id, ArticleStatusEnum.Final)
@@ -194,9 +197,10 @@ def zip_latest_round(article_id: int) -> Response:
 
     return Response.success_response()
 
-@log_if_error
-def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str, tz: str) -> Response:
+@decor.log_if_error
+def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str, tz: str) -> Response:
     is_editor(article_id)
+    lang_pkg=util.get_lang_pkg()
 
     if not assigned_reviewers:
         raise MessageException('No reviewers assigned')
@@ -220,20 +224,37 @@ def assign_reviewers(article_id: int, assigned_reviewers: list[str], deadline_co
         log_activity(False, {'err': f'Editor attepted to set reviewers to a non-existing article {article_id}.'})
         return Response.error_response(message = f"Article {article_id} does not exist")
 
+    question_groups_ids = {int(qg_id) for qg_id in question_set}
+    question_groups: list[Q.QuestionGroup]=[]
+    for qg_id in question_groups_ids:
+        qg=sq.get_question_group(qg_id)
+        if qg is None:
+            raise MessageException(lang_pkg.QuestionGroupNotFound.value)
+        question_groups.append(qg)
+    usr=au.get_curr_user_or_err()
+    if any(not qc._does_user_has_access(usr, qg.user_id) for qg in question_groups):
+        raise MessageException(lang_pkg.QuestionGroupNotFound.value, Exception(f'Illegal access attempt on guestion group'))
+
     assigned_reviewers_ids = {int(rid) for rid in assigned_reviewers}
 
+    message=f"Reviewer cannot be assigned to the article."
     if article.editor_id in assigned_reviewers_ids:
         log_activity(False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
-        return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+        return Response.error_response(message)
     
     if article.author_id in assigned_reviewers_ids:
         log_activity(False, {'err': f'Editor attempted to assign author {article.author_id} to the article {article_id}.'})
-        return Response.error_response(message = f"Reviewer cannot be assigned to the article.")
+        return Response.error_response(message)
+    
+    usr0=au.get_usr0_or_err()
+    if usr0.id in assigned_reviewers_ids:
+        log_activity(False, {'err': f'Editor attempted to assign default user {usr0.id} to the article {article_id}.'})
+        return Response.error_response(message)
 
-    for reviewer_id in assigned_reviewers_ids:
+    for reviewer_id in list(assigned_reviewers_ids):
         aq.add_reviewer_to_article(article_id, reviewer_id)
         
-    aq.set_deadlines(article_id = article_id, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
+    aq.set_deadlines_and_qs(article_id = article_id, question_set = question_groups, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
 
     aq.update_article_status(article, ArticleStatusEnum.InReview)
     return Response.success_response()
@@ -282,7 +303,7 @@ def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_
     file_url = f"{url_start}/{file.replace('.tex', '.pdf')}"
     return file_url
     
-@log_if_error
+@decor.log_if_error
 def upload_correction(article_id: int, files: list[FileStorage], main_tex_name: str|None=None) -> Response:
     # TODO: check if the function handles all possibilities
     article = aq.get_article(article_id)
@@ -309,8 +330,7 @@ def upload_correction(article_id: int, files: list[FileStorage], main_tex_name: 
         data={'pdf_url': file_url}
     )
 
-
-@log_if_error
+@decor.log_if_error
 def upload_file(title: str, editor_id: int, files: list[FileStorage], main_tex_name: str | None = None) -> Response:
     user = au.get_curr_user_or_err()
 
@@ -325,7 +345,7 @@ def upload_file(title: str, editor_id: int, files: list[FileStorage], main_tex_n
     file_url = _handle_files(prefix, f'{ec.getDocFilesDir()}/{sub_dir}', files, main_tex_name)
 
     filename = file_url.removeprefix(prefix)
-    aq.create_round(int(article.id), filename, 1)
+    aq.create_round(article.id, filename, 1)
 
     log_activity(True, {
         'message': f'Uploaded files: {files} with \"{main_tex_name}\" as main successfully',
@@ -338,7 +358,7 @@ def upload_file(title: str, editor_id: int, files: list[FileStorage], main_tex_n
     )
 
 
-@log_if_error
+@decor.log_if_error
 def generate_preview(files: list[FileStorage], main_tex_name: str | None = None) -> Response:
     user_temp_dir = _get_user_temp_dir()
     ret = _handle_files(f'/articles/temp-preview', user_temp_dir, files, main_tex_name)
@@ -346,12 +366,12 @@ def generate_preview(files: list[FileStorage], main_tex_name: str | None = None)
         'pdf_url': ret
     })
 
-@log_if_error
+@decor.log_if_error
 def temp_preview(filename: str) -> Response:
     filename=secure_filename(filename)
     user_temp_dir=_get_user_temp_dir()
     return LatexService.get_file(user_temp_dir, filename)
 
-@log_if_error
+@decor.log_if_error
 def get_uploaded_file(article_id: int, round_num: int, filename: str) -> Response:
     return LatexService.get_file(f'{ec.getDocFilesDir()}/{article_id}/{round_num}', filename)

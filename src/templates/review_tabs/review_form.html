@@ -128,15 +128,15 @@
                         {% for option in question["answers"] %}
                             <label class="option-label">
                                 <input type="radio"
-                                       id="option{{ option["id"] }}"
-                                       name="question_{{ question['id'] }}"
+                                       id="option_{{ question['group_id'] }}_{{ question['id'] }}_{{ option['id'] }}"
+                                       name="question_{{ question['group_id'] }}_{{ question['id'] }}"
                                        value="{{ option['answer'] }}"
                                        required>
                                 {{ option["answer"] }}
                             </label>
                         {% endfor %}
                     {% else %}
-                        <input type="text" name="question_{{ question['id'] }}" required>
+                        <input type="text" name="question_{{ question['group_id'] }}_{{ question['id'] }}" required>
                     {% endif %}
                 </div>
             {% endfor %}

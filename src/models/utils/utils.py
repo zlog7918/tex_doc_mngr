@@ -1,12 +1,13 @@
 import sys
 import os.path
 import traceback
+import typing as t
 from . import consts as c
 from tzlocal import get_localzone
-from flask import render_template, g
 from datetime import datetime, tzinfo
 from .EnvConsts import envConsts as ec
 from models.lang import LangEnum, LangBaseEx
+from flask import render_template, g, url_for
 from werkzeug.datastructures import ImmutableMultiDict
 from .FormNotFilledException import FormNotFilledException
 
@@ -23,12 +24,24 @@ def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> 
     for k in keys:
         v=form.get(k)
         if v is None:
-            raise FormNotFilledException(f'Formularz nie zawiera "{k}"')
+            lang_pkg=get_lang_pkg()
+            raise FormNotFilledException(lang_pkg.FormDoesNotContain.value(k))
         vs.append(v)
     return tuple(vs)
 
+P=t.ParamSpec('P')
+
+def _url_with_lang_for(_: t.Callable[t.Concatenate[str, P], str]=url_for) -> t.Callable[t.Concatenate[str, P], str]:
+    def func(endpoint: str, *args: P.args, **kwargs: P.kwargs) -> str:
+        path=url_for(endpoint, *args, **kwargs)
+        return url_for('choose_lang', lang=LangEnum(get_lang_pkg()), path=path.removeprefix('/'))
+    return func
+url_with_lang_for=_url_with_lang_for()
+del _url_with_lang_for
+
 def render_base_template(name: str, **kwargs: object) -> str:
-    return render_template(name, url_last_edit=url_last_edit, **kwargs)
+    global url_with_lang_for
+    return render_template(name, url_last_edit=url_last_edit, url_with_lang_for=url_with_lang_for, lang_pkg=get_lang_pkg(), **kwargs)
 
 def unified_timezone() -> tzinfo:
     return get_localzone()

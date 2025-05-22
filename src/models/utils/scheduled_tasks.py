@@ -1,7 +1,7 @@
 import time
 from typing import Callable
-import services.review as rs
 from flask.ctx import AppContext
+import services.review_service as rs
 from models.utils import utils as util
 from datetime import datetime, timedelta
 from apscheduler.triggers.cron import CronTrigger
