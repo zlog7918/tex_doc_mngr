@@ -64,6 +64,16 @@ def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
         .all()
     )
 
+def get_all_rejected_articles_by_editor_id(editor_id: int) -> list[Article]:
+    return (
+        Article.query
+        .join(ArticleStatus)
+        .where(and_(
+            Article.editor_id == editor_id,
+            ArticleStatus.stat == ArticleStatusEnum.Rejected
+        ))
+        .all()
+    )
 
 def is_article_rejected(article_id: int) -> bool:
     article_status = (

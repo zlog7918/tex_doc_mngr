@@ -28,6 +28,10 @@ def show_articles():
     else:
         return response.to_dict()
 
+@editor_articles_bp.route('/rejected_articles')
+@decor.approve_required
+def rejected_articles():
+    return ac.get_all_rejected_articles_by_editor().to_dict()
 
 @editor_articles_bp.route('/<int:article_id>')
 @decor.approve_required
@@ -61,7 +65,8 @@ def article_details(article_id: int):
         grouped_answers = response.data["grouped_answers"]
         tab_content = util.render_base_template("round_tabs/reviewed.html", article=article, grouped_answers=grouped_answers)
     elif article.status.stat == ArticleStatusEnum.Rejected:
-        return util.render_base_template("round_tabs/rejected.html")
+        print("here")
+        return util.render_base_template("round_tabs/rejected.html", article=article)
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
         return util.render_base_template("round_tabs/needs_corrections.html", article=article)
     elif article.status.stat == ArticleStatusEnum.Final:
