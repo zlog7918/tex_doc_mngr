@@ -96,8 +96,8 @@ def get_article_details_as_reviewer(article_id: int) -> Response:
                 article_content = f'<br><embed src="{f"/articles/uploads/{article.id}/{latest_round.round_number}/{article_content}"}" width="800" height="500" type="application/pdf">'
 
     elif review.status.stat == ReviewStatusEnum.AcceptedByReviewer:
-        questions = rs.get_questions_by_article(article_id)
-        if not questions:
+        tuple_questions = rs.get_questions_by_article(article)
+        if not tuple_questions:
             raise MessageException("No questions found for the article.")
         questions=[]
         for question in tuple_questions:
