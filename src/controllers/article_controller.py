@@ -250,7 +250,12 @@ def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_
     if not tex_file_path:
         raise MessageException('Nie znaleziono pliku .tex')
 
+    LatexService.is_safe_tex(tex_file_path, dir_path)
+
     file=os.path.basename(tex_file_path)
+    if not LatexService.is_safe_tex(tex_file_path, dir_path):
+        raise MessageException("Plik LaTeX zawiera niebezpieczne instrukcje.")
+
     if not LatexService.convert_tex_to_pdf(tex_file_path, dir_path):
         raise MessageException(lang_pkg.LaTeXtoPDFconvertError.value)
     file_url = f"{url_start}/{file.replace('.tex', '.pdf')}"
