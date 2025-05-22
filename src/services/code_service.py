@@ -1,15 +1,15 @@
+from db.db_base import db
 from sqlalchemy import and_
 from datetime import timedelta
 from models.usr.User import User
 from models.utils import utils as util
-from db.db_base import db, log_activity
 from models.utils.MessageException import MessageException
 from models.usr.Code import Code, CodePurpose, CodePurposeEnum
 
 def __get_purpose_or_err(purpose: CodePurposeEnum) -> CodePurpose:
     _purpose: CodePurpose|None=CodePurpose.query.where(CodePurpose.purpose==purpose).first()
     if _purpose is None:
-        raise ValueError(f'Podany powód: {purpose.name} nie istnieje w bazie danych')
+        raise ValueError(f'Given purpose: {purpose.name} does not exist in db')
     return _purpose
 
 def __gen_unique_code(user: User, purpose: CodePurpose) -> tuple[str, int]:
@@ -34,10 +34,10 @@ def __gen_unique_code(user: User, purpose: CodePurpose) -> tuple[str, int]:
             save_point.rollback()
             if 'unique constraint' not in str(e):
                 raise e.with_traceback(e.__traceback__) from None
-    raise RuntimeError(f'Nie można wylosowań unikalnego kodu pomimo {MAX_TRIES} losowań')
+    raise RuntimeError(f'Can not qenerate unique code inspite of {MAX_TRIES} tries')
 
 def gen_code(user: User, purpose: CodePurposeEnum) -> tuple[Code, int]:
-    message='Nie można wygenerować kodu'
+    message=util.get_lang_pkg().CodeNotGenerated.value
     try:
         Code.query.where(and_(
             Code.usr_id==user.id
@@ -68,7 +68,8 @@ def deactivate_code(code: Code) -> None:
         code.deactivate()
         db.session.flush()
     except Exception as e:
-        raise MessageException.from_exception(e, 'Nie można deaktywować kodu')
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.CodeNotDeactivated.value)
 
 def check_code(user: User, code_str: str, purpose: CodePurposeEnum, deactivate: bool=True) -> Code|None:
     try:
@@ -88,21 +89,19 @@ def check_code(user: User, code_str: str, purpose: CodePurposeEnum, deactivate: 
             deactivate_code(code)
         return code
     except Exception as e:
-        raise MessageException.from_exception(e, 'Nie można potwierdzić kodu')
+        lang_pkg=util.get_lang_pkg()
+        raise MessageException.from_exception(e, lang_pkg.CodeNotApproved.value)
 
 def active_codes(user: User, purpose: CodePurposeEnum) -> list[Code]|None:
-    try:
-        _purpose=__get_purpose_or_err(purpose)
-        codes=Code.query.where(
-            and_(
-                Code.usr_id==user.id
-                ,Code.purpose_id==_purpose.id
-                ,Code.is_active==True
-                ,Code.code_exp>util.get_timestamp()
-            )
-        ).all()
-        if codes is None:
-            return None
-        return codes
-    except Exception as e:
-        raise MessageException.from_exception(e, 'Nie można potwierdzić kodu')
+    _purpose=__get_purpose_or_err(purpose)
+    codes=Code.query.where(
+        and_(
+            Code.usr_id==user.id
+            ,Code.purpose_id==_purpose.id
+            ,Code.is_active==True
+            ,Code.code_exp>util.get_timestamp()
+        )
+    ).all()
+    if len(codes)==0:
+        return None
+    return codes

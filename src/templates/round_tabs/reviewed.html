@@ -1,45 +1,320 @@
-<div>
-    <h2>Reviews Summary</h2>
-    <ul>
-        {% for nick, answers in grouped_answers.items() %}
-            <li>
-                <strong>Reviewer: {{ nick }}</strong>
-                <ul>
-                    {% for answer in answers %}
-                        <li> <strong>{{ answer.question }}</strong><br>{{ answer.answer }}</li>
-                    {% endfor %}
-                </ul>
-            </li>
-        {% endfor %}
-    </ul>
-    <button id="needs_correction" onclick="setCorrectionStatus()">
-        Needs Correction
-    </button>
-    <button id="reject" onclick="rejectArticle()">Reject</button>
-</div>
-<script>
-    function setCorrectionStatus() {
-        fetch(`/editor/articles/{{ article.id }}/request_correction`, { method: "POST" })
-            .then(response => response.json())
-            .then(data => {
-                if (data['success']) {
-                    location.reload();
-                } else {
-                    alert("Unable to update the article status.");
-                }
-            });
+<style>
+    h1, h2 {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c2c2c;
+        margin-bottom: 20px;
+    }
+    
+    h3, h4 {
+        color: #2c2c2c;
+        margin: 0 0 10px 0;
+        font-weight: 600;
+    }
+    
+    h3 {
+        font-size: 18px;
+    }
+    
+    h4 {
+        font-size: 17px;
+    }
+    
+    .review-section {
+        margin-bottom: 30px;
+        padding: 25px;
+        background-color: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    .review-section:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    .review-section h3 {
+        background-color: #5a3d90;
+        color: #fff;
+        padding: 10px 16px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .question-block {
+        margin-bottom: 20px;
+        padding: 15px;
+        background-color: #f8f6ff;
+        border-left: 5px solid #5a3d90;
+        border-radius: 8px;
+    }
+    
+    .response-text {
+        font-style: italic;
+        font-size: 15px;
+        line-height: 1.6;
+        color: #444;
+        margin-bottom: 8px;
+    }
+    
+    .comments-section {
+        margin-top: 50px;
+        padding: 25px;
+        background-color: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+    
+    .comment-block {
+        margin-bottom: 30px;
+        padding: 20px;
+        background-color: #f4f2fa;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+    }
+    
+    .comment-text, .suggestion-text {
+        background: #fff;
+        padding: 12px 16px;
+        border-radius: 6px;
+        border: 1px solid #ccc;
+        font-size: 15px;
+        margin-bottom: 10px;
+        line-height: 1.5;
+    }
+    
+    .edit-button {
+        background: #5a3d90;
+        color: white;
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    .edit-button:hover {
+        background: #4a1e87;
+    }
+    
+    .action-buttons {
+        margin-top: 30px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .action-buttons button {
+        padding: 10px 24px;
+        border: none;
+        color: white;
+        font-size: 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    
+    .accept-btn {
+        background: #5a3d90;
+    }
+    
+    .accept-btn:hover {
+        background: #4a1e87;
+    }
+    
+    .reject-btn {
+        background: #d9534f;
     }
 
-    function rejectArticle() {
-        fetch(`/editor/articles/{{ article.id }}/reject`, { method: "POST" })
-            .then(response => response.json())
-            .then(data => {
-                if (data['success']) {
-                    alert("Article has been rejected.");
-                    location.reload();
-                } else {
-                    alert("Unable to reject the article.");
-                }
-            });
+    .reject-btn:hover {
+        background: #c9302c;
     }
-</script>
+
+    .needs-correction-btn {
+        background: #a8a8a8;
+    }
+
+    .needs-correction-btn:hover {
+        background: #8c8c8c;
+    }
+    
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+    
+    .modal-content {
+        background-color: #fff;
+        margin: 10% auto;
+        padding: 20px;
+        border-radius: 10px;
+        width: 90%;
+        max-width: 500px;
+    }
+    
+    .modal textarea {
+        width: 95%;
+        height: 100px;
+        padding: 10px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+    }
+    
+    .modal .modal-buttons {
+        margin-top: 10px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    </style>
+    
+    
+    <div>
+        <h2>Podsumowanie recenzji</h2>
+        <div>
+            {% for nick, answers in grouped_answers.items() %}
+                <div class="review-section">
+                    <h3>Recenzent: {{ nick }}</h3>
+                    {% set questions = {} %}
+                    {% for answer in answers %}
+                        {% set _ = questions.setdefault(answer.question, []).append(answer.answer) %}
+                    {% endfor %}
+                    {% for question, responses in questions.items() %}
+                        <div class="question-block">
+                            <h4>{{ question }}</h4>
+                            {% for response in responses %}
+                                <div class="response-text">{{ response }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+            
+        <div class="comments-section">
+            <h2>Komentarze dla autora</h2>
+    
+            <div class="comment-block">
+                <h3>Recenzent Jan Kowalski</h3>
+                <div class="comment-text">Zalecam doprecyzowanie metodologii w sekcji 2.2.</div>
+                <div class="suggestion-text" id="suggestion-1">Propozycja: "Zamiast ogólnikowego opisu, należy dodać konkretne źródła i techniki."</div>
+                <button class="edit-button" onclick="editSuggestion(1)">Edytuj propozycję</button>
+            </div>
+    
+            <div class="comment-block">
+                <h3>Recenzent Anna Nowak</h3>
+                <div class="comment-text">Podsumowanie wydaje się zbyt lakoniczne.</div>
+                <div class="suggestion-text" id="suggestion-2">Propozycja: "Rozszerzyć o kluczowe wnioski płynące z analizy wyników."</div>
+                <button class="edit-button" onclick="editSuggestion(2)">Edytuj propozycję</button>
+            </div>
+        </div>
+    
+        <div class="action-buttons">
+            <button class="accept-btn" id="accept" onclick="finishArticle()">Zaakceptuj</button>
+            <button class="needs-correction-btn" id="needs_correction" onclick="setCorrectionStatus()">Wymaga poprawek</button>
+            <button class="reject-btn" id="reject" onclick="rejectArticle()">Odrzuć</button>
+        </div>
+    </div>
+    
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3>Edytuj komentarz i propozycję</h3>
+            <label for="commentTextarea">Komentarz:</label>
+            <textarea id="commentTextarea"></textarea>
+            <label for="suggestionTextarea">Propozycja zmian:</label>
+            <textarea id="suggestionTextarea"></textarea>
+            <div class="modal-buttons">
+                <button class="edit-button" onclick="saveEdit()">Zapisz</button>
+                <button class="reject-btn" onclick="closeModal()">Anuluj</button>
+            </div>
+        </div>
+    </div>    
+    
+    <script>
+        let currentEditId = null;
+
+        function finishArticle() {
+            fetch('/editor/articles/{{article.id}}/finish', { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data['success']) {
+                        alert("Article successfully finished.");
+                        location.reload();
+                    } else {
+                        alert("Unable to finish the article.");
+                    }
+                });
+        }
+    
+        function setCorrectionStatus() {
+            fetch(`/editor/articles/{{ article.id }}/request_correction`, { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert("Nie udało się zaktualizować statusu artykułu.");
+                    }
+                });
+        }
+    
+        function rejectArticle() {
+            fetch(`/editor/articles/{{ article.id }}/reject`, { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Artykuł został odrzucony.");
+                        location.reload();
+                    } else {
+                        alert("Nie udało się odrzucić artykułu.");
+                    }
+                });
+        }
+    
+        function editSuggestion(id) {
+            currentEditId = id;
+            const commentText = document.querySelector(`#suggestion-${id}`).previousElementSibling.innerText.trim();
+            const suggestionText = document.getElementById(`suggestion-${id}`).innerText.replace("Propozycja: ", "").replace(/^"|"$/g, "").trim();
+
+            document.getElementById("commentTextarea").value = commentText;
+            document.getElementById("suggestionTextarea").value = suggestionText;
+            document.getElementById("editModal").style.display = "block";
+        }
+
+        function closeModal() {
+            document.getElementById("editModal").style.display = "none";
+        }
+    
+        function saveEdit() {
+            const newComment = document.getElementById("commentTextarea").value;
+            const newSuggestion = document.getElementById("suggestionTextarea").value;
+
+            if (currentEditId) {
+                const commentBlock = document.querySelector(`#suggestion-${currentEditId}`).previousElementSibling;
+                const suggestionBlock = document.getElementById(`suggestion-${currentEditId}`);
+
+                commentBlock.innerText = newComment;
+                suggestionBlock.innerText = `Propozycja: "${newSuggestion}"`;
+
+                closeModal();
+            }
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById("editModal");
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+    

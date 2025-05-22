@@ -16,7 +16,7 @@ class User(db.Model, UserMixin):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     nick: Mapped[str|None] = mapped_column(Text, nullable=True, unique=True)
     email: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
-    passwd: Mapped[str] = mapped_column(Text, nullable=False)
+    passwd: Mapped[str|None] = mapped_column(Text, nullable=True)
     do_after_cr: Mapped[bytes|None] = mapped_column(LargeBinary, nullable=True)
     approved: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
@@ -31,25 +31,20 @@ class User(db.Model, UserMixin):
         ), name='usr_created_has_nothing_in_after_created'),
     )
     def get_id(self) -> str:
-        return f"{self.id}"
+        return f'{self.id}'
     def get_nick(self) -> str:
         return '' if self.nick is None else self.nick
-    def get_email(self) -> str:
-        return self.email
-    def is_approved(self) -> bool:
-        return self.approved
-    def get_passwd(self) -> str:
-        return self.passwd
     
     def approve(self) -> None:
         self.approved=True
     def __pass(self, passwd: str) -> bytes:
         return self.__PEPPER__+bytes(passwd, 'utf8')
     def verify_pass(self, passwd: str) -> bool:
+        time.sleep(0.3+(random.random()/4))
         if (self.passwd is None):
+            time.sleep(0.3)
             return False
         ret=sha256_crypt.verify(self.__pass(passwd), self.passwd)
-        time.sleep(0.3+(random.random()/4))
         if not ret:
             time.sleep(0.3)
         return ret

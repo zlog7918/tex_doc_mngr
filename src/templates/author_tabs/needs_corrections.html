@@ -156,52 +156,89 @@
             const uploadForm = document.getElementById('uploadForm');
 
             fileInput.addEventListener('change', function() {
-                let filename = this.files[0]?.name || "";
-                if (filename.endsWith('.tex')) {
-                    previewBtn.style.display = "inline-block";
-                    sendBtn.style.display = "inline-block";
-                } else {
-                    previewBtn.style.display = "none";
-                    sendBtn.style.display = "none";
-                }
+                let showButtons = this.files.length > 0;
+                previewBtn.style.display = showButtons ? "inline-block" : "none";
+                sendBtn.style.display = showButtons ? "inline-block" : "none";
             });
 
             previewBtn.addEventListener("click", async function() {
                 let formData = new FormData();
-                formData.append("file", fileInput.files[0]);
+                for (const file of fileInput.files)
+                    formData.append("files", file);
+                if (mainTexDiv.style.display !== "none" && mainTexSelect.value)
+                    formData.append("mainTex", mainTexSelect.value);
 
-                fetch("/articles/generate-preview", {
+                let response = await fetch("/articles/generate-preview", {
                     method: "POST",
                     body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data["pdf_url"]) {
-                        window.open(data["pdf_url"], '_blank');
-                    } else {
-                        alert("Błąd: " + (data.message || "Nie udało się wygenerować podglądu"));
-                    }
                 });
+
+                const data = await response.json();
+
+                if (data.data?.need_main_tex && data.data?.tex_files) {
+                    mainTexSelect.innerHTML = '';
+                    data.data.tex_files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file;
+                        option.textContent = file;
+                        mainTexSelect.appendChild(option);
+                    });
+                    mainTexDiv.style.display = 'block';
+                    mainTexSelect.required = true;
+                    alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'View PDF'.");
+                } else if (data.data?.pdf_url) {
+                    window.open(data.data.pdf_url, '_blank');
+                } else {
+                    alert("❌ Błąd generowania podglądu: " + (data.message || "Nieznany błąd"));
+                }
             });
 
-            uploadForm.addEventListener("submit", async function(event) {
+            // Obsługa zapisu pliku
+            uploadForm.addEventListener("submit", async function (event) {
                 event.preventDefault();
+                const formData = new FormData();
+                for (const file of fileInput.files) {
+                    formData.append("files", file);
+                }
+                // Dodaj wybrany plik mainTex
+                if (mainTexDiv.style.display !== "none" && mainTexSelect.value) {
+                    formData.append("mainTex", mainTexSelect.value);
+                }
 
-                let formData = new FormData();
-                formData.append("file", fileInput.files[0]);
+                try {
+                    let response = await fetch("/articles/{{ article.id }}/upload-correction", {
+                        method: "POST",
+                        body: formData
+                    });
 
-                let response = await fetch("/articles/{{ article.id }}/upload-correction", {
-                    method: "POST",
-                    body: formData
-                });
+                    const data = await response.json();
 
-                let data = await response.json();
+                    // Jeśli backend prosi o wybór głównego pliku
+                    if (data.data?.need_main_tex && data.data?.tex_files) {
+                        mainTexSelect.innerHTML = '';
+                        data.data.tex_files.forEach(file => {
+                            const option = document.createElement('option');
+                            option.value = file;
+                            option.textContent = file;
+                            mainTexSelect.appendChild(option);
+                        });
+                        mainTexDiv.style.display = 'block';
+                        mainTexSelect.required = true;
 
-                if (data['success']) {
-                    alert("Korekta została dodana.");
-                    window.location.reload();
-                } else {
-                    alert("Błąd: " + (data.message || "Nieznany problem"));
+                        alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'Send'.");
+                        return;
+                    }
+
+                    // Przesłano i wygenerowano PDF
+                    if (!data.data?.need_main_tex && data.data?.pdf_url) {
+                        alert("✅ Plik przesłany pomyślnie!");
+                        window.location.href = window.location.href;
+                    } else {
+                        alert("❌ Błąd przesyłania: " + (data.message || "Nieznany błąd"));
+                    }
+
+                } catch (error) {
+                    alert("🚨 Błąd podczas przesyłania: " + error.message);
                 }
             });
         });

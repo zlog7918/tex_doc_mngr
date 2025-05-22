@@ -1,6 +1,17 @@
 <div>
     <h2>Assign Reviewers</h2>
-    <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post">
+    <form id="assign-form" method="post">
+        <input type="hidden" name="tz" value="">
+        <label>{{ lang_pkg.SelectQuestionSet.value }}</label>
+        <select name="question_group_input">
+            <option value="" selected>--{{ lang_pkg.QuestionGroup.value }}--</option>
+            {% for qg in question_groups %}
+                <option data-id="{{ qg.id }}">{{ qg.name }}</option>
+            {% endfor %}
+        </select><button type="button" id="add-question-group-btn" class="secondary-btn">{{ lang_pkg.AddQuestionGroup.value }}</button>
+        <h3>{{ lang_pkg.QuestionGroupList.value }}:</h3>
+        <ul id="question-group-list"></ul>
+
         <label for="reviewer">Select a reviewer:</label>
         <select id="reviewer" name="reviewer" required>
             {% for reviewer_id, reviewer_nick in reviewers.items() %}
@@ -15,44 +26,128 @@
         <div id="assignedReviewersInput" name="assigned_reviewers[]">
 
         <label for="deadline_confirm">Confirmation Deadline:</label>
-        <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required>
+        <input type="date" id="deadline_confirm" name="deadline_confirm" required><br>
 
         <label for="deadline_submit">Submission Deadline:</label>
-        <input type="datetime-local" id="deadline_submit" name="deadline_submit" required>
+        <input type="date" id="deadline_submit" name="deadline_submit" required>
 
         <button type="submit">Save</button>
     </form>
 
 </div>
 <script>
-    document.getElementById('addReviewer').addEventListener('click', function () {
-        const reviewerSelect = document.getElementById('reviewer');
-        const selectedReviewerId = reviewerSelect.value;
-        const selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
-        const assignedReviewersList = document.getElementById('assignedReviewers');
+    (function() {
+        let start, setMinDate;
 
-        if (!selectedReviewerId) {
-            alert('Please select a reviewer.');
-            return;
+        start=()=>{
+            setMinDate('deadline_confirm');
+            setMinDate('deadline_submit');
+
+            document.getElementsByName('tz')[0].value=Intl.DateTimeFormat().resolvedOptions().timeZone
+
+            let form=document.getElementById('assign-form');
+            let ul=document.getElementById('question-group-list');
+            let question_group_input=form['question_group_input'];
+            let add_question_btn=document.getElementById('add-question-group-btn');
+            let values_dict={};
+            add_question_btn.addEventListener('click', ()=>{
+                let option=question_group_input.selectedOptions[0];
+                if(option.value=='') {
+                    alert('{{ lang_pkg.QuestionGroupIsEmpty.value }}');
+                    return;
+                }
+                let option_id=option.dataset['id'];
+                if(option_id in values_dict) {
+                    alert('{{ lang_pkg.QuestionGroupDuplicate.value }}');
+                    return;
+                }
+                values_dict[option_id]=true;
+                let li=document.createElement('li');
+                let inp=document.createElement('input');
+                inp.type='hidden'; inp.name='question_group'; inp.value=option_id;
+                let span=document.createElement('span');
+                span.innerText=option.value;
+                option.parentElement.removeChild(option)
+                li.appendChild(inp);
+                li.appendChild(span);
+                ul.appendChild(li);
+            }, false);
+
+            document.getElementById('addReviewer').addEventListener('click', function () {
+                let reviewerSelect = document.getElementById('reviewer');
+                let selectedReviewerId = reviewerSelect.value;
+                let selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
+                let assignedReviewersList = document.getElementById('assignedReviewers');
+
+                if (!selectedReviewerId) {
+                    alert('Please select a reviewer.');
+                    return;
+                }
+
+                let existingItems = assignedReviewersList.querySelectorAll('li');
+                for (let item of existingItems) {
+                    if (item.getAttribute('data-id') === selectedReviewerId) {
+                        alert('Reviewer already added.');
+                        return;
+                    }
+                }
+
+                let newReviewerItem = document.createElement('li');
+                newReviewerItem.textContent = selectedReviewerName;
+                newReviewerItem.setAttribute('data-id', selectedReviewerId);
+                assignedReviewersList.appendChild(newReviewerItem);
+
+                let hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'assigned_reviewers[]';
+                hiddenInput.value = selectedReviewerId;
+                assignedReviewersList.appendChild(hiddenInput);
+            });
+
+            document.getElementById('deadline_confirm').addEventListener('change', function () {
+                let confirmDate = new Date(this.value);
+                if (!isNaN(confirmDate)) {
+                    let submitInput = document.getElementById('deadline_submit');
+
+                    date=new Date(this.value)
+                    date.setDate(date.getDate()+1);
+
+                    submitInput.min = date.toISOString().split('T', 1)[0];
+
+                    if (submitInput.value < submitInput.min) {
+                        submitInput.value = '';
+                    }
+                }
+            });
+            form.addEventListener('submit', async ev=>{
+                ev.preventDefault();
+                
+                let formData = new FormData(form);
+
+                let response = await fetch('{{ url_with_lang_for("editor_articles.assign_reviewers", article_id=article.id) }}', {
+                    method: "POST",
+                    body: formData
+                });
+
+                let data = await response.json();
+
+                if(data['success']) {
+                    window.location.href=window.location.href;
+                } else {
+                    alert(`Err: ${data['message']}`);
+                }
+                return false;
+            }, false);
         }
 
-        const existingItems = assignedReviewersList.querySelectorAll('li');
-        for (let item of existingItems) {
-            if (item.getAttribute('data-id') === selectedReviewerId) {
-                alert('Reviewer already added.');
-                return;
-            }
+        setMinDate=inputId=>{
+            let input=document.getElementById(inputId);
+            let today=new Date();
+            today.setDate(today.getDate() + 2);
+            let minDate=today.toISOString().split('T')[0];
+            input.min=minDate;
         }
 
-        const newReviewerItem = document.createElement('li');
-        newReviewerItem.textContent = selectedReviewerName;
-        newReviewerItem.setAttribute('data-id', selectedReviewerId);
-        assignedReviewersList.appendChild(newReviewerItem);
-
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = 'assigned_reviewers[]';
-        hiddenInput.value = selectedReviewerId;
-        assignedReviewersList.appendChild(hiddenInput);
-    });
+        start();
+    })();
 </script>
