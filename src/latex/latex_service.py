@@ -96,6 +96,16 @@ class LatexService:
 
     @staticmethod
     def is_safe_tex(tex_path: str, allowed_folder: str) -> bool:
+        seen_files = set()
+        LatexService._analyze_tex_recursive(tex_path, allowed_folder, seen_files)
+        return True
+
+    @staticmethod
+    def _analyze_tex_recursive(tex_path: str, allowed_folder: str, seen_files: set) -> None:
+        if tex_path in seen_files:
+            return
+        seen_files.add(tex_path)
+
         forbidden_patterns = [
             r"\\immediate\s*\\write18",
             r"\\csname\s*write18\s*\\endcsname",
@@ -128,21 +138,17 @@ class LatexService:
                     if re.search(pattern, stripped_line):
                         raise MessageException(f"❌ Podejrzana komenda shell w LaTeX: `{stripped_line}`")
 
-                openout_immediate_match = re.search(r"\\immediate\s*\\openout\s*\w+\s*=\s*\"?([^\"}]+)\"?", stripped_line)
-                if openout_immediate_match:
-                    file_path = openout_immediate_match.group(1).strip().replace('"', '')
+                openout_match = re.search(r"\\immediate\s*\\openout\s*\w+\s*=\s*\"?([^\"}]+)\"?", stripped_line)
+                if openout_match:
+                    file_path = openout_match.group(1).strip()
                     abs_path = os.path.abspath(os.path.join(os.path.dirname(tex_path), file_path))
-                    if "#" in file_path or "\\" in file_path or file_path.startswith(("~", ".", "..")):
-                        raise MessageException(f"❌ `\\openout` używa niedozwolonej ścieżki: `{file_path}`")
-                    for forbidden_path in dangerous_paths:
-                        if abs_path.startswith(forbidden_path):
-                            raise MessageException(f"❌ `\\openout` próbuje pisać do zabronionej ścieżki: `{file_path}`")
+                    if any(file_path.startswith(p) for p in ("~", ".", "..")) or any(fp in abs_path for fp in dangerous_paths):
+                        raise MessageException(f"❌ `\\openout` próbuje pisać do: `{file_path}`")
 
-                if "\\usepackage{minted}" in stripped_line:
-                    for full_line in content:
-                        if "\\inputminted" in full_line:
-                            raise MessageException(
-                                "❌ Użycie `inputminted` z pakietem `minted` wymaga `--shell-escape`, co jest niedozwolone!")
+                # if "\\usepackage{minted}" in stripped_line:
+                #     for full_line in content:
+                #         if "\\inputminted" in full_line:
+                #             raise MessageException("❌ `inputminted` z `minted` wymaga `--shell-escape`, co jest niedozwolone!")
 
                 write_match = re.search(r"\\write\s*\d+\s*\{(.+?)\}", stripped_line)
                 if write_match:
@@ -154,11 +160,12 @@ class LatexService:
                 input_match = re.search(r"\\(input|include)(?:\[[^\]]*\])?\{([^}]+)\}", stripped_line)
                 if input_match:
                     included_file = input_match.group(2).strip()
-                    abs_path = os.path.abspath(os.path.join(os.path.dirname(tex_path), included_file))
-                    if not abs_path.startswith(os.path.abspath(allowed_folder)):
-                        raise MessageException(f"❌ `\\{input_match.group(1)}` odwołuje się do pliku poza dozwoloną ścieżką: `{included_file}`")
-                    if not os.path.exists(abs_path):
-                        raise MessageException(f"❌ Plik dołączany przez `\\{input_match.group(1)}` nie istnieje: `{included_file}`")
+                    included_file_path = os.path.abspath(os.path.join(os.path.dirname(tex_path), included_file))
+                    if not included_file_path.startswith(os.path.abspath(allowed_folder)):
+                        raise MessageException(f"❌ `{input_match.group(1)}` odwołuje się do pliku poza dozwoloną ścieżką: `{included_file}`")
+                    if not os.path.exists(included_file_path):
+                        raise MessageException(f"❌ Plik `{included_file}` nie istnieje!")
+                    LatexService._analyze_tex_recursive(included_file_path, allowed_folder, seen_files)
 
                 lst_match = re.search(r"\\lstinputlisting(?:\[[^\]]*\])?\{([^}]+)\}", stripped_line)
                 if lst_match:
@@ -169,16 +176,27 @@ class LatexService:
                     if not os.path.exists(abs_path):
                         raise MessageException(f"❌ Plik `\\lstinputlisting` nie istnieje: `{listing_file}`")
 
-            full_text = "".join(content)
-            match = re.search(r"\\begin{document}(.*?)\\end{document}", full_text, re.DOTALL)
-            if not match:
-                raise MessageException("❌ Brakuje \\begin{document} lub \\end{document} – niepoprawny plik LaTeX.")
-            if not match.group(1).strip():
-                raise MessageException("❌ Dokument LaTeX jest pusty – brak treści do kompilacji.")
+                inputminted_match = re.search(r"\\inputminted(?:\[[^\]]*\])?\{[^}]+\}\{([^}]+)\}", stripped_line)
+                if inputminted_match:
+                    minted_file = inputminted_match.group(1).strip()
+                    abs_path = os.path.abspath(os.path.join(os.path.dirname(tex_path), minted_file))
 
-            return True
+                    if not abs_path.startswith(os.path.abspath(allowed_folder)):
+                        raise MessageException(f"❌ `\\inputminted` próbuje wczytać plik spoza folderu: `{minted_file}`")
+
+                    if not os.path.exists(abs_path):
+                        raise MessageException(f"❌ Plik `\\inputminted` nie istnieje: `{minted_file}`")
+
+            # tylko w pliku głównym (pierwszym) sprawdzamy, czy jest dokument
+            if len(seen_files) == 1:
+                full_text = "".join(content)
+                match = re.search(r"\\begin{document}(.*?)\\end{document}", full_text, re.DOTALL)
+                if not match:
+                    raise MessageException("❌ Brakuje \\begin{document} lub \\end{document} – niepoprawny plik LaTeX.")
+                if not match.group(1).strip():
+                    raise MessageException("❌ Dokument LaTeX jest pusty – brak treści do kompilacji.")
 
         except MessageException:
             raise
         except Exception as e:
-            raise MessageException(f"❌ Błąd analizy bezpieczeństwa LaTeX: {str(e)}")
+            raise MessageException(f"❌ Błąd analizy pliku `{os.path.basename(tex_path)}`: {str(e)}")
