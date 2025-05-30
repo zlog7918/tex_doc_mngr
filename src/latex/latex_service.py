@@ -134,9 +134,9 @@ class LatexService:
                     if re.search(pattern, stripped_line):
                         raise MessageException(f"❌ Niedozwolony kod LaTeX: `{stripped_line}`")
 
-                for pattern in shell_commands:
-                    if re.search(pattern, stripped_line):
-                        raise MessageException(f"❌ Podejrzana komenda shell w LaTeX: `{stripped_line}`")
+                # for pattern in shell_commands:
+                #     if re.search(pattern, stripped_line):
+                #         raise MessageException(f"❌ Podejrzana komenda shell w LaTeX: `{stripped_line}`")
 
                 openout_match = re.search(r"\\immediate\s*\\openout\s*\w+\s*=\s*\"?([^\"}]+)\"?", stripped_line)
                 if openout_match:
