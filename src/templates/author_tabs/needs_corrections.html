@@ -129,9 +129,14 @@
         <div class="comments-box">
             <h3>Komentarze recenzenta:</h3>
             <ul>
-                <li>Proszę poprawić formatowanie bibliografii zgodnie z wytycznymi.</li>
+                <!-- <li>Proszę poprawić formatowanie bibliografii zgodnie z wytycznymi.</li>
                 <li>Rozdział 2 zawiera powtórzenia – sugeruję skrócenie.</li>
-                <li>Wykres na stronie 5 jest nieczytelny – zalecam poprawienie opisu osi.</li>
+                <li>Wykres na stronie 5 jest nieczytelny – zalecam poprawienie opisu osi.</li> -->
+                {% for comment in feedback %}
+                    <li>{{ comment }}</li>
+                {% else %}
+                    <li>Brak komentarzy.</li>
+                {% endfor %}
             </ul>
         </div>
 

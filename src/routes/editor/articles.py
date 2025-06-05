@@ -68,7 +68,8 @@ def article_details(article_id: int):
         print("here")
         return util.render_base_template("round_tabs/rejected.html", article=article)
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
-        return util.render_base_template("round_tabs/needs_corrections.html", article=article)
+        feedback = response.data["feedback"]
+        return util.render_base_template("round_tabs/needs_corrections.html", article=article, feedback=feedback)
     elif article.status.stat == ArticleStatusEnum.Final:
         return util.render_base_template("round_tabs/final.html", article=article)
     else:
@@ -85,7 +86,9 @@ def accept_article(article_id: int):
 @editor_articles_bp.route('/<int:article_id>/request_correction', methods=['POST'])
 @decor.approve_required
 def request_article_correction(article_id: int):
-    return ac.set_article_status_needs_corrections(article_id).to_dict()
+    feedback = request.form.getlist('feedback')
+    print(f"1feed:{feedback}")
+    return ac.set_article_status_needs_corrections(article_id, feedback).to_dict()
 
 @editor_articles_bp.route('/<int:article_id>/finish', methods=['POST'])
 @decor.approve_required

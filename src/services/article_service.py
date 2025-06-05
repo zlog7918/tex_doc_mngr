@@ -92,6 +92,39 @@ def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
     else:
         return False
 
+def add_feedback(article_id: int, feedback: list[str]) -> None:
+    article = get_article(article_id)
+    if not article:
+        raise MessageException('Article not found.')
+    round = get_latest_round(article)
+    if not round:
+        raise MessageException('Round not found.')
+
+    for fb in feedback:
+        db.session.add(R.Feedback(**util.get_kwargs_for(R.Feedback, {
+            R.Feedback.round_id: round.id,
+            R.Feedback.content: fb,
+        })))
+    
+def get_feedback(article_id: int) -> list[str]|None:
+    article = get_article(article_id)
+    if not article:
+        raise MessageException('Article not found.')
+    round = get_latest_round(article)
+    if not round:
+        raise MessageException('Round not found.')
+
+    feedback_entries = (
+        db.session.query(R.Feedback)
+        .where(R.Feedback.round_id==round.id)
+        .all()
+    )
+
+    if not feedback_entries:
+        return None
+
+    return [fb.content for fb in feedback_entries]
+
 def get_latest_round(article: Article) -> R.Round | None:
     # return article.rounds[-1]
     return R.Round.query.where(R.Round.article_id==article.id).order_by(R.Round.round_number.desc()).first()

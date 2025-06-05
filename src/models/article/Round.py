@@ -20,6 +20,7 @@ class Round(db.Model):
     article: Mapped["Article"] = relationship(back_populates='rounds', order_by=round_number.asc())
     rqg: Mapped[list["RoundQuestionGroups"]] = relationship(back_populates='round')
     reviews: Mapped[list["Review"]] = relationship(back_populates='round')
+    feedbacks: Mapped[list["Feedback"]] = relationship(back_populates="round")
 
 class RoundQuestionGroups(db.Model):
     __tablename__ = 'round_question_groups'
@@ -32,3 +33,12 @@ class RoundQuestionGroups(db.Model):
     round: Mapped[Round] = relationship(back_populates='rqg')
 
     __table_args__ = (UniqueConstraint(question_group_id, round_id),)
+
+class Feedback(db.Model):
+    __tablename__ = 'feedbacks'
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    round_id: Mapped[int] = mapped_column(ForeignKey('rounds.id'), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+
+    round: Mapped["Round"] = relationship(back_populates="feedbacks")

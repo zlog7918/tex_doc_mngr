@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 import services.user_service as au
 from db.db_base import log_activity
 import services.article_service as aq
+import services.article_service as rs
 import services.question_service as sq
 from . import question_controller as qc
 from datetime import datetime, timedelta
@@ -127,6 +128,9 @@ def get_article_data(article_id: int) -> Response:
     elif article.status.stat == ArticleStatusEnum.Reviewed:
         data["grouped_answers"] = aq.get_answers_as_editor(article.id)
 
+    elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
+        data["feedback"] = aq.get_feedback(article.id)
+
     return Response.success_response(data=data)
 
 @decor.log_if_error
@@ -140,8 +144,11 @@ def set_article_status_reject(article_id: int) -> Response:
     return set_article_status(article_id, ArticleStatusEnum.Rejected)
 
 @decor.log_if_error
-def set_article_status_needs_corrections(article_id: int) -> Response:
+def set_article_status_needs_corrections(article_id: int, feedback: list[str]|None = None) -> Response:
     is_editor(article_id)
+    if feedback is not None:
+        print(f"feebacks: {feedback}")
+        aq.add_feedback(article_id, feedback)
     return set_article_status(article_id, ArticleStatusEnum.NeedsCorrections)
 
 @decor.log_if_error

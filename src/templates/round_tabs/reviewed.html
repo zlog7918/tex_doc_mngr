@@ -193,17 +193,25 @@
                         <div class="question-block">
                             <h4>{{ question }}</h4>
                             {% for response in responses %}
-                                <div class="response-text">{{ response }}</div>
+                                <div class="response-text">
+                                    <input type="checkbox" class="comment-checkbox" data-nick="{{ nick }}" data-question="{{ question }}" data-response="{{ response|e }}">
+                                    {{ response }}
+                                </div>    
+                                <!-- <div class="response-text">{{ response }}</div> -->
                             {% endfor %}
                         </div>
                     {% endfor %}
                 </div>
             {% endfor %}
         </div>
+        <div style="margin-top: 20px;">
+            <button class="edit-button" onclick="addSelectedComments()">Dodaj do komentarzy dla autora</button>
+        </div>
+        
             
         <div class="comments-section">
             <h2>Komentarze dla autora</h2>
-    
+            <div id="author-comments"></div>
             <div class="comment-block">
                 <h3>Recenzent Jan Kowalski</h3>
                 <div class="comment-text">Zalecam doprecyzowanie metodologii w sekcji 2.2.</div>
@@ -256,16 +264,42 @@
                 });
         }
     
+        // function setCorrectionStatus() {
+        //     fetch(`/editor/articles/{{ article.id }}/request_correction`, { method: "POST" })
+        //         .then(response => response.json())
+        //         .then(data => {
+        //             if (data.success) {
+        //                 location.reload();
+        //             } else {
+        //                 alert("Nie udało się zaktualizować statusu artykułu.");
+        //             }
+        //         });
+        // }
+
         function setCorrectionStatus() {
-            fetch(`/editor/articles/{{ article.id }}/request_correction`, { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert("Nie udało się zaktualizować statusu artykułu.");
-                    }
-                });
+            const suggestions = document.querySelectorAll('.suggestion-text');
+            const formData = new FormData();
+
+            suggestions.forEach(el => {
+                const text = el.textContent || "";
+                const proposalMatch = text.match(/^Propozycja:\s*"(.*)"$/);
+                if (proposalMatch) {
+                    formData.append('feedback', proposalMatch[1]);
+                }
+            });
+
+            fetch(`/editor/articles/{{ article.id }}/request_correction`, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert("Nie udało się zaktualizować statusu artykułu.");
+                }
+            });
         }
     
         function rejectArticle() {
@@ -281,6 +315,33 @@
                 });
         }
     
+        function addSelectedComments() {
+            const checkboxes = document.querySelectorAll('.comment-checkbox:checked');
+            const commentSection = document.getElementById('author-comments');
+
+            checkboxes.forEach((checkbox, index) => {
+                const nick = checkbox.getAttribute('data-nick');
+                const question = checkbox.getAttribute('data-question');
+                const response = checkbox.getAttribute('data-response');
+                const uniqueId = Date.now() + '_' + index;
+
+                const block = document.createElement('div');
+                block.className = 'comment-block';
+
+                block.innerHTML = `
+                    <h3>Recenzent ${nick}</h3>
+                    <div class="comment-text">${question}<br>${response}</div>
+                    <div class="suggestion-text" id="suggestion-${uniqueId}">Propozycja: "${response}"</div>
+                    <button class="edit-button" onclick="editSuggestion('${uniqueId}')">Edytuj propozycję</button>
+                `;
+
+                commentSection.appendChild(block);
+
+                // Odznacz checkbox
+                checkbox.checked = false;
+            });
+        }
+
         function editSuggestion(id) {
             currentEditId = id;
             const commentText = document.querySelector(`#suggestion-${id}`).previousElementSibling.innerText.trim();
