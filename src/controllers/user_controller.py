@@ -293,3 +293,51 @@ def pass_reset_new_pass(email: str, code: str, passwd: str, rep_passwd: str) -> 
     lang_pkg.PasswordDoesNotMeetCriteria.value,
     _code.code
   )
+
+@log_if_error
+def get_editors_and_not() -> Response:
+  return Response.success_response(
+    su.get_group_users_and_not(U.UserGroupEnum.Editor)
+  )
+@log_if_error
+def get_reviewers_and_not() -> Response:
+  return Response.success_response(
+    su.get_group_users_and_not(U.UserGroupEnum.Reviewer)
+  )
+
+@log_if_error
+def add_editor(id: int) -> Response:
+  message=util.get_lang_pkg().UserAlreadyEditor.value
+  user=su.get_user(id)
+  if user is None:
+    raise MessageException(
+      message,
+      err=Exception(f'Attempt to add non-existing user {id} to editor group')
+    )
+  if user.id==su.get_usr0_or_err().id:
+    raise MessageException(
+      message,
+      err=Exception(f'Attempt to add restricted user {id} to editor group')
+    )
+  if U.UserGroupEnum.Editor in {ug.group.group for ug in user.groups}:
+    raise MessageException(message)
+  su.add_user_to_group(user, U.UserGroupEnum.Editor)
+  return Response.success_response()
+@log_if_error
+def add_reviewer(id: int) -> Response:
+  message=util.get_lang_pkg().UserAlreadyReviewer.value
+  user=su.get_user(id)
+  if user is None:
+    raise MessageException(
+      message,
+      err=Exception(f'Attempt to add non-existing user {id} to editor group')
+    )
+  if user.id==su.get_usr0_or_err().id:
+    raise MessageException(
+      message,
+      err=Exception(f'Attempt to add restricted user {id} to editor group')
+    )
+  if U.UserGroupEnum.Reviewer in {ug.group.group for ug in user.groups}:
+    raise MessageException(message)
+  su.add_user_to_group(user, U.UserGroupEnum.Reviewer)
+  return Response.success_response()

@@ -1,3 +1,4 @@
+from models.usr import User as U
 import controllers.user_controller as uc
 from flask import Blueprint, redirect, request
 from models.utils.FormNotFilledException import FormNotFilledException
@@ -100,3 +101,41 @@ def accept_invitation_cr_user():
 @user_bp.route('/pass_reset_form')
 def pass_reset_form():
     return f_util.render_base_template('request_pass_change.html')
+
+@user_bp.route('/editors')
+@decor.group_required(U.UserGroupEnum.Editor)
+def show_editors():
+    response = uc.get_editors_and_not()
+    if response.success:
+        return f_util.render_base_template('users/editors.html', editors=response.data)
+    else:
+        return response.to_dict()
+
+@user_bp.route('/make_editor/<int:id>')
+@decor.group_required(U.UserGroupEnum.Editor)
+def add_editor(id: int):
+    return uc.add_editor(id).to_dict()
+
+# @user_bp.route('/demote_editor/<int:id>')
+# @decor.group_required(U.UserGroupEnum.Editor)
+# def del_editor(id: int):
+#     return uc.del_editor(id).to_dict()
+
+@user_bp.route('/reviewers')
+@decor.group_required(U.UserGroupEnum.Editor)
+def show_reviewers():
+    response = uc.get_reviewers_and_not()
+    if response.success:
+        return f_util.render_base_template('users/reviewers.html', reviewers=response.data)
+    else:
+        return response.to_dict()
+
+@user_bp.route('/make_reviewer/<int:id>')
+@decor.group_required(U.UserGroupEnum.Editor)
+def add_reviewer(id: int):
+    return uc.add_reviewer(id).to_dict()
+
+# @user_bp.route('/demote_reviewer/<int:id>')
+# @decor.group_required(U.UserGroupEnum.Editor)
+# def del_reviewer(id: int):
+#     return uc.del_reviewer(id).to_dict()

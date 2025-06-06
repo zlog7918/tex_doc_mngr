@@ -1,5 +1,6 @@
 import typing as t
 import pickle as pkl
+import sqlalchemy as sqla
 from db.db_base import db
 from models.usr import User as U
 from flask_login import current_user
@@ -141,3 +142,23 @@ def set_user_nick(user: U.User, nick: str) -> None:
     except Exception as e:
         lang_pkg=util.get_lang_pkg()
         raise MessageException.from_exception(e, lang_pkg.AccountNotCreated.value)
+
+def get_group_users_and_not(user_group: U.UserGroupEnum) -> tuple[list[U.User], list[U.User]]:
+    usr0=get_usr0_or_err()
+    users=db.session.execute(
+        sqla.select(U.User)
+            .where(U.User.id!=usr0.id)
+            .where(U.User.nick!=None)
+    ).scalars().all()
+    is_arr=[]
+    is_not_arr=[]
+    for user in users:
+        if user_group in {ug.group.group for ug in user.groups}:
+            is_arr.append(user)
+        else:
+            is_not_arr.append(user)
+    return is_arr, is_not_arr
+def get_editors_and_not() -> tuple[list[U.User], list[U.User]]:
+    return get_group_users_and_not(U.UserGroupEnum.Editor)
+def get_reviewers_and_not() -> tuple[list[U.User], list[U.User]]:
+    return get_group_users_and_not(U.UserGroupEnum.Reviewer)
