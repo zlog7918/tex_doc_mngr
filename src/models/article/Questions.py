@@ -1,8 +1,5 @@
 from db.db_base import db
 from .Review import Review
-from typing import TYPE_CHECKING
-if TYPE_CHECKING:
-    from .Review import Round
 from ..usr.User import User
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, UniqueConstraint, Integer, Boolean, Text

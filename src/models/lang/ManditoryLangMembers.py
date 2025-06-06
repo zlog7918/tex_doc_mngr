@@ -7,6 +7,7 @@ class LangBaseEx(Enum):
         member(lambda _:f'')
     UserNotLogged=\
     UserNotAdded=\
+    UserNotAddedToGroup=\
     User0NotFound=\
     QuestionAlreadyExists=\
     QuestionAnsAlreadyExists=\

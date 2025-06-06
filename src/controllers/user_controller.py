@@ -3,7 +3,7 @@ import time
 import random
 import pickle as pkl
 import email_validator as emailV
-from models.usr.User import User
+from models.usr import User as U
 from db.db_base import log_activity
 from models.utils import utils as util
 from models.mail.SendMail import SendMail
@@ -59,7 +59,7 @@ def validate_passwords(passwd: str, rep_passwd: str) -> None:
 
 def check_password(passwd: str) -> str:
   lang_pkg=util.get_lang_pkg()
-  user=User()
+  user=U.User()
   flag=user.ch_pass(passwd)
   if flag is False:
     raise MessageException(lang_pkg.AccountNotCreated.value)
@@ -80,13 +80,17 @@ def send_code_by_email(send_func: Callable[Concatenate[SendMail, str, P], None],
 def create_user(nick: str|None, email: str, passwd: str, do_after_create: bytes|None=None) -> None:
   if nick is not None:
     do_after_create=None
-  user = User(**util.get_kwargs_for(User, {
-    User.nick: nick,
-    User.email: email,
-    User.passwd: passwd,
-    User.do_after_cr: do_after_create,
+  user = U.User(**util.get_kwargs_for(U.User, {
+    U.User.nick: nick,
+    U.User.email: email,
+    U.User.passwd: passwd,
+    U.User.do_after_cr: do_after_create,
   }))
   su.add_user(user)
+  user=su.get_user_by_email(email)
+  if user is None:
+    raise MessageException(util.get_lang_pkg().UserNotAdded.value)
+  su.add_user_to_group(user, U.UserGroupEnum.Author)
 
 def validate_email(email: str) -> str:
   try:

@@ -1,8 +1,7 @@
-from flask_login import login_required
 import controllers.user_controller as uc
 from flask import Blueprint, redirect, request
-from models.utils import decors as decor, utils as util
 from models.utils.FormNotFilledException import FormNotFilledException
+from models.utils import decors as decor, utils as util, utils_flask as f_util
 
 user_bp = Blueprint('user', __name__)
 
@@ -38,11 +37,11 @@ def approve(email: str, code: str):
     ret=uc.approve(email, code)
     if ret.success:
         return redirect('/')
-    # return util.render_base_template('error.html', err=ret.to_dict())
+    # return f_util.render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
 
 @user_bp.route('/ch_pass', methods=['POST'])
-@login_required
+@decor.login_required
 @decor.handle_form_not_filled
 def ch_pass():
     t=util.get_from_form(request.form, (
@@ -74,16 +73,16 @@ def pass_reset_request():
 def pass_reset(email: str, code: str):
     ret=uc.pass_reset(email, code)
     if ret.success:
-        return util.render_base_template('pass_reset.html', email=email, code=ret.data)
-    # return util.render_base_template('error.html', err=ret.to_dict())
+        return f_util.render_base_template('pass_reset.html', email=email, code=ret.data)
+    # return f_util.render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
 
 @user_bp.route('/accept_inv/<email>/<code>', methods=['GET', 'POST'])
 def accept_invitation(email: str, code: str):
     ret=uc.accept_invite(email, code)
     if ret.success:
-        return util.render_base_template('cr_user.html', email=email, code=ret.data)
-    # return util.render_base_template('error.html', err=ret.to_dict())
+        return f_util.render_base_template('cr_user.html', email=email, code=ret.data)
+    # return f_util.render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
 
 @user_bp.route('/accept_inv', methods=['POST'])
@@ -100,4 +99,4 @@ def accept_invitation_cr_user():
 
 @user_bp.route('/pass_reset_form')
 def pass_reset_form():
-    return util.render_base_template('request_pass_change.html')
+    return f_util.render_base_template('request_pass_change.html')

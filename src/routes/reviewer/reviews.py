@@ -1,26 +1,27 @@
 from db.db_base import log_err
+from models.usr import User as U
 from models.utils.Response import Response
-import controllers.review_controller as rc
 from flask import Blueprint, request, redirect, url_for
-from models.utils import utils as util, decors as decor
 from models.article.Review import Review, ReviewStatusEnum
 from models.article.Article import Article, ArticleStatusEnum
+from models.utils import decors as decor, utils_flask as f_util
+from controllers import article_controller as ac, review_controller as rc
 
 review_bp = Blueprint("review", __name__)
 
 
 @review_bp.route("/")
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Reviewer)
 def list_reviewer_reviews():
     response = rc.get_articles_as_reviewer()
     if response.success:
         articles = response.data
-        return util.render_base_template("reviews.html", articles = articles)
+        return f_util.render_base_template("reviews.html", articles = articles)
     return response.to_dict()
 
 
 @review_bp.route("/<int:article_id>", methods=["GET"])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Reviewer)
 def article_details(article_id: int):
     response = rc.get_article_details_as_reviewer(article_id)
     if not response.success:
@@ -31,30 +32,30 @@ def article_details(article_id: int):
     review: Review = data["review"]
 
     if article.status.stat == ArticleStatusEnum.Rejected:
-        return util.render_base_template("round_tabs/rejected.html")
+        return f_util.render_base_template("round_tabs/rejected.html")
 
     if review.status.stat == ReviewStatusEnum.PendingConfirmation:
         article_content = data["article_content"]
-        return util.render_base_template("review_tabs/pending_confirmation.html", article=article, article_content=article_content, review_id=review.id)
+        return f_util.render_base_template("review_tabs/pending_confirmation.html", article=article, article_content=article_content, review_id=review.id)
     elif review.status.stat == ReviewStatusEnum.AcceptedByReviewer:
         questions = data["questions"]
-        return util.render_base_template("review_tabs/review_form.html", review_id=review.id, questions=questions)
+        return f_util.render_base_template("review_tabs/review_form.html", review_id=review.id, questions=questions)
     else:
         return Response.error_response(message = "Not implemented").to_dict()
 
 
 @review_bp.route("/<int:review_id>/accept", methods=["POST"])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Reviewer)
 def accept_article(review_id: int):
     return rc.set_review_status_accept(review_id).to_dict()
     
 @review_bp.route("/<int:review_id>/reject", methods=["POST"])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Reviewer)
 def reject_article(review_id: int):
     return rc.set_review_status_reject(review_id).to_dict()
     
 @review_bp.route('/<int:review_id>/submit_review', methods=['POST'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Reviewer)
 def submit_review(review_id: int):
     answers: dict[tuple[int, int], str] = {}
     try:
@@ -73,3 +74,11 @@ def submit_review(review_id: int):
         return redirect(url_for("review.list_reviewer_reviews"))
 
     return response.to_dict()
+
+@review_bp.route('/uploads/<int:article_id>/<int:round_num>/<filename>')
+@decor.group_required(U.UserGroupEnum.Reviewer)
+def uploaded_file(filename: str, article_id: int, round_num: int):
+    ret=ac.get_uploaded_file(article_id, round_num, filename, U.UserGroupEnum.Reviewer)
+    if ret.success:
+        return ret.data
+    return ret.to_dict()

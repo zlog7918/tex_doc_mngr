@@ -1,9 +1,9 @@
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from .Review import Review
+    from .Article import Article
 from db.db_base import db
-from .Article import Article
-from .Questions import Question, QuestionGroup
+from .Questions import QuestionGroup
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Integer, Date, Text, UniqueConstraint
 

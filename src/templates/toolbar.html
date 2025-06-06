@@ -1,11 +1,19 @@
 <div class="toolbar">
     <ul>
-        <li><a href="/">Start</a></li>
-        <li><a href="/articles">Moje artykuły</a></li>
-        <li><a href="/questions">Pytania</a></li>
-        <li><a href="/editor/articles">Widok edytora</a></li>
-        <li><a href="/reviews">Recenzje</a></li>
-        <li><a href="/articles/upload-form">Dodawanie artykułu</a></li>
+        <li><a href="{{ url_with_lang_for('index') }}">Start</a></li>
+        {% if user_group_enum.Author in curr_user_groups %}
+            <li><a href="{{ url_with_lang_for('articles.show_articles') }}">Moje artykuły</a></li>
+        {% endif %}
+        {% if user_group_enum.Editor in curr_user_groups %}
+            <li><a href="{{ url_with_lang_for('question.show_selection') }}">Pytania</a></li>
+            <li><a href="{{ url_with_lang_for('editor_articles.show_articles') }}">Widok edytora</a></li>
+        {% endif %}
+        {% if user_group_enum.Reviewer in curr_user_groups %}
+            <li><a href="{{ url_with_lang_for('review.list_reviewer_reviews') }}">Recenzje</a></li>
+        {% endif %}
+        {% if user_group_enum.Author in curr_user_groups %}
+            <li><a href="{{ url_with_lang_for('articles.upload_form') }}">Dodawanie artykułu</a></li>
+        {% endif %}
     </ul>
 </div>
 

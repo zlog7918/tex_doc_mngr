@@ -1,7 +1,5 @@
 from models.usr.User import User
 from db.db_base import log_activity
-from typing import Callable, Iterable
-from models.article import Questions as Q
 from models.utils.Response import Response
 from models.utils import utils as util, decors as decor
 from models.utils.MessageException import MessageException

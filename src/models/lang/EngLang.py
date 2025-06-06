@@ -7,6 +7,7 @@ class EngLang(LangBase):
     ConfirmAccountThroughCode=member(lambda time: f'Confirm account through code from email in: {time}min')
     UserNotLogged='No user logged'
     UserNotAdded='User is not added'
+    UserNotAddedToGroup='User is not added to group'
     User0NotFound='Manditory user is absent from system'
     QuestionNotFound='Question not found'
     QuestionGroupNotFound='Question group not found'

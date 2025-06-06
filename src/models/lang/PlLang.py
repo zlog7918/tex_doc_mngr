@@ -7,6 +7,7 @@ class PlLang(LangBase):
     ConfirmAccountThroughCode=member(lambda time: f'Proszę potwierdzić konto za pomocą kodu z mail\'a w: {time}min')
     UserNotLogged='Nie jest zalogowany żaden użytkownik'
     UserNotAdded='Użytkownik nie został dodany'
+    UserNotAddedToGroup='Użytkownik nie został dodany do grupy'
     User0NotFound='Konieczny użytkownik nie istnieje'
     QuestionNotFound='Pytanie nie zostało znalezione'
     QuestionGroupNotFound='Grupa pytań nie została znaleziona'

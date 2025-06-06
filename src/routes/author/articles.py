@@ -1,57 +1,58 @@
 from flask import abort
 from db.db_base import log_err
+from models.usr import User as U
 from flask import request, Blueprint
+from models.article import Article as A
 from models.utils.Response import Response
 import controllers.article_controller as ac
-from models.article.Article import ArticleStatusEnum
-from models.utils import decors as decor, utils as util
 from werkzeug.datastructures import ImmutableMultiDict, FileStorage
+from models.utils import decors as decor, utils as util, utils_flask as f_util
 
 articles_bp = Blueprint("articles", __name__)
 
 @articles_bp.route('/')
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Author)
 def show_articles():
     response = ac.get_my_articles()
     if response.success:
         articles = response.data
-        return util.render_base_template("my_articles.html", articles=articles)
+        return f_util.render_base_template("my_articles.html", articles=articles)
     return response.to_dict()
 
 @articles_bp.route('/<int:article_id>')
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Author)
 def article_details(article_id):
     response = ac.get_article_data_as_author(article_id)
 
     if not response.success:
         return response.to_dict()
 
-    article = response.data["article"]
+    article: A.Article = response.data["article"]
     article_content = response.data["article_content"]
 
     data = response.to_dict()
 
-    if article.status.stat == ArticleStatusEnum.Submitted:
-        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
-    elif article.status.stat == ArticleStatusEnum.Accepted:
-        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
-    elif article.status.stat == ArticleStatusEnum.InReview:
-        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
-    elif article.status.stat == ArticleStatusEnum.Reviewed:
-        tab_content = util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
-    elif article.status.stat == ArticleStatusEnum.Rejected:
-        return util.render_base_template("author_tabs/rejected.html", article=article, article_content=article_content)
-    elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
-        tab_content = util.render_base_template("author_tabs/needs_corrections.html", article=article)
+    if article.status.stat == A.ArticleStatusEnum.Submitted:
+        tab_content = f_util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
+    elif article.status.stat == A.ArticleStatusEnum.Accepted:
+        tab_content = f_util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
+    elif article.status.stat == A.ArticleStatusEnum.InReview:
+        tab_content = f_util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
+    elif article.status.stat == A.ArticleStatusEnum.Reviewed:
+        tab_content = f_util.render_base_template("author_tabs/default_tab.html", article=article, article_content=article_content)
+    elif article.status.stat == A.ArticleStatusEnum.Rejected:
+        return f_util.render_base_template("author_tabs/rejected.html", article=article, article_content=article_content)
+    elif article.status.stat == A.ArticleStatusEnum.NeedsCorrections:
+        tab_content = f_util.render_base_template("author_tabs/needs_corrections.html", article=article)
     else:
         return Response.error_response(message="Not found").to_dict()
-    return util.render_base_template("article_author_base.html", tab_content=tab_content, article=article, data=data)
+    return f_util.render_base_template("article_author_base.html", tab_content=tab_content, article=article, data=data)
 
 @articles_bp.route('/upload-form')
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Author)
 def upload_form():
     editors = ac.get_available_editors()
-    return util.render_base_template('uploading_article.html', editors = editors)
+    return f_util.render_base_template('uploading_article.html', editors = editors)
 
 def _get_files(req_files: ImmutableMultiDict[str, FileStorage], name: str) -> list[FileStorage]|Response:
     files=req_files.getlist(name)
@@ -63,7 +64,7 @@ def _get_files(req_files: ImmutableMultiDict[str, FileStorage], name: str) -> li
     return files
 
 @articles_bp.route('/upload', methods=['POST'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Author)
 @decor.handle_form_not_filled
 def upload_file():
     title, editor=util.get_from_form(request.form, (
@@ -83,7 +84,7 @@ def upload_file():
     return ac.upload_file(title, editor, files, main_tex_name).to_dict()
 
 @articles_bp.route('/<int:article_id>/upload-correction', methods=['POST'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Author)
 @decor.handle_form_not_filled
 def upload_correction(article_id: int):
     # TODO
@@ -97,14 +98,13 @@ def upload_correction(article_id: int):
 @articles_bp.route('/uploads/<int:article_id>/<int:round_num>/<filename>')
 @decor.approve_required
 def uploaded_file(filename: str, article_id: int, round_num: int):
-    ret=ac.get_uploaded_file(article_id, round_num, filename)
+    ret=ac.get_uploaded_file(article_id, round_num, filename, U.UserGroupEnum.Author)
     if ret.success:
         return ret.data
     return ret.to_dict()
 
-
 @articles_bp.route('/generate-preview', methods=['POST'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Author)
 def generate_preview():
     files=_get_files(request.files, 'files')
     if isinstance(files, Response):
@@ -114,12 +114,12 @@ def generate_preview():
     return ac.generate_preview(files, main_tex_name).to_dict()
 
 @articles_bp.route('/temp-preview/<filename>')
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Author)
 def temp_preview(filename: str):
     ret=ac.temp_preview(filename)
     if ret.success:
         return ret.data
-    # return ret.to_dict() ???
+    # return ret.to_dict() # ???
     abort(404)
 
 
