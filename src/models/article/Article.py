@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from .Round import Round
 from db.db_base import db
@@ -35,7 +35,7 @@ class Article(db.Model):
     author: Mapped[User] = relationship(foreign_keys=[author_id])
     editor: Mapped[User] = relationship(foreign_keys=[editor_id])
     status: Mapped[ArticleStatus] = relationship(foreign_keys=[status_id])
-    rounds: Mapped[list["Round"]] = relationship("Round", back_populates='article', cascade="all, delete-orphan")
+    rounds: Mapped[list["Round"]] = relationship(back_populates='article', cascade="all, delete-orphan")
 
     __table_args__ = (
         UniqueConstraint('author_id', 'title', name='uq_author_title'),
@@ -45,3 +45,10 @@ class Article(db.Model):
     def update_status(self, new_status: ArticleStatus) -> None:
         self.status_id = new_status.id
 
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "author": self.author.get_nick() if self.author else None,
+            "status": self.status.stat.value if self.status else None,
+        }

@@ -78,7 +78,7 @@
                             {{ review.reviewer.get_email() }}
                         {% endif %}
                     </td>
-                    <td>{{ review.status }}</td>
+                    <td>{{ review.status.stat.value }}</td>
                 </tr>
             {% endfor %}
         </tbody>

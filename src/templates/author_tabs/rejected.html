@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Odrzucony artykuł{% endblock %}
+{% block title %} {{article.title}} {% endblock %}
 
 {% block body %}
 {% include 'toolbar.html' %}
@@ -62,13 +62,11 @@
 </style>
 
 <div class="main-content">
-    <a href="{{ url_for('editor_articles.show_articles') }}" class="back-button">Powrót do listy</a>
-    <h1 class="status-header">Artykuł "{{article.title}}" został odrzucony</h1>
+    <a href="{{ url_for('articles.show_articles') }}" class="back-button">Powrót do listy</a>
+    <h1 class="status-header">Artykuł "{{article.title}}" został odrzucony.</h1>
     
     <div class="meta-info">
-        <p><strong>Autor:</strong> {{article.author.get_nick()}}</p>
         <p><strong>Data decyzji:</strong> 28.04.2025</p>
-        <p><strong>Autor decyzji:</strong> Edytor odrzucający</p>
     </div>
 
     <div class="comments-box">
@@ -79,8 +77,6 @@
             Rekomendujemy ponowne opracowanie treści z uwzględnieniem konkretnych danych i przypisów.
             ---
             Dane ponownie są hardcoded, zgodnie z rozmową z ostatniego spotkania. 
-            Wynika to z faktu, że nie można pobrać danych artykułu odrzuconego. 
-            Pobieranie tych informacji wymagałoby dodania czegoś w backendzie. 
         </div>
     </div>
 </div>

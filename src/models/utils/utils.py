@@ -1,13 +1,15 @@
 import sys
 import os.path
 import traceback
+import typing as t
 from . import consts as c
-from flask import render_template, g
-from datetime import datetime,timezone
+from tzlocal import get_localzone
+from datetime import datetime, tzinfo
 from .EnvConsts import envConsts as ec
 from models.lang import LangEnum, LangBaseEx
+from flask import render_template, g, url_for
+from werkzeug.datastructures import ImmutableMultiDict
 from .FormNotFilledException import FormNotFilledException
-from werkzeug.datastructures.structures import ImmutableMultiDict
 
 def url_last_edit(path: str) -> str:
     if not path.startswith('/static/'):
@@ -22,12 +24,30 @@ def get_from_form(form: ImmutableMultiDict[str, str], keys: tuple[str, ...]) -> 
     for k in keys:
         v=form.get(k)
         if v is None:
-            raise FormNotFilledException(f'Formularz nie zawiera "{k}"')
+            lang_pkg=get_lang_pkg()
+            raise FormNotFilledException(lang_pkg.FormDoesNotContain.value(k))
         vs.append(v)
     return tuple(vs)
 
+P=t.ParamSpec('P')
+
+def _url_with_lang_for(_: t.Callable[t.Concatenate[str, P], str]=url_for) -> t.Callable[t.Concatenate[str, P], str]:
+    def func(endpoint: str, *args: P.args, **kwargs: P.kwargs) -> str:
+        path=url_for(endpoint, *args, **kwargs)
+        return url_for('choose_lang', lang=LangEnum(get_lang_pkg()), path=path.removeprefix('/'))
+    return func
+url_with_lang_for=_url_with_lang_for()
+del _url_with_lang_for
+
 def render_base_template(name: str, **kwargs: object) -> str:
-    return render_template(name, url_last_edit=url_last_edit, **kwargs)
+    global url_with_lang_for
+    return render_template(name, url_last_edit=url_last_edit, url_with_lang_for=url_with_lang_for, lang_pkg=get_lang_pkg(), **kwargs)
+
+def unified_timezone() -> tzinfo:
+    return get_localzone()
+
+def get_timestamp(tz: tzinfo=unified_timezone()) -> datetime:
+    return datetime.now(tz)
 
 def set_lang_pkg(lang: LangEnum) -> None:
     g.lang=lang.value
@@ -35,14 +55,12 @@ def get_lang_pkg() -> type[LangBaseEx]:
     if 'lang' not in g:
         g.lang=LangEnum.en.value
     return g.lang
+
 def get_kwargs_for(t: type, d: dict[object, object]) -> dict[str, object]:
     return {str(k).removeprefix(f'{t.__name__}.'):i for k, i in d.items()}
 
 def get_traceback(err: Exception) -> str:
     return ''.join(traceback.format_tb(err.__traceback__))
-
-def get_timestamp() -> datetime:
-    return datetime.now(timezone.utc)
 
 def get_function(back: int=0) -> str:
     frame=sys._getframe(back+1) # type: ignore[private_access]

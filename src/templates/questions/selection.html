@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %} Lista Artykułów {% endblock %}
+{% block title %} {{ lang_pkg.OptionList.value }} {% endblock %}
 
 {% block body %}
     {% include 'toolbar.html' %}
@@ -68,28 +68,12 @@
     </style>
 
     <div class="main-content">
-        <h1>Lista Artykułów</h1>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Tytuł</th>
-                    <th>Autor</th>
-                    <th>Status</th>
-                    <th>Szczegóły</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for article in articles %}
-                    <tr>
-                        <td>{{ article.title }}</td>
-                        <td>{{ article.author.get_nick() }}</td>
-                        <td>{{ article.status.stat.name }}</td>
-                        <td><a href="{{ url_for('articles.article_details', article_id=article.id) }}" class="details-btn">Zobacz</a></td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <h1>{{ lang_pkg.OptionList.value }}</h1>
+        <ul>
+            <li><a href="{{ url_with_lang_for('question.show_questions') }}" class="details-btn">{{ lang_pkg.QuestionList.value }}</a></li>
+            <li><a href="{{ url_with_lang_for('question.show_question_groups') }}" class="details-btn">{{ lang_pkg.QuestionGroupList.value }}</a></li>
+        </ul>
+        <td></td>
     </div>
 
 {% endblock %}

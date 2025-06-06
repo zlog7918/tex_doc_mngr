@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %} Lista Artykułów {% endblock %}
+{% block title %} {{ lang_pkg.QuestionGroupList.value }} {% endblock %}
 
 {% block body %}
     {% include 'toolbar.html' %}
@@ -68,24 +68,22 @@
     </style>
 
     <div class="main-content">
-        <h1>Lista Artykułów</h1>
-
+        <h1>{{ lang_pkg.QuestionGroupList.value }}</h1>
+        <a href="{{ url_with_lang_for('question.question_group_add_v') }}" class="details-btn">+</a>
         <table>
             <thead>
                 <tr>
-                    <th>Tytuł</th>
-                    <th>Autor</th>
-                    <th>Status</th>
-                    <th>Szczegóły</th>
+                    <th>{{ lang_pkg.Author.value }}</th>
+                    <th>{{ lang_pkg.Name.value }}</th>
+                    <th>{{ lang_pkg.Details.value }}</th>
                 </tr>
             </thead>
             <tbody>
-                {% for article in articles %}
+                {% for question_group in question_groups %}
                     <tr>
-                        <td>{{ article.title }}</td>
-                        <td>{{ article.author.get_nick() }}</td>
-                        <td>{{ article.status.stat.name }}</td>
-                        <td><a href="{{ url_for('articles.article_details', article_id=article.id) }}" class="details-btn">Zobacz</a></td>
+                        <td>{{ question_group.user.get_nick() }}</td>
+                        <td>{{ question_group.name }}</td>
+                        <td><a href="{{ url_with_lang_for('question.question_group_details', question_group_id=question_group.id) }}" class="details-btn">{{ lang_pkg.Details.value }}</a></td>
                     </tr>
                 {% endfor %}
             </tbody>

@@ -279,12 +279,12 @@
             });
 
             document.getElementById("change-password-btn").addEventListener("click", function () {
-                ajax_json_call('/user/ch_pass', null, form).then(data => {
-                    if ('error' in data && data['error']) {
-                        alert(`Err: ${data['message']}`);
-                    } else {
+                ajax_json_call('{{ url_with_lang_for("user.ch_pass") }}', null, form).then(data => {
+                    if (data['success']) {
                         alert(`Poprawnie zmieniono hasło`);
                         window.location.reload();
+                    } else {
+                        alert(`Err: ${data['message']}`);
                     }
                 }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
             });

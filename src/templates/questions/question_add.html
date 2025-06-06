@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+
+{% block title %} {{ lang_pkg.QuestionAdding.value }} {% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
+    <div class="container">
+        <form id="question-add-form">
+            <div class="form-group">
+                <label>{{ lang_pkg.Question.value }}</label>
+                <input type="text" name="question" required>
+            </div>
+
+            <div class="form-group">
+                <label>{{ lang_pkg.IsABC.value }}</label>
+                <div>
+                    <label style="display:inline-block;"><input type="radio" name="is_abcd" value="y" required>Yes</label>
+                    <label style="display:inline-block;"><input type="radio" name="is_abcd" value="n" checked required>No</label>
+                </div>
+            </div>
+
+            <div class="form-group hidden" id="hidden_possible_answers">
+                <label>{{ lang_pkg.PossibleAnswers.value }}</label>
+                <input type="text" name="abcd_input"><button type="button" id="add-abcd-btn" class="secondary-btn">{{ lang_pkg.AddAnswer.value }}</button>
+                <ul id="possible_answers">
+                </ul>
+            </div>
+
+            <button type="button" id="add-question-btn" class="primary-btn">{{ lang_pkg.AddQuestion.value }}</button>
+        </form>
+    </div>
+
+    <style>
+        .container {
+            text-align: center;
+            padding: 20px;
+            max-width: 400px;
+            margin: auto;
+        }
+
+        .actions {
+            margin: 20px 0;
+        }
+
+        .primary-btn, .secondary-btn {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .primary-btn {
+            background: #5a3d90;
+            color: white;
+        }
+
+        .secondary-btn {
+            background: #2d1053;
+            color: white;
+        }
+
+        .primary-btn:hover, .secondary-btn:hover {
+            opacity: 0.9;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .form-group {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input {
+            width: 80%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            text-align: left;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+
+    <script>
+        (function(){
+            let start;
+            let form;
+            
+            start=()=>{
+                form=document.getElementById('question-add-form');
+                let hidden_possible_answers=document.getElementById('hidden_possible_answers');
+                let is_abcd_s=[...form['is_abcd']];
+                is_abcd_s.forEach(is_abcd=>{
+                    is_abcd.addEventListener('change', ()=>{
+                        if(is_abcd.value=='y')
+                        hidden_possible_answers.classList.remove('hidden');
+                    else
+                    hidden_possible_answers.classList.add('hidden');
+                    }, false);
+                });
+                let ul=document.getElementById('possible_answers');
+                let abcd_input=form['abcd_input'];
+                let add_abcd_btn=document.getElementById('add-abcd-btn');
+                let values_dict={};
+                add_abcd_btn.addEventListener('click', ()=>{
+                    if(abcd_input.value=='') {
+                        alert('{{ lang_pkg.PossibleAnswerIsEmpty.value }}');
+                        return;
+                    }
+                    if(abcd_input.value in values_dict) {
+                        alert('{{ lang_pkg.PossibleAnswerDuplicate.value }}');
+                        return;
+                    }
+                    values_dict[abcd_input.value]=true;
+                    let li=document.createElement('li');
+                    let inp=document.createElement('input');
+                    inp.type='hidden'; inp.name='abcd'; inp.value=abcd_input.value;
+                    let span=document.createElement('span');
+                    span.innerText=abcd_input.value;
+                    li.appendChild(inp);
+                    li.appendChild(span);
+                    ul.appendChild(li);
+                }, false);
+                document.getElementById('add-question-btn').addEventListener('click', ()=>{
+                    ajax_json_call('{{ url_with_lang_for("question.question_add") }}', null, form).then(data => {
+                        if(data['success']) {
+                            alert('{{ lang_pkg.CorrectQuestionCreation.value }}');
+                            window.location.href='{{ url_with_lang_for("question.show_questions") }}';
+                        } else {
+                            alert(`Err: ${data['message']}`);
+                        }
+                    }).catch(err => alert(`Err: ${JSON.stringify(err)}`));
+                }, false);
+            };
+
+            start();
+        })()
+    </script>
+{% endblock %}

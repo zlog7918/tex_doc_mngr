@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %} Lista Artykułów {% endblock %}
+{% block title %} {{ lang_pkg.QuestionList.value }} {% endblock %}
 
 {% block body %}
     {% include 'toolbar.html' %}
@@ -68,24 +68,24 @@
     </style>
 
     <div class="main-content">
-        <h1>Lista Artykułów</h1>
-
+        <h1>{{ lang_pkg.QuestionList.value }}</h1>
+        <a href="{{ url_with_lang_for('question.question_add_v') }}" class="details-btn">+</a>
         <table>
             <thead>
                 <tr>
-                    <th>Tytuł</th>
-                    <th>Autor</th>
-                    <th>Status</th>
-                    <th>Szczegóły</th>
+                    <th>{{ lang_pkg.Author.value }}</th>
+                    <th>{{ lang_pkg.Question.value }}</th>
+                    <th>ABCD?</th>
+                    <th>{{ lang_pkg.Details.value }}</th>
                 </tr>
             </thead>
             <tbody>
-                {% for article in articles %}
+                {% for question in questions %}
                     <tr>
-                        <td>{{ article.title }}</td>
-                        <td>{{ article.author.get_nick() }}</td>
-                        <td>{{ article.status.stat.name }}</td>
-                        <td><a href="{{ url_for('articles.article_details', article_id=article.id) }}" class="details-btn">Zobacz</a></td>
+                        <td>{{ question.user.get_nick() }}</td>
+                        <td>{{ question.question }}</td>
+                        <td>{{ lang_pkg.YES.value if question.is_abc else lang_pkg.NO.value }}</td>
+                        <td><a href="{{ url_with_lang_for('question.question_details', question_id=question.id) }}" class="details-btn">{{ lang_pkg.Details.value }}</a></td>
                     </tr>
                 {% endfor %}
             </tbody>

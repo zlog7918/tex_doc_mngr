@@ -192,15 +192,15 @@ ul {
 
 <div class="reviewers-section">
   <h2>Przypisz recenzentów</h2>
-  <div class="question-set-row" style="margin-bottom:1rem;">
-    <label for="questionSet">Wybierz zestaw pytań:</label>
-    <select id="questionSet" name="questionSet">
-      <option value=""> Wybierz zestaw pytań... </option>
-      <option value="setA">Zestaw A</option>
-      <option value="setB">Zestaw B</option>
-    </select>
-  </div>
   <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post" onsubmit="return validateForm()">
+    <input type="hidden" name="tz" value="">
+    <label>{{ lang_pkg.SelectQuestionSet.value }}</label>
+    <select name="question_group_input">
+        <option value="" selected>--{{ lang_pkg.QuestionGroup.value }}--</option>
+        {% for qg in question_groups %}
+            <option data-id="{{ qg.id }}">{{ qg.name }}</option>
+        {% endfor %}
+    </select><button type="button" id="add-question-group-btn" class="secondary-btn">{{ lang_pkg.AddQuestionGroup.value }}</button>
     <label for="reviewer">Wybierz recenzenta:</label>
     <select id="reviewer" name="reviewer" placeholder="Wybierz recenzenta...">
       <option value="" disabled selected> Wybierz recenzenta... </option>
@@ -237,6 +237,36 @@ ul {
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  document.getElementsByName('tz')[0].value=Intl.DateTimeFormat().resolvedOptions().timeZone;
+  (function(){
+    let form=document.getElementById('assign-form');
+    let ul=document.getElementById('question-group-list');
+    let question_group_input=form['question_group_input'];
+    let add_question_btn=document.getElementById('add-question-group-btn');
+    let values_dict={};
+    add_question_btn.addEventListener('click', ()=>{
+      let option=question_group_input.selectedOptions[0];
+      if(option.value=='') {
+        alert('{{ lang_pkg.QuestionGroupIsEmpty.value }}');
+        return;
+      }
+      let option_id=option.dataset['id'];
+      if(option_id in values_dict) {
+        alert('{{ lang_pkg.QuestionGroupDuplicate.value }}');
+        return;
+      }
+      values_dict[option_id]=true;
+      let li=document.createElement('li');
+      let inp=document.createElement('input');
+      inp.type='hidden'; inp.name='question_group'; inp.value=option_id;
+      let span=document.createElement('span');
+      span.innerText=option.value;
+      option.parentElement.removeChild(option)
+      li.appendChild(inp);
+      li.appendChild(span);
+      ul.appendChild(li);
+    }, false);
+  })();
   new TomSelect("#questionSet", {
     create: false,
     maxItems: 1,
