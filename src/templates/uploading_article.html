@@ -86,6 +86,51 @@
                 padding: 10px 20px;
             }
         }
+
+        #successModal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        #successModal > div {
+            background: #fff;
+            border-radius: 10px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+
+        #successModal img {
+            max-width: 100px;
+            margin-bottom: 20px;
+        }
+
+        #modalOkBtn {
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: #5a3d90;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        #modalOkBtn:hover {
+            background: #4a1e87;
+        }
+
     </style>
 
     <div class="main-content">
@@ -125,6 +170,14 @@
         </form>
     </div>
 
+    <div id="successModal">
+      <div>
+        <img src="{{ url_for('static', filename='images/success.svg') }}" alt="Sukces">
+        <h2>Artykuł poprawnie przesłany. Informacje o statusie artykułu dostępne w zakładce <em>Moje artykuły</em></h2>
+        <button id="modalOkBtn">OK</button>
+      </div>
+    </div>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const fileInput = document.getElementById('file');
@@ -135,6 +188,9 @@
             const uploadForm = document.getElementById('uploadForm');
             const mainTexDiv = document.getElementById('mainTexSelector');
             const mainTexSelect = document.getElementById('mainTex');
+
+            const modal = document.getElementById('successModal');
+            const modalOkBtn = document.getElementById('modalOkBtn');
 
             function updateFileList() {
                 const label = document.querySelector('label[for="file"]');
@@ -180,9 +236,10 @@
                 previewBtn.style.display = showButtons ? "inline-block" : "none";
                 sendBtn.style.display = showButtons ? "inline-block" : "none";
 
+                fileList.style.display = selectedFiles.length > 0 ? 'block' : 'none';
+
                 const hasTexFile = selectedFiles.some(file => file.name.endsWith('.tex'));
 
-                // Jeśli mainTexDiv JEST widoczny (czyli user już raz go uruchomił)
                 if (mainTexDiv.style.display !== 'none') {
                     mainTexSelect.innerHTML = '';
 
@@ -196,7 +253,6 @@
                                 mainTexSelect.appendChild(option);
                             });
 
-                        // Resetuj wartość, jeśli obecnie wybrany plik nie istnieje
                         const availableTexNames = Array.from(mainTexSelect.options).map(opt => opt.value);
                         if (!availableTexNames.includes(mainTexSelect.value)) {
                             mainTexSelect.value = '';
@@ -208,7 +264,6 @@
                         mainTexSelect.required = false;
                     }
                 }
-
             }
 
             let selectedFiles = [];
@@ -248,15 +303,14 @@
                     });
                     mainTexDiv.style.display = 'block';
                     mainTexSelect.required = true;
-                    alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'View PDF'.");
+                    alert("Wybierz główny plik .tex z listy i kliknij ponownie 'View PDF'.");
                 } else if (data.data?.pdf_url) {
                     window.open(data.data.pdf_url, '_blank');
                 } else {
-                    alert("❌ Błąd generowania podglądu: " + (data.message || "Nieznany błąd"));
+                    alert("Błąd generowania podglądu: " + (data.message || "Nieznany błąd"));
                 }
             });
 
-            // Obsługa zapisu pliku
             uploadForm.addEventListener("submit", async function (event) {
                 event.preventDefault();
 
@@ -279,7 +333,6 @@
                 formData.append("title", title.value);
                 formData.append("editor", editorId);
 
-                // Dodaj wybrany plik mainTex
                 if (mainTexDiv.style.display !== "none" && mainTexSelect.value) {
                     formData.append("mainTex", mainTexSelect.value);
                 }
@@ -292,7 +345,6 @@
 
                     const data = await response.json();
 
-                    // Jeśli backend prosi o wybór głównego pliku
                     if (data.data?.need_main_tex && data.data?.tex_files) {
                         mainTexSelect.innerHTML = '';
                         data.data.tex_files.forEach(file => {
@@ -304,27 +356,30 @@
                         mainTexDiv.style.display = 'block';
                         mainTexSelect.required = true;
 
-                        alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'Send'.");
+                        alert("Wybierz główny plik .tex z listy i kliknij ponownie 'Send'.");
                         return;
                     }
 
-                    // Przesłano i wygenerowano PDF
                     if (!data.data?.need_main_tex && data.data?.pdf_url) {
-                        alert("✅ Plik przesłany pomyślnie!");
-                        window.location.href = window.location.href;
+                        modal.style.display = "flex";
+
+                        modalOkBtn.onclick = function() {
+                            modal.style.display = "none";
+                            window.location.href = "{{ url_for('articles.show_articles') }}"; 
+                        };
+
                         selectedFiles = [];
-                        updateFileList(); // też aktualizuje UI
+                        updateFileList();
                         mainTexSelect.innerHTML = '';
                         mainTexDiv.style.display = 'none';
-                        fileInput.value = ''; // czyści input plików
+                        fileInput.value = '';
 
                     } else {
-
-                        alert("❌ Błąd przesyłania: " + (data.message || "Nieznany błąd"));
+                        alert("Błąd przesyłania: " + (data.message || "Nieznany błąd"));
                     }
 
                 } catch (error) {
-                    alert("🚨 Błąd podczas przesyłania: " + error.message);
+                    alert("Błąd podczas przesyłania: " + error.message);
                 }
             });
         });
