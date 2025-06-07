@@ -199,8 +199,8 @@ ul {
 
 <div class="reviewers-section">
   <h2>Przypisz recenzentów</h2>
-  
-  <div class="question-set-row" style="margin-bottom:1rem;">
+  <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post" onsubmit="return validateForm()">
+    <input type="hidden" name="tz" value="">
     <label for="question_group_input">Zestawy pytań:</label>
     <select name="question_group_input" id="question_group_input">
       <option value="" disabled selected>Wybierz zestaw pytań...</option>
@@ -209,13 +209,12 @@ ul {
       {% endfor %}
     </select>
     <button type="button" id="add-question-group-btn">Dodaj zestaw</button>
-    <ul id="question-group-list"></ul>
-  </div>
-
-  <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post" onsubmit="return validateForm()">
+    <ul id="chosen-question-groups" class="reviewer-list">
+      <li id="noQuestionGroups" class="placeholder-item">Nie wybrano zestawów pytań</li>
+    </ul>
     <label for="reviewer">Wybierz recenzenta:</label>
     <select id="reviewer" name="reviewer" placeholder="Wybierz recenzenta...">
-      <option value="" disabled selected> Wybierz recenzenta... </option>
+      <option value="" disabled selected>Wybierz recenzenta...</option>
       {% for reviewer_id, reviewer_nick in reviewers.items() %}
         <option value="{{ reviewer_id }}">{{ reviewer_nick }}</option>
       {% endfor %}
@@ -224,18 +223,17 @@ ul {
     <button type="button" id="inviteReviewer" class="link-button">lub zaproś przez email</button>
     <div id="inviteForm" class="hidden" style="margin-top: 10px;">
       <label for="inviteReviewer">Zaproś do recenzowania przez email:</label>
-      <label for="inviteEmail">Email recenzenta:</label>
       <input type="email" id="inviteEmail" name="inviteEmail" placeholder="Podaj email" />
       <button type="button" id="addEmail">Dodaj email</button>
     </div>
-    <h3>Wybrane zestawy pytań:</h3>
-    <ul id="chosen-question-groups" class="reviewer-list">
-      <li id="noQuestionGroups" class="placeholder-item">Nie wybrano zestawów pytań</li>
-    </ul>
     <h3>Przypisani recenzenci:</h3>
-    <ul id="assignedReviewers"><li id="noReviewers" class="placeholder-item">Nie przypisano recenzentów</li></ul>
+    <ul id="assignedReviewers" class="reviewer-list">
+      <li id="noReviewers" class="placeholder-item">Nie przypisano recenzentów</li>
+    </ul>
     <h3>Lista zapraszanych emaili:</h3>
-    <ul id="invitedEmails"><li id="noEmails" class="placeholder-item">Nie podano emaili</li></ul>
+    <ul id="invitedEmails" class="reviewer-list">
+      <li id="noEmails" class="placeholder-item">Nie podano emaili</li>
+    </ul>
     <div class="deadline-row">
       <div>
         <label for="deadline_confirm">Deadline potwierdzenia:</label>
@@ -253,51 +251,63 @@ ul {
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  // Corrected ID for TomSelect initialization
+  const tzField = document.getElementsByName('tz')[0];
+  if (tzField) {
+    tzField.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
+
   new TomSelect("#question_group_input", {
     create: false,
     maxItems: 1,
     allowEmptyOption: true,
     placeholder: "Wybierz zestaw pytań...",
     render: {
-      option: function(data, escape) {
+      option: function (data, escape) {
         if (!data.value) {
           return `<div class="ts-placeholder">${escape(data.text)}</div>`;
         }
         return `<div>${escape(data.text)}</div>`;
       },
-      item: function(data, escape) {
+      item: function (data, escape) {
         if (!data.value) {
           return `<div class="ts-placeholder">${escape(data.text)}</div>`;
         }
         return `<div>${escape(data.text)}</div>`;
       }
     },
-    onChange: function() { this.blur(); },
-    onFocus: function() { this.clear(); }
+    onChange: function () {
+      this.blur();
+    },
+    onFocus: function () {
+      this.clear();
+    }
   });
 
-  const tsReviewer = new TomSelect("#reviewer", {
+  new TomSelect("#reviewer", {
     create: false,
     maxItems: 1,
     allowEmptyOption: true,
     placeholder: "Wybierz recenzenta...",
     render: {
-      option: function(data, escape) {
+      option: function (data, escape) {
         if (!data.value) {
           return `<div class="ts-placeholder">${escape(data.text)}</div>`;
         }
         return `<div>${escape(data.text)}</div>`;
       },
-      item: function(data, escape) {
+      item: function (data, escape) {
         if (!data.value) {
           return `<div class="ts-placeholder">${escape(data.text)}</div>`;
         }
         return `<div>${escape(data.text)}</div>`;
       }
     },
-    onChange: function() { this.blur(); },
-    onFocus: function() { this.clear(); }
+    onChange: function () {
+      this.blur();
+    },
+    onFocus: function () {
+      this.clear();
+    }
   });
 
   const reviewerSelect = document.getElementById("reviewer");
@@ -311,18 +321,18 @@ document.addEventListener("DOMContentLoaded", function () {
     const selectedText = selectedOption.textContent;
 
     if (!selectedId) {
-        alert("Wybierz recenzenta z listy.");
-        return;
+      alert("Wybierz recenzenta z listy.");
+      return;
     }
 
     if ([...assignedReviewersList.children].some(li => li.dataset.id === selectedId)) {
-        alert("Recenzent już został dodany.");
-        return;
+      alert("Recenzent już został dodany.");
+      return;
     }
 
     if (noReviewersItem) {
-        noReviewersItem.remove();
-        noReviewersItem = null;
+      noReviewersItem.remove();
+      noReviewersItem = null;
     }
 
     const newReviewerItem = document.createElement("li");
@@ -336,17 +346,17 @@ document.addEventListener("DOMContentLoaded", function () {
     removeButton.textContent = "Usuń";
     removeButton.classList.add("remove-reviewer");
     removeButton.addEventListener("click", function () {
-        newReviewerItem.remove();
-        hiddenInput.remove();
-        if (assignedReviewersList.children.length === 0) {
-            if (!noReviewersItem) {
-                noReviewersItem = document.createElement("li");
-                noReviewersItem.id = "noReviewers";
-                noReviewersItem.textContent = "Nie przypisano recenzentów";
-                noReviewersItem.classList.add("placeholder-item"); // Ensure placeholder-item class is added
-                assignedReviewersList.appendChild(noReviewersItem);
-            }
+      newReviewerItem.remove();
+      hiddenInput.remove();
+      if (assignedReviewersList.children.length === 0) {
+        if (!noReviewersItem) {
+          noReviewersItem = document.createElement("li");
+          noReviewersItem.id = "noReviewers";
+          noReviewersItem.textContent = "Nie przypisano recenzentów";
+          noReviewersItem.classList.add("placeholder-item");
+          assignedReviewersList.appendChild(noReviewersItem);
         }
+      }
     });
 
     newReviewerItem.appendChild(reviewerNameSpan);
@@ -359,8 +369,8 @@ document.addEventListener("DOMContentLoaded", function () {
     hiddenInput.value = selectedId;
     form.appendChild(hiddenInput);
 
-    tsReviewer.clear();
-});
+    reviewerSelect.value = ""; 
+  });
 
   const emailInput = document.getElementById("inviteEmail");
   const emailList = document.getElementById("invitedEmails");
@@ -401,6 +411,7 @@ document.addEventListener("DOMContentLoaded", function () {
           noEmailsItem = document.createElement("li");
           noEmailsItem.id = "noEmails";
           noEmailsItem.textContent = "Nie podano emaili";
+          noEmailsItem.classList.add("placeholder-item");
           emailList.appendChild(noEmailsItem);
         }
       }
@@ -416,7 +427,7 @@ document.addEventListener("DOMContentLoaded", function () {
     hiddenEmailInput.value = email;
     form.appendChild(hiddenEmailInput);
 
-    emailInput.value = "";
+    emailInput.value = ""; 
     document.getElementById("inviteForm").style.display = "none";
   });
 
@@ -448,71 +459,68 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("deadline_confirm").min = minDate;
     document.getElementById("deadline_submit").min = minDate;
   }
-
   setMinDate();
-});
 
-(function () {
-  const select = document.getElementById("question_group_input");
-  const addBtn = document.getElementById("add-question-group-btn");
-  const list = document.getElementById("chosen-question-groups"); // Correct container for chosen sets
-  const form = document.querySelector("form");
-  const selectedGroups = {};
-  let noQuestionGroupsItem = document.getElementById("noQuestionGroups");
+  (function () {
+    const select = document.getElementById("question_group_input");
+    const addBtn = document.getElementById("add-question-group-btn");
+    const list = document.getElementById("chosen-question-groups");
+    const selectedGroups = {};
+    let noQuestionGroupsItem = document.getElementById("noQuestionGroups");
 
-  addBtn.addEventListener("click", () => {
-    const option = select.selectedOptions[0];
-    if (!option || option.value === "") {
-      alert("Wybierz zestaw pytań.");
-      return;
-    }
-
-    const groupId = option.dataset.id;
-    const groupName = option.textContent;
-
-    if (selectedGroups[groupId]) {
-      alert("Ten zestaw został już dodany.");
-      return;
-    }
-
-    selectedGroups[groupId] = true;
-
-    if (noQuestionGroupsItem) {
-      noQuestionGroupsItem.remove();
-      noQuestionGroupsItem = null;
-    }
-
-    const li = document.createElement("li");
-    li.classList.add("reviewer-item"); // Ensure consistent styling
-    li.textContent = groupName;
-
-    const hiddenInput = document.createElement("input");
-    hiddenInput.type = "hidden";
-    hiddenInput.name = "question_group";
-    hiddenInput.value = groupId;
-    li.appendChild(hiddenInput);
-
-    const removeBtn = document.createElement("button");
-    removeBtn.textContent = "Usuń";
-    removeBtn.type = "button";
-    removeBtn.className = "remove-reviewer";
-    removeBtn.style.marginLeft = "1rem";
-    removeBtn.addEventListener("click", () => {
-      delete selectedGroups[groupId];
-      li.remove();
-      if (list.children.length === 0) {
-        if (!noQuestionGroupsItem) {
-          noQuestionGroupsItem = document.createElement("li");
-          noQuestionGroupsItem.id = "noQuestionGroups";
-          noQuestionGroupsItem.textContent = "Nie wybrano zestawów pytań";
-          noQuestionGroupsItem.classList.add("placeholder-item");
-          list.appendChild(noQuestionGroupsItem);
-        }
+    addBtn.addEventListener("click", () => {
+      const option = select.selectedOptions[0];
+      if (!option || option.value === "") {
+        alert("Wybierz zestaw pytań.");
+        return;
       }
-    });
 
-    li.appendChild(removeBtn);
-    list.appendChild(li); // Append to the correct container
-  });
-})();
+      const groupId = option.dataset.id;
+      const groupName = option.textContent;
+
+      if (selectedGroups[groupId]) {
+        alert("Ten zestaw został już dodany.");
+        return;
+      }
+
+      selectedGroups[groupId] = true;
+
+      if (noQuestionGroupsItem) {
+        noQuestionGroupsItem.remove();
+        noQuestionGroupsItem = null;
+      }
+
+      const li = document.createElement("li");
+      li.classList.add("reviewer-item");
+      li.textContent = groupName;
+
+      const hiddenInput = document.createElement("input");
+      hiddenInput.type = "hidden";
+      hiddenInput.name = "question_group";
+      hiddenInput.value = groupId;
+      li.appendChild(hiddenInput);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.textContent = "Usuń";
+      removeBtn.type = "button";
+      removeBtn.className = "remove-reviewer";
+      removeBtn.addEventListener("click", () => {
+        delete selectedGroups[groupId];
+        li.remove();
+        if (list.children.length === 0) {
+          if (!noQuestionGroupsItem) {
+            noQuestionGroupsItem = document.createElement("li");
+            noQuestionGroupsItem.id = "noQuestionGroups";
+            noQuestionGroupsItem.textContent = "Nie wybrano zestawów pytań";
+            noQuestionGroupsItem.classList.add("placeholder-item");
+            list.appendChild(noQuestionGroupsItem);
+          }
+        }
+      });
+
+      li.appendChild(removeBtn);
+      list.appendChild(li);
+    });
+  })();
+});
 </script>
