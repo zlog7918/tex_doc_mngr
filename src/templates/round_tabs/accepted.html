@@ -39,7 +39,7 @@ input[type="email"] {
   box-sizing: border-box;
 }
 
-input[type="datetime-local"] {
+input[type="date"] {
   background-color: #fffefc;
   border: 1px solid #ccc;
   border-radius: 6px;
@@ -52,7 +52,7 @@ input[type="datetime-local"] {
   transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-input[type="datetime-local"]:focus {
+input[type="date"]:focus {
   border-color: #5a3d90;
   outline: none;
 }
@@ -237,11 +237,11 @@ ul {
     <div class="deadline-row">
       <div>
         <label for="deadline_confirm">Deadline potwierdzenia:</label>
-        <input type="datetime-local" id="deadline_confirm" name="deadline_confirm" required />
+        <input type="date" id="deadline_confirm" name="deadline_confirm" required />
       </div>
       <div>
         <label for="deadline_submit">Deadline oddania recenzji:</label>
-        <input type="datetime-local" id="deadline_submit" name="deadline_submit" required />
+        <input type="date" id="deadline_submit" name="deadline_submit" required />
       </div>
     </div>
     <button type="submit">Zapisz</button>
@@ -256,59 +256,29 @@ document.addEventListener("DOMContentLoaded", function () {
     tzField.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
   }
 
-  new TomSelect("#question_group_input", {
-    create: false,
-    maxItems: 1,
-    allowEmptyOption: true,
-    placeholder: "Wybierz zestaw pytań...",
-    render: {
-      option: function (data, escape) {
-        if (!data.value) {
-          return `<div class="ts-placeholder">${escape(data.text)}</div>`;
+  function initTomSelect(selector, placeholder) {
+    return new TomSelect(selector, {
+      create: false,
+      maxItems: 1,
+      allowEmptyOption: true,
+      placeholder: placeholder,
+      render: {
+        option: function (data, escape) {
+          if (!data.value) return `<div class="ts-placeholder">${escape(data.text)}</div>`;
+          return `<div>${escape(data.text)}</div>`;
+        },
+        item: function (data, escape) {
+          if (!data.value) return `<div class="ts-placeholder">${escape(data.text)}</div>`;
+          return `<div>${escape(data.text)}</div>`;
         }
-        return `<div>${escape(data.text)}</div>`;
       },
-      item: function (data, escape) {
-        if (!data.value) {
-          return `<div class="ts-placeholder">${escape(data.text)}</div>`;
-        }
-        return `<div>${escape(data.text)}</div>`;
-      }
-    },
-    onChange: function () {
-      this.blur();
-    },
-    onFocus: function () {
-      this.clear();
-    }
-  });
+      onChange() { this.blur(); },
+      onFocus() { this.clear(); }
+    });
+  }
 
-  new TomSelect("#reviewer", {
-    create: false,
-    maxItems: 1,
-    allowEmptyOption: true,
-    placeholder: "Wybierz recenzenta...",
-    render: {
-      option: function (data, escape) {
-        if (!data.value) {
-          return `<div class="ts-placeholder">${escape(data.text)}</div>`;
-        }
-        return `<div>${escape(data.text)}</div>`;
-      },
-      item: function (data, escape) {
-        if (!data.value) {
-          return `<div class="ts-placeholder">${escape(data.text)}</div>`;
-        }
-        return `<div>${escape(data.text)}</div>`;
-      }
-    },
-    onChange: function () {
-      this.blur();
-    },
-    onFocus: function () {
-      this.clear();
-    }
-  });
+  initTomSelect("#question_group_input", "Wybierz zestaw pytań...");
+  initTomSelect("#reviewer", "Wybierz recenzenta...");
 
   const reviewerSelect = document.getElementById("reviewer");
   const assignedReviewersList = document.getElementById("assignedReviewers");
@@ -318,18 +288,16 @@ document.addEventListener("DOMContentLoaded", function () {
   document.getElementById('addReviewer').addEventListener('click', function () {
     const selectedOption = reviewerSelect.options[reviewerSelect.selectedIndex];
     const selectedId = selectedOption.value;
-    const selectedText = selectedOption.textContent;
+    const selectedText = selectedOption.textContent.trim();
 
     if (!selectedId) {
       alert("Wybierz recenzenta z listy.");
       return;
     }
-
     if ([...assignedReviewersList.children].some(li => li.dataset.id === selectedId)) {
       alert("Recenzent już został dodany.");
       return;
     }
-
     if (noReviewersItem) {
       noReviewersItem.remove();
       noReviewersItem = null;
@@ -337,25 +305,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const newReviewerItem = document.createElement("li");
     newReviewerItem.classList.add("reviewer-item");
-    newReviewerItem.setAttribute("data-id", selectedId);
+    newReviewerItem.dataset.id = selectedId;
 
     const reviewerNameSpan = document.createElement("span");
     reviewerNameSpan.textContent = selectedText;
 
     const removeButton = document.createElement("button");
     removeButton.textContent = "Usuń";
+    removeButton.type = "button";
     removeButton.classList.add("remove-reviewer");
-    removeButton.addEventListener("click", function () {
+    removeButton.addEventListener("click", () => {
       newReviewerItem.remove();
       hiddenInput.remove();
       if (assignedReviewersList.children.length === 0) {
-        if (!noReviewersItem) {
-          noReviewersItem = document.createElement("li");
-          noReviewersItem.id = "noReviewers";
-          noReviewersItem.textContent = "Nie przypisano recenzentów";
-          noReviewersItem.classList.add("placeholder-item");
-          assignedReviewersList.appendChild(noReviewersItem);
-        }
+        noReviewersItem = document.createElement("li");
+        noReviewersItem.id = "noReviewers";
+        noReviewersItem.textContent = "Nie przypisano recenzentów";
+        noReviewersItem.classList.add("placeholder-item");
+        assignedReviewersList.appendChild(noReviewersItem);
       }
     });
 
@@ -369,7 +336,9 @@ document.addEventListener("DOMContentLoaded", function () {
     hiddenInput.value = selectedId;
     form.appendChild(hiddenInput);
 
-    reviewerSelect.value = ""; 
+    reviewerTomSelect.removeItem(selectedId);
+    reviewerTomSelect.removeOption(selectedId);
+    reviewerTomSelect.clear();
   });
 
   const emailInput = document.getElementById("inviteEmail");
@@ -382,12 +351,10 @@ document.addEventListener("DOMContentLoaded", function () {
       alert("Wprowadź poprawny adres email.");
       return;
     }
-
     if ([...emailList.children].some(li => li.dataset.email === email)) {
       alert("Ten email został już dodany.");
       return;
     }
-
     if (noEmailsItem) {
       noEmailsItem.remove();
       noEmailsItem = null;
@@ -395,25 +362,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const newEmailItem = document.createElement("li");
     newEmailItem.classList.add("reviewer-item");
-    newEmailItem.setAttribute("data-email", email);
+    newEmailItem.dataset.email = email;
 
     const emailSpan = document.createElement("span");
     emailSpan.textContent = email;
 
     const removeButton = document.createElement("button");
     removeButton.textContent = "Usuń";
+    removeButton.type = "button";
     removeButton.classList.add("remove-reviewer");
-    removeButton.addEventListener("click", function () {
+    removeButton.addEventListener("click", () => {
       newEmailItem.remove();
       hiddenEmailInput.remove();
       if (emailList.children.length === 0) {
-        if (!noEmailsItem) {
-          noEmailsItem = document.createElement("li");
-          noEmailsItem.id = "noEmails";
-          noEmailsItem.textContent = "Nie podano emaili";
-          noEmailsItem.classList.add("placeholder-item");
-          emailList.appendChild(noEmailsItem);
-        }
+        noEmailsItem = document.createElement("li");
+        noEmailsItem.id = "noEmails";
+        noEmailsItem.textContent = "Nie podano emaili";
+        noEmailsItem.classList.add("placeholder-item");
+        emailList.appendChild(noEmailsItem);
       }
     });
 
@@ -427,7 +393,7 @@ document.addEventListener("DOMContentLoaded", function () {
     hiddenEmailInput.value = email;
     form.appendChild(hiddenEmailInput);
 
-    emailInput.value = ""; 
+    emailInput.value = "";
     document.getElementById("inviteForm").style.display = "none";
   });
 
@@ -436,28 +402,37 @@ document.addEventListener("DOMContentLoaded", function () {
     inviteForm.style.display = inviteForm.style.display === "none" ? "block" : "none";
   });
 
-  function validateForm() {
-    const assignedReviewers = document.querySelectorAll('input[name="assigned_reviewers[]"]');
-    const invitedEmails = document.querySelectorAll('input[name="invited_emails[]"]');
-    if (assignedReviewers.length === 0 && invitedEmails.length === 0) {
-      alert("Musisz dodać co najmniej jednego recenzenta lub zaprosić przez email.");
-      return false;
-    }
-    return true;
-  }
-
   function validateEmail(email) {
     const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return re.test(email.toLowerCase());
   }
 
   function setMinDate() {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    const minDate = tomorrow.toISOString().slice(0, 16);
-    document.getElementById("deadline_confirm").min = minDate;
-    document.getElementById("deadline_submit").min = minDate;
+    const today = new Date();
+    today.setDate(today.getDate() + 3);
+    today.setHours(0, 0, 0, 0);
+    const minDate = today.toISOString().slice(0, 10);
+
+    const deadlineConfirm = document.getElementById("deadline_confirm");
+    const deadlineSubmit = document.getElementById("deadline_submit");
+
+    deadlineConfirm.min = minDate;
+    deadlineSubmit.min = minDate;
+
+    deadlineConfirm.addEventListener("change", () => {
+      if (deadlineConfirm.value) {
+        let confirmDate = new Date(deadlineConfirm.value);
+        confirmDate.setDate(confirmDate.getDate() + 1);
+        const newMin = confirmDate.toISOString().slice(0, 10);
+        deadlineSubmit.min = newMin;
+
+        if (deadlineSubmit.value && deadlineSubmit.value < newMin) {
+          deadlineSubmit.value = "";
+        }
+      } else {
+        deadlineSubmit.min = minDate;
+      }
+    });
   }
   setMinDate();
 
@@ -476,7 +451,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       const groupId = option.dataset.id;
-      const groupName = option.textContent;
+      const groupName = option.textContent.trim();
 
       if (selectedGroups[groupId]) {
         alert("Ten zestaw został już dodany.");
@@ -508,13 +483,11 @@ document.addEventListener("DOMContentLoaded", function () {
         delete selectedGroups[groupId];
         li.remove();
         if (list.children.length === 0) {
-          if (!noQuestionGroupsItem) {
-            noQuestionGroupsItem = document.createElement("li");
-            noQuestionGroupsItem.id = "noQuestionGroups";
-            noQuestionGroupsItem.textContent = "Nie wybrano zestawów pytań";
-            noQuestionGroupsItem.classList.add("placeholder-item");
-            list.appendChild(noQuestionGroupsItem);
-          }
+          noQuestionGroupsItem = document.createElement("li");
+          noQuestionGroupsItem.id = "noQuestionGroups";
+          noQuestionGroupsItem.textContent = "Nie wybrano zestawów pytań";
+          noQuestionGroupsItem.classList.add("placeholder-item");
+          list.appendChild(noQuestionGroupsItem);
         }
       });
 
@@ -522,5 +495,36 @@ document.addEventListener("DOMContentLoaded", function () {
       list.appendChild(li);
     });
   })();
+
+  function validateForm() {
+    const assignedReviewers = document.querySelectorAll('input[name="assigned_reviewers[]"]');
+    const invitedEmails = document.querySelectorAll('input[name="invited_emails[]"]');
+    const deadlineConfirm = document.getElementById("deadline_confirm");
+    const deadlineSubmit = document.getElementById("deadline_submit");
+
+    if (assignedReviewers.length === 0 && invitedEmails.length === 0) {
+      alert("Musisz dodać co najmniej jednego recenzenta lub zaprosić przez email.");
+      return false;
+    }
+    if (!deadlineConfirm.value) {
+      alert("Wybierz deadline potwierdzenia.");
+      return false;
+    }
+    if (!deadlineSubmit.value) {
+      alert("Wybierz deadline oddania recenzji.");
+      return false;
+    }
+    if (deadlineSubmit.value < deadlineConfirm.value) {
+      alert("Deadline oddania recenzji nie może być wcześniejszy niż deadline potwierdzenia.");
+      return false;
+    }
+    return true;
+  }
+
+  form.addEventListener("submit", function (e) {
+    if (!validateForm()) {
+      e.preventDefault();
+    }
+  });
 });
 </script>
