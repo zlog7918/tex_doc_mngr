@@ -170,7 +170,7 @@ def zip_latest_round(article_id: int) -> Response:
         
         for root, dirs, files in os.walk(folder_path):
             for file in files:
-                if file.endswith(('.aux', '.log', '.pdf', '.synctex.gz', '.zip')):
+                if file.endswith(('.aux', '.log', '.pdf', '.synctex.gz', '.zip', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2')):
                     os.remove(os.path.join(root, file))
                 elif file.startswith(('_minted',)):
                     os.remove(os.path.join(root, file))
@@ -183,11 +183,12 @@ def zip_latest_round(article_id: int) -> Response:
                 for root, dirs, files in os.walk(folder_path):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        arcname = os.path.relpath(file_path, start=folder_path)
-                        zipf.write(file_path, arcname)
+                        if file_path == output_zip_path:
+                            arcname = os.path.relpath(file_path, start=folder_path)
+                            zipf.write(file_path, arcname)
                 for root, dirs, files in os.walk(folder_path):
                     for file in files:
-                        if not file.endswith(('.zip',)):
+                        if not file.endswith(('.zip', '.tar', '.gz', '.bz2', '.xz', '.tgz', '.tbz2')):
                             os.remove(os.path.join(root, file))
 
         except Exception as e:
