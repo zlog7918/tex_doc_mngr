@@ -76,6 +76,24 @@
         .reject-btn:hover {
             background: #8c8c8c;
         }
+
+        .article-embed {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+
+        .article-embed iframe,
+        .article-embed embed,
+        .article-embed object {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
     </style>
 
     <div class="main-content">
@@ -85,7 +103,7 @@
 
         <h1>{{ article.title }}</h1>
         <p class="article-info"><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
-        <p class="article-info"><strong>Treść:</strong> {{ article_content|safe }}</p>
+        <p class="article-embed"><strong>Treść:</strong> {{ article_content|safe }}</p>
 
         <div class="action-buttons">
             <button class="accept-btn" onclick="acceptArticle()">Zaakceptuj</button>
