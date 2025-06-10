@@ -53,7 +53,7 @@
         background-color: #4a2a70;
     }
 
-    .back-button {
+    .back-button, .btn-back, .btn-view {
         margin-top: 20px;
         padding: 10px 15px;
         background-color: #5a3d90;
@@ -63,8 +63,35 @@
         transition: background-color 0.3s ease;
     }
 
-    .back-button:hover {
+    .btn-view {
+        background-color: #7d60b0;
+    }
+
+    .back-button:hover, .btn-back:hover {
         background-color: #4a2a70;
+    }
+
+    .btn-view:hover {
+        background-color: #6c4da3;
+    }
+
+    .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+    .action-buttons a {
+        text-decoration: none;
+        padding: 10px 20px;
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: 6px;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: background-color 0.2s ease;
     }
 </style>
 
@@ -86,9 +113,10 @@
         </ul>
     </div>
 
-    <div class="action-box">
-        <button class="assign-btn" disabled>Przejdź do kreatora czasopism</button>
-    </div>
+    <div class="action-buttons">
+            <a href="#" class="btn-back">Przejdź do kreatora czasopism</a>
+            <a href="{{ url_with_lang_for('articles.uploaded_file', filename=article.rounds[-1].article_content.removeprefix('/'), article_id=article.id, round_num=article.rounds[-1].round_number) }}" class="btn-view" target="_blank">Zobacz artykuł</a>
+        </div>
 </div>
 
 {% endblock %}
