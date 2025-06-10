@@ -183,7 +183,7 @@ def zip_latest_round(article_id: int) -> Response:
                 for root, dirs, files in os.walk(folder_path):
                     for file in files:
                         file_path = os.path.join(root, file)
-                        if file_path == output_zip_path:
+                        if file_path != output_zip_path:
                             arcname = os.path.relpath(file_path, start=folder_path)
                             zipf.write(file_path, arcname)
                 for root, dirs, files in os.walk(folder_path):
