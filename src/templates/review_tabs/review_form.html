@@ -114,7 +114,7 @@
     <div class="review-wrapper">
         <div class="action-buttons">
             <a href="/reviews" class="btn-back">Wróć do listy recenzji</a>
-            <a href="#" class="btn-view" target="_blank">Zobacz artykuł</a>
+            <a href="{{ url_with_lang_for('articles.uploaded_file', filename=article.rounds[-1].article_content.removeprefix('/'), article_id=article.id, round_num=article.rounds[-1].round_number) }}" class="btn-view" target="_blank">Zobacz artykuł</a>
         </div>
 
         <form method="POST" action="/reviews/{{ review_id }}/submit_review">

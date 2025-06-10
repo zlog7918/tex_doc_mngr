@@ -1,90 +1,122 @@
 {% extends "base.html" %}
 
-{% block title %} Szczegóły Artykułu {% endblock %}
+{% block title %} {{ article.title }} {% endblock %}
 
 {% block body %}
-    {% include 'toolbar.html' %}
+{% include 'toolbar.html' %}
 
-    <style>
-        .main-content {
-            padding: 20px;
-            width: 100%;
-            box-sizing: border-box;
-        }
+<style>
+    .main-content {
+        padding: 20px;
+        width: 100%;
+        box-sizing: border-box;
+    }
 
-        .top-bar {
+    .info-box {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+        color: #155724;
+        font-size: 16px;
+    }
+
+    .comments-box {
+        background-color: #e9ecef;
+        border-left: 5px solid #28a745;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 5px;
+    }
+
+    .comments-box h3 {
+        margin-top: 0;
+        color: #1c582a;
+    }
+
+    .action-box {
+        margin-top: 30px;
+    }
+
+    .assign-btn {
+        background-color: #5a3d90;
+        color: white;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 16px;
+        cursor: pointer;
+    }
+
+    .assign-btn:hover {
+        background-color: #4a2a70;
+    }
+
+    .back-button, .btn-back, .btn-view {
+        margin-top: 20px;
+        padding: 10px 15px;
+        background-color: #5a3d90;
+        color: white;
+        border-radius: 5px;
+        text-decoration: none;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-view {
+        background-color: #7d60b0;
+    }
+
+    .back-button:hover, .btn-back:hover {
+        background-color: #4a2a70;
+    }
+
+    .btn-view:hover {
+        background-color: #6c4da3;
+    }
+
+    .action-buttons {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
+            gap: 12px;
+            margin-bottom: 30px;
         }
 
-        .back-btn {
-            padding: 10px 20px;
-            background: #5a3d90;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 16px;
-            transition: 0.3s;
-        }
+    .action-buttons a {
+        text-decoration: none;
+        padding: 10px 20px;
+        font-size: 15px;
+        font-weight: 500;
+        border-radius: 6px;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: background-color 0.2s ease;
+    }
+</style>
 
-        .back-btn:hover {
-            background: #4a1e87;
-        }
+<div class="main-content">
+    <a href="{{ url_for('editor_articles.show_articles') }}" class="back-button">Powrót do listy</a>
+    <h1>Artykuł {{ article.title }} został pozytywnie zrecenzowany</h1>
+    <p><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
 
-        h1 {
-            font-size: 28px;
-            font-weight: bold;
-            color: black;
-            margin-bottom: 15px;
-        }
-
-        .article-info {
-            font-size: 18px;
-            color: #2d1053;
-            margin-bottom: 10px;
-        }
-
-        .action-buttons {
-            margin-top: 30px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .action-buttons button {
-            padding: 10px 20px;
-            border: none;
-            color: white;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        .accept-btn {
-            background: #5a3d90;
-        }
-
-        .accept-btn:hover {
-            background: #4a1e87;
-        }
-
-        .reject-btn {
-            background: #a8a8a8;
-        }
-
-        .reject-btn:hover {
-            background: #8c8c8c;
-        }
-    </style>
-
-    <div class="main-content">
-        <div class="top-bar">
-            <a href="{{ url_for('editor_articles.show_articles') }}" class="back-btn">Wróć do listy</a>
-        </div>
-
-        <h1>{{ article.title }}</h1>
-        <p class="article-info"><strong>Autor:</strong> {{ article.author.get_nick() }}</p>
-        <p class="article-info"><strong>Treść:</strong> {{ article_content|safe }}</p>
+    <div class="info-box">
+        Artykuł przeszedł pomyślnie proces recenzji. Proszę przypisać go do odpowiedniego numeru czasopisma.
     </div>
+
+    <div class="comments-box">
+        <h3>Podsumowanie recenzji:</h3>
+        <ul>
+            <li>Recenzje pozytywne – brak istotnych zastrzeżeń.</li>
+            <li>Tematyka zgodna z profilem czasopisma.</li>
+            <li>Artykuł gotowy do publikacji.</li>
+        </ul>
+    </div>
+
+    <div class="action-buttons">
+            <a href="#" class="btn-back">Przejdź do kreatora czasopism</a>
+            <a href="{{ url_with_lang_for('articles.uploaded_file', filename=article.rounds[-1].article_content.removeprefix('/'), article_id=article.id, round_num=article.rounds[-1].round_number) }}" class="btn-view" target="_blank">Zobacz artykuł</a>
+        </div>
+</div>
+
 {% endblock %}

@@ -337,15 +337,14 @@
                     });
                     mainTexDiv.style.display = 'block';
                     mainTexSelect.required = true;
-                    alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'View PDF'.");
+                    alert("Wybierz główny plik .tex z listy i kliknij ponownie 'View PDF'.");
                 } else if (data.data?.pdf_url) {
                     window.open(data.data.pdf_url, '_blank');
                 } else {
-                    alert("❌ Błąd generowania podglądu: " + (data.message || "Nieznany błąd"));
+                    alert("Błąd generowania podglądu: " + (data.message || "Nieznany błąd"));
                 }
             });
 
-            // Obsługa zapisu pliku
             uploadForm.addEventListener("submit", async function (event) {
                 event.preventDefault();
 
@@ -359,7 +358,6 @@
                     formData.append("files", file);
                 }
 
-                // Dodaj wybrany plik mainTex
                 if (mainTexDiv.style.display !== "none" && mainTexSelect.value) {
                     formData.append("mainTex", mainTexSelect.value);
                 }
@@ -372,7 +370,6 @@
 
                     const data = await response.json();
 
-                    // Jeśli backend prosi o wybór głównego pliku
                     if (data.data?.need_main_tex && data.data?.tex_files) {
                         mainTexSelect.innerHTML = '';
                         data.data.tex_files.forEach(file => {
@@ -384,27 +381,26 @@
                         mainTexDiv.style.display = 'block';
                         mainTexSelect.required = true;
 
-                        alert("📝 Wybierz główny plik .tex z listy i kliknij ponownie 'Send'.");
+                        alert("Wybierz główny plik .tex z listy i kliknij ponownie 'Send'.");
                         return;
                     }
 
-                    // Przesłano i wygenerowano PDF
                     if (!data.data?.need_main_tex && data.data?.pdf_url) {
-                        alert("✅ Plik przesłany pomyślnie!");
+                        alert("Plik przesłany pomyślnie!");
                         window.location.href = window.location.href;
                         selectedFiles = [];
-                        updateFileList(); // też aktualizuje UI
+                        updateFileList(); 
                         mainTexSelect.innerHTML = '';
                         mainTexDiv.style.display = 'none';
-                        fileInput.value = ''; // czyści input plików
+                        fileInput.value = ''; 
 
                     } else {
 
-                        alert("❌ Błąd przesyłania: " + (data.message || "Nieznany błąd"));
+                        alert("Błąd przesyłania: " + (data.message || "Nieznany błąd"));
                     }
 
                 } catch (error) {
-                    alert("🚨 Błąd podczas przesyłania: " + error.message);
+                    alert("Błąd podczas przesyłania: " + error.message);
                 }
             });
         });
