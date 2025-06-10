@@ -43,6 +43,8 @@ def article_details(article_id):
         return util.render_base_template("author_tabs/rejected.html", article=article, article_content=article_content)
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
         tab_content = util.render_base_template("author_tabs/needs_corrections.html", article=article)
+    elif article.status.stat == ArticleStatusEnum.Final:
+        return util.render_base_template("author_tabs/final_tab.html", article=article)
     else:
         return Response.error_response(message="Not found").to_dict()
     return util.render_base_template("article_author_base.html", tab_content=tab_content, article=article, data=data)
