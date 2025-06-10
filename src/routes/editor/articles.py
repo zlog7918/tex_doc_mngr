@@ -1,7 +1,7 @@
-from flask import request, Blueprint
 from models.utils.Response import Response
 import controllers.article_controller as ac
 import controllers.question_controller as qc
+from flask import request, redirect, Blueprint
 from models.utils import decors as decor, utils as util
 from models.article.Article import ArticleStatusEnum, Article
 
@@ -28,6 +28,10 @@ def show_articles():
     else:
         return response.to_dict()
 
+@editor_articles_bp.route('/rejected_articles')
+@decor.approve_required
+def rejected_articles():
+    return ac.get_all_rejected_articles_by_editor().to_dict()
 
 @editor_articles_bp.route('/<int:article_id>')
 @decor.approve_required
@@ -61,7 +65,8 @@ def article_details(article_id: int):
         grouped_answers = response.data["grouped_answers"]
         tab_content = util.render_base_template("round_tabs/reviewed.html", article=article, grouped_answers=grouped_answers)
     elif article.status.stat == ArticleStatusEnum.Rejected:
-        return util.render_base_template("round_tabs/rejected.html")
+        print("here")
+        return util.render_base_template("round_tabs/rejected.html", article=article)
     elif article.status.stat == ArticleStatusEnum.NeedsCorrections:
         return util.render_base_template("round_tabs/needs_corrections.html", article=article)
     elif article.status.stat == ArticleStatusEnum.Final:
@@ -92,6 +97,7 @@ def finish_article(article_id: int):
 @decor.handle_form_not_filled
 def assign_reviewers(article_id: int):
     assigned_reviewers = request.form.getlist('assigned_reviewers[]')
+    assigned_emails = request.form.getlist('invited_emails[]')
     question_set = request.form.getlist('question_group')
     (deadline_confirm, deadline_submit, tz)=util.get_from_form(request.form, (
         'deadline_confirm',
@@ -99,7 +105,10 @@ def assign_reviewers(article_id: int):
         'tz',
     ))
     
-    response = ac.assign_reviewers(article_id, question_set, assigned_reviewers, deadline_confirm, deadline_submit, tz)
+    response = ac.assign_reviewers(article_id, question_set, assigned_reviewers, assigned_emails, deadline_confirm, deadline_submit, tz)
+
+    if response.success:
+        return redirect(util.url_with_lang_for('editor_articles.article_details', article_id=article_id))
     return response.to_dict()
 
 

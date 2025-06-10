@@ -58,28 +58,72 @@
             background: #4a1e87;
         }
 
+        .no-articles-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            margin: 50px auto;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .no-articles-image {
+            max-width: 200px;
+            height: auto;
+        }
+
+        .no-articles-text {
+            max-width: 500px;
+            text-align: left;
+        }
+
+        .no-articles-text h2 {
+            font-size: 24px;
+            color: #5a3d90;
+            margin-bottom: 10px;
+        }
+
+        .no-articles-text p {
+            font-size: 16px;
+            color: #555;
+        }
     </style>
 
     <div class="main-content">
-        <h1>Lista artykułów w trakcie recenzji</h1>
+        <h1>Artykuły przekazane do zrecenzowania</h1>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Tytuł</th>
-                    <th>Autor</th>
-                    <th>Szczegóły</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for article, review_id in articles %}
+        {% if articles %}
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ article.title }}</td>
-                        <td>{{ article.author.get_nick() }}</td>
-                        <td><a href="{{ url_for('review.article_details', article_id=article.id) }}" class="details-btn">View Details</a></td>
+                        <th>Tytuł</th>
+                        <th>Autor</th>
+                        <th>Szczegóły</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for article, review_id in articles %}
+                        <tr>
+                            <td>{{ article.title }}</td>
+                            <td>{{ article.author.get_nick() }}</td>
+                            <td>
+                                <a href="{{ url_for('review.article_details', article_id=article.id) }}" class="details-btn">
+                                    View Details
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="no-articles-box">
+                <img src="{{ url_for('static', filename='images/working.svg') }}" alt="Pracujemy nad tym" class="no-articles-image">
+                <div class="no-articles-text">
+                    <h2>Chwilowo brak artykułów do wyświetlenia</h2>
+                    <p>Edytorzy nie przypisali ci żadnego artykułu do recenzowania. Wróć później.</p>
+                </div>
+            </div>
+        {% endif %}
     </div>
 {% endblock %}

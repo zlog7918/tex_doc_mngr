@@ -64,6 +64,16 @@ def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
         .all()
     )
 
+def get_all_rejected_articles_by_editor_id(editor_id: int) -> list[Article]:
+    return (
+        Article.query
+        .join(ArticleStatus)
+        .where(and_(
+            Article.editor_id == editor_id,
+            ArticleStatus.stat == ArticleStatusEnum.Rejected
+        ))
+        .all()
+    )
 
 def is_article_rejected(article_id: int) -> bool:
     article_status = (
@@ -94,7 +104,7 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
         author_id = article.author_id if article else None
 
         latest_round_subquery = (
-            db.session.query(R.Round.id)
+            select(R.Round.id)
             .filter(R.Round.article_id == article_id)
             .order_by(R.Round.round_number.desc())
             .limit(1)
@@ -102,7 +112,7 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
         )
 
         assigned_reviewers_subquery = (
-            db.session.query(Rv.Review.reviewer_id)
+            select(Rv.Review.reviewer_id)
             .filter(Rv.Review.round_id.in_(select(latest_round_subquery)))
             .subquery()
         )
@@ -111,9 +121,10 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
             db.session.query(User.id, User.nick)
             .where(and_(
                 ~User.id.in_(select(assigned_reviewers_subquery)),
+                User.nick != None,
                 User.id != user_id,
                 User.id != user0_id,
-                User.id != author_id
+                User.id != author_id,
             ))
             .all()
         )

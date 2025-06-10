@@ -1,153 +1,530 @@
-<div>
-    <h2>Assign Reviewers</h2>
-    <form id="assign-form" method="post">
-        <input type="hidden" name="tz" value="">
-        <label>{{ lang_pkg.SelectQuestionSet.value }}</label>
-        <select name="question_group_input">
-            <option value="" selected>--{{ lang_pkg.QuestionGroup.value }}--</option>
-            {% for qg in question_groups %}
-                <option data-id="{{ qg.id }}">{{ qg.name }}</option>
-            {% endfor %}
-        </select><button type="button" id="add-question-group-btn" class="secondary-btn">{{ lang_pkg.AddQuestionGroup.value }}</button>
-        <h3>{{ lang_pkg.QuestionGroupList.value }}:</h3>
-        <ul id="question-group-list"></ul>
+<link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet" />
+<style>
+.reviewers-section {
+  background-color: white;
+  margin: 0 auto;
+}
 
-        <label for="reviewer">Select a reviewer:</label>
-        <select id="reviewer" name="reviewer" required>
-            {% for reviewer_id, reviewer_nick in reviewers.items() %}
-                <option value="{{ reviewer_id }}">{{ reviewer_nick }}</option>
-            {% endfor %}
-        </select>
-        <button type="button" id="addReviewer">Add Reviewer</button>
+.reviewers-section h2,
+.reviewers-section h3 {
+  margin-bottom: 1rem;
+  color: #333;
+}
 
-        <h3>Assigned Reviewers:</h3>
-        <ul id="assignedReviewers"></ul>
+label {
+  display: block;
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: bold;
+  color: #444;
+}
 
-        <div id="assignedReviewersInput" name="assigned_reviewers[]">
+.ts-control {
+  border-radius: 6px !important;
+  border: 1px solid #ccc !important;
+  font-size: 1rem !important;
+  padding: 0.5rem !important;
+  box-sizing: border-box;
+  width: 100% !important;
+  background-color: white;
+}
 
-        <label for="deadline_confirm">Confirmation Deadline:</label>
-        <input type="date" id="deadline_confirm" name="deadline_confirm" required><br>
+input[type="text"],
+input[type="email"] {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
 
-        <label for="deadline_submit">Submission Deadline:</label>
-        <input type="date" id="deadline_submit" name="deadline_submit" required>
+input[type="date"] {
+  background-color: #fffefc;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  font-family: inherit;
+  width: 280px;
+  max-width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
 
-        <button type="submit">Save</button>
-    </form>
+input[type="date"]:focus {
+  border-color: #5a3d90;
+  outline: none;
+}
 
+button {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  background-color: #5a3d90;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #4a2a70;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+.reviewer-item {
+  background-color: #eee;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.remove-reviewer {
+  background-color: #d9534f !important;
+  margin-top: 0 !important;
+  margin-left: 1rem;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  color: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.3s;
+}
+
+.remove-reviewer:hover {
+  background-color: #c9302c;
+}
+
+.deadline-row {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.hidden {
+  display: none;
+}
+
+.ts-placeholder {
+  color: #999 !important;
+  font-style: italic;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #5a3d90;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: 1rem;
+}
+
+.link-button:hover {
+  background: none;
+  border: none;
+  color: #4a2a70;
+}
+
+#inviteForm {
+  padding: 1rem;
+  background-color: #f4f4f9;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#inviteForm input {
+  margin-bottom: 1rem;
+}
+
+#assignedReviewers, #invitedEmails, #chosen-question-groups {
+  background-color: #f9f9f9;  
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);  
+}
+
+#assignedReviewers li, #invitedEmails li, #chosen-question-groups li {
+  padding: 0.5rem;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+#assignedReviewers li:last-child, #invitedEmails li:last-child, #chosen-question-groups li:last-child {
+  border-bottom: none;
+}
+
+#assignedReviewers li span, #invitedEmails li span {
+  font-weight: bold;
+  color: #444;
+}
+
+#assignedReviewers li button, #invitedEmails li button, #chosen-question-groups li button {
+  background-color: #d9534f;
+  color: white;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-left: 1rem;
+}
+
+#assignedReviewers li button:hover, #invitedEmails li button:hover, #chosen-question-groups li button:hover {
+  background-color: #c9302c;
+}
+
+.placeholder-item {
+  color: gray;
+  font-style: italic;
+}
+
+.ts-placeholder {
+  color: gray !important;
+  font-style: normal !important;
+}
+</style>
+
+<div class="reviewers-section">
+  <h2>Przypisz recenzentów</h2>
+  <form action="/editor/articles/{{ article.id }}/assign_reviewers" method="post" onsubmit="return validateForm()">
+    <input type="hidden" name="tz" value="">
+    <label for="question_group_input">Zestawy pytań:</label>
+    <select name="question_group_input" id="question_group_input">
+      <option value="" disabled selected>Wybierz zestaw pytań...</option>
+      {% for qg in question_groups %}
+        <option data-id="{{ qg.id }}">{{ qg.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="button" id="add-question-group-btn">Dodaj zestaw</button>
+    <ul id="chosen-question-groups" class="reviewer-list">
+      <li id="noQuestionGroups" class="placeholder-item">Nie wybrano zestawów pytań</li>
+    </ul>
+    <label for="reviewer">Wybierz recenzenta:</label>
+    <select id="reviewer" name="reviewer" placeholder="Wybierz recenzenta...">
+      <option value="" disabled selected>Wybierz recenzenta...</option>
+      {% for reviewer_id, reviewer_nick in reviewers.items() %}
+        <option value="{{ reviewer_id }}">{{ reviewer_nick }}</option>
+      {% endfor %}
+    </select>
+    <button type="button" id="addReviewer">Dodaj recenzenta</button>
+    <button type="button" id="inviteReviewer" class="link-button">lub zaproś przez email</button>
+    <div id="inviteForm" class="hidden" style="margin-top: 10px;">
+      <label for="inviteReviewer">Zaproś do recenzowania przez email:</label>
+      <input type="email" id="inviteEmail" name="inviteEmail" placeholder="Podaj email" />
+      <button type="button" id="addEmail">Dodaj email</button>
+    </div>
+    <h3>Przypisani recenzenci:</h3>
+    <ul id="assignedReviewers" class="reviewer-list">
+      <li id="noReviewers" class="placeholder-item">Nie przypisano recenzentów</li>
+    </ul>
+    <h3>Lista zapraszanych emaili:</h3>
+    <ul id="invitedEmails" class="reviewer-list">
+      <li id="noEmails" class="placeholder-item">Nie podano emaili</li>
+    </ul>
+    <div class="deadline-row">
+      <div>
+        <label for="deadline_confirm">Deadline potwierdzenia:</label>
+        <input type="date" id="deadline_confirm" name="deadline_confirm" required />
+      </div>
+      <div>
+        <label for="deadline_submit">Deadline oddania recenzji:</label>
+        <input type="date" id="deadline_submit" name="deadline_submit" required />
+      </div>
+    </div>
+    <button type="submit">Zapisz</button>
+  </form>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 <script>
-    (function() {
-        let start, setMinDate;
+document.addEventListener("DOMContentLoaded", function () {
+  const tzField = document.getElementsByName('tz')[0];
+  if (tzField) {
+    tzField.value = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }
 
-        start=()=>{
-            setMinDate('deadline_confirm');
-            setMinDate('deadline_submit');
-
-            document.getElementsByName('tz')[0].value=Intl.DateTimeFormat().resolvedOptions().timeZone
-
-            let form=document.getElementById('assign-form');
-            let ul=document.getElementById('question-group-list');
-            let question_group_input=form['question_group_input'];
-            let add_question_btn=document.getElementById('add-question-group-btn');
-            let values_dict={};
-            add_question_btn.addEventListener('click', ()=>{
-                let option=question_group_input.selectedOptions[0];
-                if(option.value=='') {
-                    alert('{{ lang_pkg.QuestionGroupIsEmpty.value }}');
-                    return;
-                }
-                let option_id=option.dataset['id'];
-                if(option_id in values_dict) {
-                    alert('{{ lang_pkg.QuestionGroupDuplicate.value }}');
-                    return;
-                }
-                values_dict[option_id]=true;
-                let li=document.createElement('li');
-                let inp=document.createElement('input');
-                inp.type='hidden'; inp.name='question_group'; inp.value=option_id;
-                let span=document.createElement('span');
-                span.innerText=option.value;
-                option.parentElement.removeChild(option)
-                li.appendChild(inp);
-                li.appendChild(span);
-                ul.appendChild(li);
-            }, false);
-
-            document.getElementById('addReviewer').addEventListener('click', function () {
-                let reviewerSelect = document.getElementById('reviewer');
-                let selectedReviewerId = reviewerSelect.value;
-                let selectedReviewerName = reviewerSelect.options[reviewerSelect.selectedIndex].text;
-                let assignedReviewersList = document.getElementById('assignedReviewers');
-
-                if (!selectedReviewerId) {
-                    alert('Please select a reviewer.');
-                    return;
-                }
-
-                let existingItems = assignedReviewersList.querySelectorAll('li');
-                for (let item of existingItems) {
-                    if (item.getAttribute('data-id') === selectedReviewerId) {
-                        alert('Reviewer already added.');
-                        return;
-                    }
-                }
-
-                let newReviewerItem = document.createElement('li');
-                newReviewerItem.textContent = selectedReviewerName;
-                newReviewerItem.setAttribute('data-id', selectedReviewerId);
-                assignedReviewersList.appendChild(newReviewerItem);
-
-                let hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.name = 'assigned_reviewers[]';
-                hiddenInput.value = selectedReviewerId;
-                assignedReviewersList.appendChild(hiddenInput);
-            });
-
-            document.getElementById('deadline_confirm').addEventListener('change', function () {
-                let confirmDate = new Date(this.value);
-                if (!isNaN(confirmDate)) {
-                    let submitInput = document.getElementById('deadline_submit');
-
-                    date=new Date(this.value)
-                    date.setDate(date.getDate()+1);
-
-                    submitInput.min = date.toISOString().split('T', 1)[0];
-
-                    if (submitInput.value < submitInput.min) {
-                        submitInput.value = '';
-                    }
-                }
-            });
-            form.addEventListener('submit', async ev=>{
-                ev.preventDefault();
-                
-                let formData = new FormData(form);
-
-                let response = await fetch('{{ url_with_lang_for("editor_articles.assign_reviewers", article_id=article.id) }}', {
-                    method: "POST",
-                    body: formData
-                });
-
-                let data = await response.json();
-
-                if(data['success']) {
-                    window.location.href=window.location.href;
-                } else {
-                    alert(`Err: ${data['message']}`);
-                }
-                return false;
-            }, false);
+  function initTomSelect(selector, placeholder) {
+    return new TomSelect(selector, {
+      create: false,
+      maxItems: 1,
+      allowEmptyOption: true,
+      placeholder: placeholder,
+      render: {
+        option: function (data, escape) {
+          if (!data.value) return `<div class="ts-placeholder">${escape(data.text)}</div>`;
+          return `<div>${escape(data.text)}</div>`;
+        },
+        item: function (data, escape) {
+          if (!data.value) return `<div class="ts-placeholder">${escape(data.text)}</div>`;
+          return `<div>${escape(data.text)}</div>`;
         }
+      },
+      onChange() { this.blur(); },
+      onFocus() { this.clear(); }
+    });
+  }
 
-        setMinDate=inputId=>{
-            let input=document.getElementById(inputId);
-            let today=new Date();
-            today.setDate(today.getDate() + 2);
-            let minDate=today.toISOString().split('T')[0];
-            input.min=minDate;
+  initTomSelect("#question_group_input", "Wybierz zestaw pytań...");
+  initTomSelect("#reviewer", "Wybierz recenzenta...");
+
+  const reviewerSelect = document.getElementById("reviewer");
+  const assignedReviewersList = document.getElementById("assignedReviewers");
+  let noReviewersItem = document.getElementById("noReviewers");
+  const form = document.querySelector("form");
+
+  document.getElementById('addReviewer').addEventListener('click', function () {
+    const selectedOption = reviewerSelect.options[reviewerSelect.selectedIndex];
+    const selectedId = selectedOption.value;
+    const selectedText = selectedOption.textContent.trim();
+
+    if (!selectedId) {
+      alert("Wybierz recenzenta z listy.");
+      return;
+    }
+    if ([...assignedReviewersList.children].some(li => li.dataset.id === selectedId)) {
+      alert("Recenzent już został dodany.");
+      return;
+    }
+    if (noReviewersItem) {
+      noReviewersItem.remove();
+      noReviewersItem = null;
+    }
+
+    const newReviewerItem = document.createElement("li");
+    newReviewerItem.classList.add("reviewer-item");
+    newReviewerItem.dataset.id = selectedId;
+
+    const reviewerNameSpan = document.createElement("span");
+    reviewerNameSpan.textContent = selectedText;
+
+    const removeButton = document.createElement("button");
+    removeButton.textContent = "Usuń";
+    removeButton.type = "button";
+    removeButton.classList.add("remove-reviewer");
+    removeButton.addEventListener("click", () => {
+      newReviewerItem.remove();
+      hiddenInput.remove();
+      if (assignedReviewersList.children.length === 0) {
+        noReviewersItem = document.createElement("li");
+        noReviewersItem.id = "noReviewers";
+        noReviewersItem.textContent = "Nie przypisano recenzentów";
+        noReviewersItem.classList.add("placeholder-item");
+        assignedReviewersList.appendChild(noReviewersItem);
+      }
+    });
+
+    newReviewerItem.appendChild(reviewerNameSpan);
+    newReviewerItem.appendChild(removeButton);
+    assignedReviewersList.appendChild(newReviewerItem);
+
+    const hiddenInput = document.createElement("input");
+    hiddenInput.type = "hidden";
+    hiddenInput.name = "assigned_reviewers[]";
+    hiddenInput.value = selectedId;
+    form.appendChild(hiddenInput);
+
+    reviewerTomSelect.removeItem(selectedId);
+    reviewerTomSelect.removeOption(selectedId);
+    reviewerTomSelect.clear();
+  });
+
+  const emailInput = document.getElementById("inviteEmail");
+  const emailList = document.getElementById("invitedEmails");
+  let noEmailsItem = document.getElementById("noEmails");
+
+  document.getElementById('addEmail').addEventListener('click', function () {
+    const email = emailInput.value.trim();
+    if (!email || !validateEmail(email)) {
+      alert("Wprowadź poprawny adres email.");
+      return;
+    }
+    if ([...emailList.children].some(li => li.dataset.email === email)) {
+      alert("Ten email został już dodany.");
+      return;
+    }
+    if (noEmailsItem) {
+      noEmailsItem.remove();
+      noEmailsItem = null;
+    }
+
+    const newEmailItem = document.createElement("li");
+    newEmailItem.classList.add("reviewer-item");
+    newEmailItem.dataset.email = email;
+
+    const emailSpan = document.createElement("span");
+    emailSpan.textContent = email;
+
+    const removeButton = document.createElement("button");
+    removeButton.textContent = "Usuń";
+    removeButton.type = "button";
+    removeButton.classList.add("remove-reviewer");
+    removeButton.addEventListener("click", () => {
+      newEmailItem.remove();
+      hiddenEmailInput.remove();
+      if (emailList.children.length === 0) {
+        noEmailsItem = document.createElement("li");
+        noEmailsItem.id = "noEmails";
+        noEmailsItem.textContent = "Nie podano emaili";
+        noEmailsItem.classList.add("placeholder-item");
+        emailList.appendChild(noEmailsItem);
+      }
+    });
+
+    newEmailItem.appendChild(emailSpan);
+    newEmailItem.appendChild(removeButton);
+    emailList.appendChild(newEmailItem);
+
+    const hiddenEmailInput = document.createElement("input");
+    hiddenEmailInput.type = "hidden";
+    hiddenEmailInput.name = "invited_emails[]";
+    hiddenEmailInput.value = email;
+    form.appendChild(hiddenEmailInput);
+
+    emailInput.value = "";
+    document.getElementById("inviteForm").style.display = "none";
+  });
+
+  document.getElementById('inviteReviewer').addEventListener('click', function () {
+    const inviteForm = document.getElementById("inviteForm");
+    inviteForm.classList.toggle("hidden");
+  });
+
+  function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email.toLowerCase());
+  }
+
+  function setMinDate() {
+    const today = new Date();
+    today.setDate(today.getDate() + 3);
+    today.setHours(0, 0, 0, 0);
+    const minDate = today.toISOString().slice(0, 10);
+
+    const deadlineConfirm = document.getElementById("deadline_confirm");
+    const deadlineSubmit = document.getElementById("deadline_submit");
+
+    deadlineConfirm.min = minDate;
+    deadlineSubmit.min = minDate;
+
+    deadlineConfirm.addEventListener("change", () => {
+      if (deadlineConfirm.value) {
+        let confirmDate = new Date(deadlineConfirm.value);
+        confirmDate.setDate(confirmDate.getDate() + 1);
+        const newMin = confirmDate.toISOString().slice(0, 10);
+        deadlineSubmit.min = newMin;
+
+        if (deadlineSubmit.value && deadlineSubmit.value < newMin) {
+          deadlineSubmit.value = "";
         }
+      } else {
+        deadlineSubmit.min = minDate;
+      }
+    });
+  }
+  setMinDate();
 
-        start();
-    })();
+  (function () {
+    const select = document.getElementById("question_group_input");
+    const addBtn = document.getElementById("add-question-group-btn");
+    const list = document.getElementById("chosen-question-groups");
+    const selectedGroups = {};
+    let noQuestionGroupsItem = document.getElementById("noQuestionGroups");
+
+    addBtn.addEventListener("click", () => {
+      const option = select.selectedOptions[0];
+      if (!option || option.value === "") {
+        alert("Wybierz zestaw pytań.");
+        return;
+      }
+
+      const groupId = option.dataset.id;
+      const groupName = option.textContent.trim();
+
+      if (selectedGroups[groupId]) {
+        alert("Ten zestaw został już dodany.");
+        return;
+      }
+
+      selectedGroups[groupId] = true;
+
+      if (noQuestionGroupsItem) {
+        noQuestionGroupsItem.remove();
+        noQuestionGroupsItem = null;
+      }
+
+      const li = document.createElement("li");
+      li.classList.add("reviewer-item");
+      li.textContent = groupName;
+
+      const hiddenInput = document.createElement("input");
+      hiddenInput.type = "hidden";
+      hiddenInput.name = "question_group";
+      hiddenInput.value = groupId;
+      li.appendChild(hiddenInput);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.textContent = "Usuń";
+      removeBtn.type = "button";
+      removeBtn.className = "remove-reviewer";
+      removeBtn.addEventListener("click", () => {
+        delete selectedGroups[groupId];
+        li.remove();
+        if (list.children.length === 0) {
+          noQuestionGroupsItem = document.createElement("li");
+          noQuestionGroupsItem.id = "noQuestionGroups";
+          noQuestionGroupsItem.textContent = "Nie wybrano zestawów pytań";
+          noQuestionGroupsItem.classList.add("placeholder-item");
+          list.appendChild(noQuestionGroupsItem);
+        }
+      });
+
+      li.appendChild(removeBtn);
+      list.appendChild(li);
+    });
+  })();
+
+  function validateForm() {
+    const assignedReviewers = document.querySelectorAll('input[name="assigned_reviewers[]"]');
+    const invitedEmails = document.querySelectorAll('input[name="invited_emails[]"]');
+    const deadlineConfirm = document.getElementById("deadline_confirm");
+    const deadlineSubmit = document.getElementById("deadline_submit");
+
+    if (assignedReviewers.length === 0 && invitedEmails.length === 0) {
+      alert("Musisz dodać co najmniej jednego recenzenta lub zaprosić przez email.");
+      return false;
+    }
+    if (!deadlineConfirm.value) {
+      alert("Wybierz deadline potwierdzenia.");
+      return false;
+    }
+    if (!deadlineSubmit.value) {
+      alert("Wybierz deadline oddania recenzji.");
+      return false;
+    }
+    if (deadlineSubmit.value < deadlineConfirm.value) {
+      alert("Deadline oddania recenzji nie może być wcześniejszy niż deadline potwierdzenia.");
+      return false;
+    }
+    return true;
+  }
+
+  form.addEventListener("submit", function (e) {
+    if (!validateForm()) {
+      e.preventDefault();
+    }
+  });
+});
 </script>

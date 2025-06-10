@@ -3,10 +3,12 @@ import shutil
 from typing import Any
 from zoneinfo import ZoneInfo
 import services.user_service as au
-from db.db_base import log_activity
+from flask import send_from_directory
 import services.article_service as aq
 import services.question_service as sq
+from db.db_base import db, log_activity
 from . import question_controller as qc
+import controllers.user_controller as uc
 from datetime import datetime, timedelta
 from models.article import Questions as Q
 from werkzeug.utils import secure_filename
@@ -87,6 +89,12 @@ def get_all_articles_by_editor() -> Response:
     return Response.success_response(data=articles)
 
 @decor.log_if_error
+def get_all_rejected_articles_by_editor() -> Response:
+    user_id = au.get_curr_user_or_err().get_id()
+    articles = aq.get_all_rejected_articles_by_editor_id(int(user_id))
+    return Response.success_response(data=articles)
+
+@decor.log_if_error
 def get_article_data_as_editor(article_id: int) -> Response:
     is_editor(article_id)
     return get_article_data(article_id)
@@ -151,11 +159,11 @@ def set_article_status(article_id: int, status: ArticleStatusEnum) -> Response:
     return Response.success_response()
 
 @decor.log_if_error
-def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewers: list[str], deadline_confirm: str, deadline_submit: str, tz: str) -> Response:
+def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewers: list[str], assigned_emails: list[str], deadline_confirm: str, deadline_submit: str, tz: str) -> Response:
     is_editor(article_id)
     lang_pkg=util.get_lang_pkg()
 
-    if not assigned_reviewers:
+    if not assigned_reviewers and not assigned_emails:
         raise MessageException('No reviewers assigned')
     
     confirm_date = datetime.strptime(deadline_confirm, "%Y-%m-%d")
@@ -178,6 +186,8 @@ def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewer
         return Response.error_response(message = f"Article {article_id} does not exist")
 
     question_groups_ids = {int(qg_id) for qg_id in question_set}
+    if len(question_groups_ids)<1:
+        raise MessageException(lang_pkg.SelectQuestionSet.value)
     question_groups: list[Q.QuestionGroup]=[]
     for qg_id in question_groups_ids:
         qg=sq.get_question_group(qg_id)
@@ -206,10 +216,36 @@ def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewer
 
     for reviewer_id in list(assigned_reviewers_ids):
         aq.add_reviewer_to_article(article_id, reviewer_id)
+    db.session.commit()
+
+    failed_emails = []
+    invited_ids = []
+    for email in assigned_emails:
+        try:
+            result = uc.invite_user(email)
+            if result.success:
+                invited_user_id = result.data["user_id"]
+                invited_ids.append(invited_user_id)
+                aq.add_reviewer_to_article(article_id, invited_user_id)
+            else:
+                failed_emails.append(email)
+        except Exception as e:
+            failed_emails.append(email)
+
+    # Czy jakikolwiek recenzent został skutecznie przypisany?
+    if not assigned_reviewers_ids and not invited_ids:
+        return Response.error_response(message="No valid reviewers could be assigned.")
         
     aq.set_deadlines_and_qs(article_id = article_id, question_set = question_groups, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
 
-    aq.update_article_status(article, ArticleStatusEnum.InReview)
+    update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
+    if not update_status_result.success:
+        db.session.rollback()
+        raise MessageException(f'Failed to update article status to {ArticleStatusEnum.InReview.value}.')
+    
+    if failed_emails:
+        return Response.success_response(message=f"Some invitations failed: {', '.join(failed_emails)}")
+
     return Response.success_response()
 
 def _handle_files(url_start: str, dir_path: str, files: list[FileStorage], main_tex_name: str|None=None) -> str:

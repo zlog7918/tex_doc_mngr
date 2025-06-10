@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %} Lista Artykułów {% endblock %}
+{% block title %}Lista Artykułów{% endblock %}
 
 {% block body %}
     {% include 'toolbar.html' %}
@@ -27,12 +27,12 @@
         }
 
         table {
-            width: 100%; 
+            width: 100%;
             border-collapse: collapse;
             background: white;
             border-radius: 10px;
             overflow: hidden;
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
         }
 
         th, td {
@@ -65,11 +65,68 @@
             background: #4a1e87;
         }
 
+        .toggle-btn {
+            background-color: #5a3d90;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .toggle-btn:hover {
+            background-color: #4a1e87;
+        }
+
+        .toggle-btn:active {
+            transform: scale(0.98);
+            background-color: #39126c;
+        }
+
+         .no-articles-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            margin: 50px auto;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .no-articles-image {
+            max-width: 200px;
+            height: auto;
+        }
+
+        .no-articles-text {
+            max-width: 500px;
+            text-align: left;
+        }
+
+        .no-articles-text h2 {
+            font-size: 24px;
+            color: #5a3d90;
+            margin-bottom: 10px;
+        }
+
+        .no-articles-text p {
+            font-size: 16px;
+            color: #555;
+        }
     </style>
 
     <div class="main-content">
-        <h1>Lista Artykułów</h1>
+        <h1>Lista artykułów</h1>
 
+        {% if articles %}
         <table>
             <thead>
                 <tr>
@@ -85,11 +142,97 @@
                         <td>{{ article.title }}</td>
                         <td>{{ article.author.get_nick() }}</td>
                         <td>{{ article.status.stat.name }}</td>
-                        <td><a href="{{ url_for('editor_articles.article_details', article_id=article.id) }}" class="details-btn">Zobacz</a></td>
+                        <td>
+                            <a href="{{ url_for('editor_articles.article_details', article_id=article.id) }}" class="details-btn">Zobacz</a>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        <button id="toggleRejectedBtn" class="toggle-btn" style="display: none;">Pokaż odrzucone artykuły</button>
+
+        <div id="rejectedSection" style="display: none; margin-top: 20px;">
+            <h1>Lista Artykułów Odrzuconych</h1>
+            <table id="rejectedArticlesTable">
+                <thead>
+                    <tr>
+                        <th>Tytuł</th>
+                        <th>Autor</th>
+                        <th>Status</th>
+                        <th>Szczegóły</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        {% else %}
+            <div class="no-articles-box">
+                <img src="{{ url_for('static', filename='images/working.svg') }}" alt="Pracujemy nad tym" class="no-articles-image">
+                <div class="no-articles-text">
+                    <h2>Chwilowo brak artykułów do wyświetlenia</h2>
+                    <p>Nie przypisano Ci żadnego artykułu do zarządzania. Wróć później.</p>
+                </div>
+            </div>
+        {% endif %}
     </div>
 
+    <script>
+        let rejectedLoaded = false;
+        const toggleBtn = document.getElementById('toggleRejectedBtn');
+        const rejectedSection = document.getElementById('rejectedSection');
+
+        fetch('/editor/articles/rejected_articles')
+            .then(response => {
+                if (!response.ok) throw new Error('Błąd pobierania');
+                return response.json();
+            })
+            .then(data => {
+                if (data.data.length > 0) {
+                    toggleBtn.style.display = 'inline-flex';
+                }
+            })
+            .catch(error => {
+                console.error('Nie udało się sprawdzić odrzuconych artykułów.', error);
+            });
+
+        toggleBtn.addEventListener('click', function () {
+            if (rejectedSection.style.display === 'none') {
+                rejectedSection.style.display = 'block';
+                toggleBtn.textContent = 'Ukryj odrzucone artykuły';
+
+                if (!rejectedLoaded) {
+                    fetch('/editor/articles/rejected_articles')
+                        .then(response => {
+                            if (!response.ok) throw new Error('Błąd pobierania');
+                            return response.json();
+                        })
+                        .then(data => {
+                            const tbody = document.querySelector('#rejectedArticlesTable tbody');
+                            tbody.innerHTML = '';
+
+                            data.data.forEach(article => {
+                                const row = document.createElement('tr');
+                                row.innerHTML = `
+                                    <td>${article.title}</td>
+                                    <td>${article.author}</td>
+                                    <td>${article.status}</td>
+                                    <td><a href="/editor/articles/${article.id}" class="details-btn">Zobacz</a></td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+
+                            rejectedLoaded = true;
+                        })
+                        .catch(error => {
+                            alert('Nie udało się załadować odrzuconych artykułów.');
+                            console.error(error);
+                        });
+                }
+            } else {
+                rejectedSection.style.display = 'none';
+                toggleBtn.textContent = 'Pokaż odrzucone artykuły';
+            }
+        });
+    </script>
 {% endblock %}
