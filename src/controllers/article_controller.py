@@ -186,6 +186,8 @@ def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewer
         return Response.error_response(message = f"Article {article_id} does not exist")
 
     question_groups_ids = {int(qg_id) for qg_id in question_set}
+    if len(question_groups_ids)<1:
+        raise MessageException(lang_pkg.SelectQuestionSet.value)
     question_groups: list[Q.QuestionGroup]=[]
     for qg_id in question_groups_ids:
         qg=sq.get_question_group(qg_id)
