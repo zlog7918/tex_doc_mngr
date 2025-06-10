@@ -116,6 +116,52 @@
                 padding: 10px 20px;
             }
         }
+
+        #fileTable {
+            margin-top: 10px;
+            width: 100%;
+            border-collapse: separate; 
+            border-spacing: 0;
+            border: 1px solid #ccc; 
+            border-radius: 10px;
+            display: none;
+            overflow: hidden; 
+            background-color: white;
+        }
+
+        #fileTable th, #fileTable td {
+            padding: 8px;
+            border-bottom: 1px solid #ccc;
+        }
+
+        #fileTable th {
+            background-color: #eee;
+            text-align: left;
+        }
+
+        #fileTable thead tr:first-child th:first-child {
+            border-top-left-radius: 10px;
+        }
+
+        #fileTable thead tr:first-child th:last-child {
+            border-top-right-radius: 10px;
+        }
+
+        #fileTable tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        #fileTable tbody tr:last-child td:first-child {
+            border-bottom-left-radius: 10px;
+        }
+
+        #fileTable tbody tr:last-child td:last-child {
+            border-bottom-right-radius: 10px;
+        }
+
+        #fileTable tr:hover {
+            background-color: #f0f0f0;
+        }
     </style>
 
 <div>
@@ -139,7 +185,18 @@
             <div class="form-group">
                 <label for="file">Wybierz poprawione pliki:</label>
                 <input type="file" name="files" id="file" multiple>
-                <ul id="fileList" style="margin-top: 10px; font-size: 14px; color: #333; list-style: none; padding: 0;"></ul>
+                
+                <table id="fileTable">
+                    <thead>
+                        <tr>
+                            <th>Nazwa pliku</th>
+                            <th style="text-align: center;">Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Tutaj pojawią się pliki -->
+                    </tbody>
+                </table>
             </div>
 
             <div class="form-group" id="mainTexSelector" style="display: none;">
@@ -163,45 +220,55 @@
             const mainTexDiv = document.getElementById('mainTexSelector');
             const mainTexSelect = document.getElementById('mainTex');
 
+            let selectedFiles = [];
+
             function updateFileList() {
                 const label = document.querySelector('label[for="file"]');
-                const fileList = document.getElementById("fileList");
+                const fileTable = document.getElementById("fileTable");
+                const tbody = fileTable.querySelector("tbody");
 
                 label.innerText = `Wybierz pliki: (Liczba plików: ${selectedFiles.length})`;
 
-                fileList.innerHTML = "";
+                tbody.innerHTML = "";  
 
-                selectedFiles.forEach(file => {
-                    const li = document.createElement("li");
-                    li.style.display = "flex";
-                    li.style.justifyContent = "space-between";
-                    li.style.alignItems = "center";
-                    li.style.padding = "4px 0";
+                if (selectedFiles.length === 0) {
+                    fileTable.style.display = "none";  
+                } else {
+                    fileTable.style.display = "table"; 
 
-                    const fileName = document.createElement("span");
-                    fileName.textContent = file.name;
+                    selectedFiles.forEach(file => {
+                        const tr = document.createElement("tr");
 
-                    const removeBtn = document.createElement("button");
-                    removeBtn.textContent = "Usuń";
-                    removeBtn.style.background = "#e74c3c";
-                    removeBtn.style.color = "white";
-                    removeBtn.style.border = "none";
-                    removeBtn.style.padding = "4px 8px";
-                    removeBtn.style.borderRadius = "4px";
-                    removeBtn.style.cursor = "pointer";
+                        
+                        const tdName = document.createElement("td");
+                        tdName.textContent = file.name;
 
-                    removeBtn.addEventListener("click", function () {
-                        const idx = selectedFiles.findIndex(f => f.name === file.name);
-                        if (idx !== -1) {
-                            selectedFiles.splice(idx, 1);
-                            updateFileList();
-                        }
+                        const tdActions = document.createElement("td");
+                        tdActions.style.textAlign = "center";
+
+                        const removeBtn = document.createElement("button");
+                        removeBtn.textContent = "Usuń";
+                        removeBtn.style.background = "#e74c3c";
+                        removeBtn.style.color = "white";
+                        removeBtn.style.border = "none";
+                        removeBtn.style.padding = "6px 12px";
+                        removeBtn.style.borderRadius = "4px";
+                        removeBtn.style.cursor = "pointer";
+
+                        removeBtn.addEventListener("click", function () {
+                            const idx = selectedFiles.findIndex(f => f.name === file.name);
+                            if (idx !== -1) {
+                                selectedFiles.splice(idx, 1);
+                                updateFileList();
+                            }
+                        });
+
+                        tdActions.appendChild(removeBtn);
+                        tr.appendChild(tdName);
+                        tr.appendChild(tdActions);
+                        tbody.appendChild(tr);
                     });
-
-                    li.appendChild(fileName);
-                    li.appendChild(removeBtn);
-                    fileList.appendChild(li);
-                });
+                }
 
                 const showButtons = selectedFiles.length > 0;
                 previewBtn.style.display = showButtons ? "inline-block" : "none";
@@ -209,7 +276,6 @@
 
                 const hasTexFile = selectedFiles.some(file => file.name.endsWith('.tex'));
 
-                // Jeśli mainTexDiv JEST widoczny (czyli user już raz go uruchomił)
                 if (mainTexDiv.style.display !== 'none') {
                     mainTexSelect.innerHTML = '';
 
@@ -223,7 +289,6 @@
                                 mainTexSelect.appendChild(option);
                             });
 
-                        // Resetuj wartość, jeśli obecnie wybrany plik nie istnieje
                         const availableTexNames = Array.from(mainTexSelect.options).map(opt => opt.value);
                         if (!availableTexNames.includes(mainTexSelect.value)) {
                             mainTexSelect.value = '';
@@ -235,10 +300,7 @@
                         mainTexSelect.required = false;
                     }
                 }
-
             }
-
-            let selectedFiles = [];
 
             fileInput.addEventListener('change', function () {
                 for (const file of this.files) {
