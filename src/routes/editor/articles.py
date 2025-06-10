@@ -1,7 +1,7 @@
-from flask import request, Blueprint
 from models.utils.Response import Response
 import controllers.article_controller as ac
 import controllers.question_controller as qc
+from flask import request, redirect, Blueprint
 from models.utils import decors as decor, utils as util
 from models.article.Article import ArticleStatusEnum, Article
 
@@ -97,6 +97,7 @@ def finish_article(article_id: int):
 @decor.handle_form_not_filled
 def assign_reviewers(article_id: int):
     assigned_reviewers = request.form.getlist('assigned_reviewers[]')
+    assigned_emails = request.form.getlist('invited_emails[]')
     question_set = request.form.getlist('question_group')
     (deadline_confirm, deadline_submit, tz)=util.get_from_form(request.form, (
         'deadline_confirm',
@@ -104,7 +105,10 @@ def assign_reviewers(article_id: int):
         'tz',
     ))
     
-    response = ac.assign_reviewers(article_id, question_set, assigned_reviewers, deadline_confirm, deadline_submit, tz)
+    response = ac.assign_reviewers(article_id, question_set, assigned_reviewers, assigned_emails, deadline_confirm, deadline_submit, tz)
+
+    if response.success:
+        return redirect(util.url_with_lang_for('editor_articles.article_details', article_id=article_id))
     return response.to_dict()
 
 
