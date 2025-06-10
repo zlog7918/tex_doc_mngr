@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}{{ lang_pkg.EditorList.value }}{% endblock %}
+
+{% block body %}
+    {% include 'toolbar.html' %}
+
+    <style>
+        .main-content {
+            padding: 20px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: black;
+            margin-bottom: 20px;
+        }
+
+        .above-table-text {
+            text-align: left;
+            font-size: 18px;
+            color: #2d1053;
+            margin-bottom: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #5a3d90;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background: #f3f1f9;
+        }
+
+        .details-btn {
+            background: #5a3d90;
+            color: white;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: 0.3s;
+        }
+
+        .details-btn:hover {
+            background: #4a1e87;
+        }
+
+        .toggle-btn {
+            background-color: #5a3d90;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            border: none;
+            border-radius: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .toggle-btn:hover {
+            background-color: #4a1e87;
+        }
+
+        .toggle-btn:active {
+            transform: scale(0.98);
+            background-color: #39126c;
+        }
+    </style>
+
+    <div class="main-content">
+        <h1>{{ lang_pkg.NotEditorList.value }}</h1>
+        <table id="interceptTable">
+            <thead>
+                <tr>
+                    <th>{{ lang_pkg.Name.value }}</th>
+                    <th>{{ lang_pkg.Action.value }}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for editor in editors[1] %}
+                    <tr>
+                        <td>{{ editor.nick }}</td>
+                        <td>
+                            <a href="{{ url_with_lang_for('user.add_editor', id=editor.id) }}" class="details-btn">{{ lang_pkg.Add.value }}</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <button id="toggleBtn" class="toggle-btn">{{ lang_pkg.EditorList.value }}</button>
+        <div id="tagglebleTable" style="display:none; margin-top:20px;">
+            <h1>{{ lang_pkg.EditorList.value }}</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th>{{ lang_pkg.Name.value }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for editor in editors[0] %}
+                        <tr>
+                            <td>{{ editor.nick }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        (function() {
+            let setup;
+
+            setup=()=>{
+                let toggleBtn=document.getElementById('toggleBtn');
+                let tagglebleTable=document.getElementById('tagglebleTable');
+                let interceptTable=document.getElementById('interceptTable');
+
+                toggleBtn.addEventListener('click', ()=>{
+                    if(tagglebleTable.style.display!=='none')
+                        tagglebleTable.style.display='none';
+                    else
+                        tagglebleTable.style.display='block';
+                }, false);
+
+                interceptTable.addEventListener('click', ev=>{
+                    if(ev.srcElement.tagName!=='A')
+                        return;
+                    ev.preventDefault();
+                    ajax_json_call(ev.srcElement.href, null, null).then(data=>{
+                        if(data['success']) {
+                            window.location.href='{{ url_with_lang_for("user.show_editors") }}';
+                        } else {
+                            alert(`Err: ${data['message']}`);
+                        }
+                    }).catch(err=>alert(`Err: ${JSON.stringify(err)}`));
+                    return false;
+                }, false);
+            };
+
+            setup();
+        })();
+    </script>
+{% endblock %}

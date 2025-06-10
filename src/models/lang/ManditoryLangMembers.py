@@ -7,6 +7,7 @@ class LangBaseEx(Enum):
         member(lambda _:f'')
     UserNotLogged=\
     UserNotAdded=\
+    UserNotAddedToGroup=\
     User0NotFound=\
     QuestionAlreadyExists=\
     QuestionAnsAlreadyExists=\
@@ -26,14 +27,20 @@ class LangBaseEx(Enum):
     AddQuestionGroup=\
     SelectQuestionSet=\
     OptionList=\
+    EditorList=\
+    NotEditorList=\
+    ReviewerList=\
+    NotReviewerList=\
     AddAnswer=\
     Question=\
     QuestionGroup=\
     Details=\
     Author=\
+    Action=\
     IsABC=\
     Name=\
     User=\
+    Add=\
     YES=\
     NO=\
     PossibleAnswerIsEmpty=\
@@ -63,6 +70,8 @@ class LangBaseEx(Enum):
     IncorrectCode=\
     EmailOrNickExists=\
     UserAlreadyApproved=\
+    UserAlreadyEditor=\
+    UserAlreadyReviewer=\
     IncorrectOldPassword=\
     PasswordDoesNotMeetCriteria=\
     UnknownErr=\

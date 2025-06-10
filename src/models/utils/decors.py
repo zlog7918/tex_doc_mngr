@@ -1,45 +1,76 @@
+import typing as t
 from flask import abort
 from functools import wraps
 from . import utils as util
+from ..usr import User as U
 from .Response import Response
 from db.db_base import db, log_err
 from services import user_service as su
 from flask.typing import ResponseReturnValue
 from .MessageException import MessageException
-from typing import Callable, ParamSpec, TypeVar, Generic
 from .FormNotFilledException import FormNotFilledException
 
-_PWrapped=ParamSpec('_PWrapped')
-_RWrapped=TypeVar('_RWrapped')
-_PWrapper=ParamSpec('_PWrapper')
-_RWrapper=TypeVar('_RWrapper')
-class _Wrapped(Generic[_PWrapped, _RWrapped, _PWrapper, _RWrapper]):
-    __wrapped__: Callable[_PWrapped, _RWrapped]
+_PWrapped=t.ParamSpec('_PWrapped')
+_RWrapped=t.TypeVar('_RWrapped')
+_PWrapper=t.ParamSpec('_PWrapper')
+_RWrapper=t.TypeVar('_RWrapper')
+class _Wrapped(t.Generic[_PWrapped, _RWrapped, _PWrapper, _RWrapper]):
+    __wrapped__: t.Callable[_PWrapped, _RWrapped]
     def __call__(self, *args: _PWrapper.args, **kwargs: _PWrapper.kwargs) -> _RWrapper: ...
     __name__: str
     __qualname__: str
-def __ret_wrapped(f: Callable[_PWrapped, _RWrapped]) -> Callable[[Callable[_PWrapper, _RWrapper]], _Wrapped[_PWrapped, _RWrapped, _PWrapped, _RWrapper]]:
-    def _func(fun: Callable[_PWrapper, _RWrapper]) -> _Wrapped[_PWrapped, _RWrapped, _PWrapped, _RWrapper]:
+def __ret_wrapped(f: t.Callable[_PWrapped, _RWrapped]) -> t.Callable[[t.Callable[_PWrapper, _RWrapper]], _Wrapped[_PWrapped, _RWrapped, _PWrapped, _RWrapper]]:
+    def _func(fun: t.Callable[_PWrapper, _RWrapper]) -> _Wrapped[_PWrapped, _RWrapped, _PWrapped, _RWrapper]:
         @wraps(f)
         def func(*args: _PWrapper.args, **kwargs: _PWrapper.kwargs) -> _RWrapper:
             return fun(*args, **kwargs)
         return func # type: ignore
     return _func
 
+def __is_loggedin() -> U.User:
+    user=su.get_curr_user()
+    if user is None:
+        abort(401)
+    return user
 
-P=ParamSpec('P')
-def approve_required(f: Callable[P, ResponseReturnValue]) -> _Wrapped[P, ResponseReturnValue, P, ResponseReturnValue]:
+def __is_approved() -> U.User:
+    user=__is_loggedin()
+    if not user.approved:
+        abort(401)
+    return user
+
+def __is_group(get_user_func: t.Callable[[], U.User], group: U.UserGroupEnum) -> U.User:
+    user=get_user_func()
+    user_groups={ug.group.group for ug in user.groups}
+    if group not in user_groups:
+        abort(401)
+    return user
+
+P=t.ParamSpec('P')
+def login_required(f: t.Callable[P, ResponseReturnValue]) -> _Wrapped[P, ResponseReturnValue, P, ResponseReturnValue]:
     @__ret_wrapped(f)
     def func(*args: P.args, **kwargs: P.kwargs) -> ResponseReturnValue:
-        user=su.get_curr_user()
-        if user is None:
-            abort(401)
-        if not user.approved:
-            abort(401)
+        __is_loggedin()
         return f(*args, **kwargs)
     return func
 
-def log_if_error(f: Callable[P, Response]) -> _Wrapped[P, Response, P, Response]:
+def approve_required(f: t.Callable[P, ResponseReturnValue]) -> _Wrapped[P, ResponseReturnValue, P, ResponseReturnValue]:
+    @__ret_wrapped(f)
+    def func(*args: P.args, **kwargs: P.kwargs) -> ResponseReturnValue:
+        __is_approved()
+        return f(*args, **kwargs)
+    return func
+
+def group_required(group: U.UserGroupEnum, is_approve_req: bool=True) -> t.Callable[[t.Callable[P, ResponseReturnValue]], _Wrapped[P, ResponseReturnValue, P, ResponseReturnValue]]:
+    def group_required(f: t.Callable[P, ResponseReturnValue]) -> _Wrapped[P, ResponseReturnValue, P, ResponseReturnValue]:
+        @__ret_wrapped(f)
+        def func(*args: P.args, **kwargs: P.kwargs) -> ResponseReturnValue:
+            __is_group(__is_approved if is_approve_req else __is_loggedin, group)
+            return f(*args, **kwargs)
+        return func
+    return group_required
+
+def log_if_error(f: t.Callable[P, Response]) -> _Wrapped[P, Response, P, Response]:
     @__ret_wrapped(f)
     def func(*args: P.args, **kwargs: P.kwargs) -> Response:
         try:
@@ -69,7 +100,7 @@ def log_if_error(f: Callable[P, Response]) -> _Wrapped[P, Response, P, Response]
             return Response.error_response(message=util.get_lang_pkg().UnknownDBErr.value)
     return func
 
-def handle_form_not_filled(f: Callable[P, ResponseReturnValue]) -> _Wrapped[P, ResponseReturnValue, P, ResponseReturnValue]:
+def handle_form_not_filled(f: t.Callable[P, ResponseReturnValue]) -> _Wrapped[P, ResponseReturnValue, P, ResponseReturnValue]:
     @__ret_wrapped(f)
     def func(*args: P.args, **kwargs: P.kwargs) -> ResponseReturnValue:
         try:

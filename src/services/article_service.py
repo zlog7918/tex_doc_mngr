@@ -1,4 +1,4 @@
-from models.usr.User import User
+from models.usr import User as U
 from sqlalchemy import and_, select
 from models.article import Round as R
 from models.utils import utils as util
@@ -67,7 +67,7 @@ def get_all_articles_by_editor_id(editor_id: int) -> list[Article]:
 def get_all_rejected_articles_by_editor_id(editor_id: int) -> list[Article]:
     return (
         Article.query
-        .join(ArticleStatus)
+        .join(ArticleStatus, ArticleStatus.id==Article.status_id)
         .where(and_(
             Article.editor_id == editor_id,
             ArticleStatus.stat == ArticleStatusEnum.Rejected
@@ -93,8 +93,11 @@ def set_article_status(article: Article, new_status: ArticleStatusEnum) -> bool:
         return False
 
 def get_latest_round(article: Article) -> R.Round | None:
-    # return article.rounds[-1]
-    return R.Round.query.where(R.Round.article_id==article.id).order_by(R.Round.round_number.desc()).first()
+    try:
+        return article.rounds[-1]
+    except IndexError as e:
+        return None
+    # return R.Round.query.where(R.Round.article_id==article.id).order_by(R.Round.round_number.desc()).first()
 
 def get_available_reviewers(article_id: int) -> dict[int, str]:
     try:
@@ -117,36 +120,40 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
             .subquery()
         )
 
-        reviewers = (
-            db.session.query(User.id, User.nick)
+        reviewers = db.session.execute(
+            select(U.User)
+            .join(U.UsersGroups, U.UsersGroups.user_id==U.User.id)
+            .join(U.UserGroup, U.UserGroup.id==U.UsersGroups.group_id)
             .where(and_(
-                ~User.id.in_(select(assigned_reviewers_subquery)),
-                User.nick != None,
-                User.id != user_id,
-                User.id != user0_id,
-                User.id != author_id,
+                ~U.User.id.in_(select(assigned_reviewers_subquery)),
+                U.User.nick!=None,
+                U.User.id != user_id,
+                U.User.id != user0_id,
+                U.User.id != author_id,
             ))
-            .all()
-        )
+        ).scalars().all()
 
         # Konwersja wyników na listę słowników
-        return { row.id: row.nick for row in reviewers }
+        return {row.id: row.get_nick() for row in reviewers}
 
     except Exception as err:
         raise MessageException.from_exception(err, 'Error while: finding available reviewers')
     
 def get_available_editors() -> dict[int, str]:
     try:
-        editors = (
-            db.session.query(User.id, User.nick)
+        editors = db.session.execute(
+            select(U.User)
+            .join(U.UsersGroups, U.UsersGroups.user_id==U.User.id)
+            .join(U.UserGroup, U.UserGroup.id==U.UsersGroups.group_id)
             .where(and_(
-                User.id!=uq.get_curr_user_or_err().id,
-                User.id!=uq.get_usr0_or_err().id
+                U.User.nick!=None,
+                U.UserGroup.group==U.UserGroupEnum.Editor,
+                U.User.id!=uq.get_curr_user_or_err().id,
+                U.User.id!=uq.get_usr0_or_err().id,
             ))
-            .all()
-        )
+        ).scalars().all()
 
-        return {row.id: row.nick for row in editors} 
+        return {row.id: row.get_nick() for row in editors}
 
     except Exception as e:
         return {}
@@ -155,7 +162,7 @@ def get_assigned_reviewers(article_id: int) -> dict[int, str]:
     try:
         # Pobieramy identyfikator najnowszej rundy dla artykułu
         latest_round_subquery = (
-            db.session.query(R.Round.id)
+            select(R.Round.id)
             .filter(R.Round.article_id == article_id)
             .order_by(R.Round.round_number.desc())
             .limit(1)
@@ -163,15 +170,14 @@ def get_assigned_reviewers(article_id: int) -> dict[int, str]:
         )
 
         # Pobieramy użytkowników, którzy są recenzentami w tej rundzie
-        reviewers = (
-            db.session.query(User.id, User.nick)
-            .join(Rv.Review, Rv.Review.reviewer_id == User.id)
+        reviewers = db.session.execute(
+            select(U.User)
+            .join(Rv.Review, Rv.Review.reviewer_id == U.User.id)
             .filter(Rv.Review.round_id.in_(select(latest_round_subquery)))
-            .all()
-        )
+        ).scalars().all()
 
         # Konwersja do listy słowników
-        return {row.id: row.nick for row in reviewers}
+        return {row.id: row.get_nick() for row in reviewers}
 
     except Exception as err:
         raise MessageException.from_exception(err, 'Error while: finding assigned reviewers')
@@ -181,7 +187,7 @@ def get_assigned_reviews(article_id: int) -> list[Rv.Review]:
     try:
         # Pobieramy identyfikator najnowszej rundy dla artykułu
         latest_round_subquery = (
-            db.session.query(R.Round.id)
+            select(R.Round.id)
             .filter(R.Round.article_id == article_id)
             .order_by(R.Round.round_number.desc())
             .limit(1)
@@ -215,8 +221,8 @@ def get_answers_as_editor(article_id: int) -> dict[str, list[dict]]:
 
         # Pobieramy odpowiedzi z recenzji najnowszej rundy
         results = db.session.execute(
-            select(User.nick, Q.Question.question, Q.Answer.answer)
-                .join(Rv.Review, Rv.Review.reviewer_id == User.id)
+            select(U.User.nick, Q.Question.question, Q.Answer.answer)
+                .join(Rv.Review, Rv.Review.reviewer_id == U.User.id)
                 .join(R.RoundQuestionGroups, R.RoundQuestionGroups.round_id == Rv.Review.round_id)
                 .join(Q.QuestionGroupQuestions, Q.QuestionGroupQuestions.question_group_id == R.RoundQuestionGroups.question_group_id)
                 .join(Q.Question, Q.Question.id == Q.QuestionGroupQuestions.question_id)
@@ -226,7 +232,7 @@ def get_answers_as_editor(article_id: int) -> dict[str, list[dict]]:
                     Q.Answer.question_id == Q.QuestionGroupQuestions.question_id,
                 ))
                 .where(Rv.Review.round_id == latest_round_id_subquery)
-            # db.session.query(User.nick, Q.Question.question, Q.Answer.answer)
+            # db.session.query(U.User.nick, Q.Question.question, Q.Answer.answer)
         )
 
         # Grupowanie wyników po recenzencie

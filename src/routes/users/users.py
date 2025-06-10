@@ -1,8 +1,8 @@
-from flask_login import login_required
+from models.usr import User as U
 import controllers.user_controller as uc
 from flask import Blueprint, redirect, request
-from models.utils import decors as decor, utils as util
 from models.utils.FormNotFilledException import FormNotFilledException
+from models.utils import decors as decor, utils as util, utils_flask as f_util
 
 user_bp = Blueprint('user', __name__)
 
@@ -38,11 +38,11 @@ def approve(email: str, code: str):
     ret=uc.approve(email, code)
     if ret.success:
         return redirect('/')
-    # return util.render_base_template('error.html', err=ret.to_dict())
+    # return f_util.render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
 
 @user_bp.route('/ch_pass', methods=['POST'])
-@login_required
+@decor.login_required
 @decor.handle_form_not_filled
 def ch_pass():
     t=util.get_from_form(request.form, (
@@ -74,16 +74,16 @@ def pass_reset_request():
 def pass_reset(email: str, code: str):
     ret=uc.pass_reset(email, code)
     if ret.success:
-        return util.render_base_template('pass_reset.html', email=email, code=ret.data)
-    # return util.render_base_template('error.html', err=ret.to_dict())
+        return f_util.render_base_template('pass_reset.html', email=email, code=ret.data)
+    # return f_util.render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
 
 @user_bp.route('/accept_inv/<email>/<code>', methods=['GET', 'POST'])
 def accept_invitation(email: str, code: str):
     ret=uc.accept_invite(email, code)
     if ret.success:
-        return util.render_base_template('cr_user.html', email=email, code=ret.data)
-    # return util.render_base_template('error.html', err=ret.to_dict())
+        return f_util.render_base_template('cr_user.html', email=email, code=ret.data)
+    # return f_util.render_base_template('error.html', err=ret.to_dict())
     return ret.to_dict()
 
 @user_bp.route('/accept_inv', methods=['POST'])
@@ -100,4 +100,42 @@ def accept_invitation_cr_user():
 
 @user_bp.route('/pass_reset_form')
 def pass_reset_form():
-    return util.render_base_template('request_pass_change.html')
+    return f_util.render_base_template('request_pass_change.html')
+
+@user_bp.route('/editors')
+@decor.group_required(U.UserGroupEnum.Editor)
+def show_editors():
+    response = uc.get_editors_and_not()
+    if response.success:
+        return f_util.render_base_template('users/editors.html', editors=response.data)
+    else:
+        return response.to_dict()
+
+@user_bp.route('/make_editor/<int:id>')
+@decor.group_required(U.UserGroupEnum.Editor)
+def add_editor(id: int):
+    return uc.add_editor(id).to_dict()
+
+# @user_bp.route('/demote_editor/<int:id>')
+# @decor.group_required(U.UserGroupEnum.Editor)
+# def del_editor(id: int):
+#     return uc.del_editor(id).to_dict()
+
+@user_bp.route('/reviewers')
+@decor.group_required(U.UserGroupEnum.Editor)
+def show_reviewers():
+    response = uc.get_reviewers_and_not()
+    if response.success:
+        return f_util.render_base_template('users/reviewers.html', reviewers=response.data)
+    else:
+        return response.to_dict()
+
+@user_bp.route('/make_reviewer/<int:id>')
+@decor.group_required(U.UserGroupEnum.Editor)
+def add_reviewer(id: int):
+    return uc.add_reviewer(id).to_dict()
+
+# @user_bp.route('/demote_reviewer/<int:id>')
+# @decor.group_required(U.UserGroupEnum.Editor)
+# def del_reviewer(id: int):
+#     return uc.del_reviewer(id).to_dict()

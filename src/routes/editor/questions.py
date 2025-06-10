@@ -1,47 +1,48 @@
+from models.usr import User as U
 from flask import abort, Blueprint, request
 import controllers.question_controller as qc
-from models.utils import decors as decor, utils as util
 from models.utils.FormNotFilledException import FormNotFilledException
+from models.utils import decors as decor, utils as util, utils_flask as f_util
 
 questions_bp=Blueprint('question', __name__)
 
 @questions_bp.route('/')
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 def show_selection():
-    return util.render_base_template('questions/selection.html')
+    return f_util.render_base_template('questions/selection.html')
 
 @questions_bp.route('/q')
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 def show_questions():
     ret=qc.get_all_questions()
-    return util.render_base_template('questions/questions_view.html', questions=ret.data)
+    return f_util.render_base_template('questions/questions_view.html', questions=ret.data)
 @questions_bp.route('/q_j', methods=['GET', 'POST'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 def show_questions_json():
     ret=qc.get_all_questions()
     return ret.to_dict()
 
 @questions_bp.route('/q/<int:question_id>')
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 def question_details(question_id: int):
     ret=qc.get_question(question_id)
     if ret.success:
-        return util.render_base_template('questions/question_view.html', question=ret.data)
+        return f_util.render_base_template('questions/question_view.html', question=ret.data)
     else:
         abort(404)
 @questions_bp.route('/q_j/<int:question_id>', methods=['GET', 'POST'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 def question_details_json(question_id: int):
     ret=qc.get_question(question_id)
     return ret.to_dict()
 
 @questions_bp.route('/q_add', methods=['GET'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 @decor.handle_form_not_filled
 def question_add_v():
-    return util.render_base_template('questions/question_add.html')
+    return f_util.render_base_template('questions/question_add.html')
 @questions_bp.route('/q_add', methods=['POST'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 @decor.handle_form_not_filled
 def question_add():
     (question, is_abcd)=util.get_from_form(request.form, (
@@ -59,41 +60,41 @@ def question_add():
     return qc.cr_question(question, abc_s).to_dict()
 
 @questions_bp.route('/qg')
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 def show_question_groups():
     ret=qc.get_all_question_groups()
-    return util.render_base_template('questions/question_groups_view.html', question_groups=ret.data)
+    return f_util.render_base_template('questions/question_groups_view.html', question_groups=ret.data)
 @questions_bp.route('/qg_j', methods=['GET', 'POST'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 def show_question_groups_json():
     ret=qc.get_all_question_groups()
     return ret.to_dict()
 
 @questions_bp.route('/qg/<int:question_group_id>')
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 def question_group_details(question_group_id: int):
     ret=qc.get_question_group(question_group_id)
     if ret.success:
-        return util.render_base_template('questions/question_group_view.html', question_group=ret.data)
+        return f_util.render_base_template('questions/question_group_view.html', question_group=ret.data)
     else:
         abort(404)
 @questions_bp.route('/qg_j/<int:question_group_id>', methods=['GET', 'POST'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 def question_group_details_json(question_group_id: int):
     ret=qc.get_question_group(question_group_id)
     return ret.to_dict()
 
 @questions_bp.route('/qg_add', methods=['GET'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 @decor.handle_form_not_filled
 def question_group_add_v():
     ret=qc.get_all_questions()
     questions=ret.data
     if not ret.success:
         questions=[]
-    return util.render_base_template('questions/question_group_add.html', questions=questions)
+    return f_util.render_base_template('questions/question_group_add.html', questions=questions)
 @questions_bp.route('/qg_add', methods=['POST'])
-@decor.approve_required
+@decor.group_required(U.UserGroupEnum.Editor)
 @decor.handle_form_not_filled
 def question_group_add():
     qg_name,=util.get_from_form(request.form, ('name',))

@@ -9,7 +9,6 @@ from models.usr.User import User
 from flask_login import LoginManager
 from flask.typing import RouteCallable
 from routes.users.users import user_bp
-from models.utils import utils as util
 from services import user_service as su
 from werkzeug.exceptions import NotFound
 from routes.reviewer.reviews import review_bp
@@ -18,6 +17,7 @@ from routes.editor.questions import questions_bp
 from models.utils.EnvConsts import envConsts as ec
 from routes.editor.articles import editor_articles_bp
 from models.utils.scheduled_tasks import create_scheduler
+from models.utils import utils as util, utils_flask as f_util
 from flask import abort, Flask, Request as flRequest, request, current_app
 from werkzeug.routing import RequestRedirect, MapAdapter, BaseConverter, ValidationError
 
@@ -111,7 +111,7 @@ def choose_lang(lang: LangEnum, path: str):
 @app.route('/')
 def index():
     user=su.get_curr_user()
-    return util.render_base_template('login_form.html' if user is None else ('logged.html' if user.approved else 'check_approval.html'))
+    return f_util.render_base_template('login_form.html' if user is None else ('logged.html' if user.approved else 'check_approval.html'))
 
 scheduler = create_scheduler(app.app_context)
 atexit.register(lambda: scheduler.shutdown())

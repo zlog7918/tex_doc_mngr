@@ -2,8 +2,8 @@ import os
 import shutil
 from typing import Any
 from zoneinfo import ZoneInfo
+from models.usr import User as U
 import services.user_service as au
-from flask import send_from_directory
 import services.article_service as aq
 import services.question_service as sq
 from db.db_base import db, log_activity
@@ -13,13 +13,12 @@ from datetime import datetime, timedelta
 from models.article import Questions as Q
 from werkzeug.utils import secure_filename
 from models.utils.Response import Response
-from models.utils.utils import get_timestamp
 from latex.latex_service import LatexService
 from werkzeug.datastructures import FileStorage
 from models.utils.EnvConsts import envConsts as ec
 from models.article.Article import ArticleStatusEnum
-from models.utils import utils as util, decors as decor
 from models.utils.MessageException import MessageException
+from models.utils import utils as util, utils_flask as f_util, decors as decor
 
 
 def get_available_editors() -> dict[int, str]:
@@ -36,22 +35,30 @@ def _get_user_temp_dir() -> str:
 def is_valid_editor(editor_id: int) -> Response:
     user = au.get_curr_user_or_err()
     user0_id = au.get_usr0_or_err().id
-    if editor_id == user.id or  user.id == user0_id:
+    if editor_id == user.id or user.id == user0_id:
         return Response.error_response(message="An author cannot assign themselves as an editor.")
+    message='Editor does not exist.'
+    if U.UserGroupEnum.Editor not in {ug.group.group for ug in user.groups}:
+        return Response.error_response(message=message)
     elif not au.get_user(editor_id):
-        return Response.error_response(message="Editor does not exist.")
+        return Response.error_response(message=message)
     return Response.success_response()
 
 def is_author(article_id: int) -> None:
     try:
         user = au.get_curr_user_or_err()
+        if U.UserGroupEnum.Author not in {ug.group.group for ug in user.groups}:
+            raise MessageException(
+                'You are not an author of this article.',
+                err=Exception(f'Nie-autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+            )
         article = aq.get_article(article_id)
         if not article:
             raise MessageException(
                 'You are not an author of this article.',
                 err=Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
             )
-        if int(article.author_id) != int(user.id):
+        if article.author_id != user.id:
             raise MessageException(
                 'You are not an author of this article.',
                 err=Exception(f'Autor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
@@ -62,6 +69,11 @@ def is_author(article_id: int) -> None:
 def is_editor(article_id: int) -> None:
     try:
         user = au.get_curr_user_or_err()
+        if all(ug.group.group!=U.UserGroupEnum.Editor for ug in user.groups):
+            raise MessageException(
+                'You are not an editor of this article.',
+                err=Exception(f'Nie-edytor {user.get_id()} usiłował uzyskać dostęp do artykułu o id: {article_id}')
+            )
         article = aq.get_article(article_id)
         if not article or not article.editor_id:
             raise MessageException(
@@ -97,14 +109,14 @@ def get_all_rejected_articles_by_editor() -> Response:
 @decor.log_if_error
 def get_article_data_as_editor(article_id: int) -> Response:
     is_editor(article_id)
-    return get_article_data(article_id)
+    return get_article_data(U.UserGroupEnum.Editor, article_id)
 
 @decor.log_if_error
 def get_article_data_as_author(article_id: int) -> Response:
     is_author(article_id)
-    return get_article_data(article_id)
+    return get_article_data(U.UserGroupEnum.Author, article_id)
 
-def get_article_data(article_id: int) -> Response:
+def get_article_data(user_group: U.UserGroupEnum, article_id: int) -> Response:
     article = aq.get_article(article_id)
     if not article:
         raise MessageException('Nie znaleziono artykułu', Exception(f'Article with id: {article_id} not found'))
@@ -114,7 +126,13 @@ def get_article_data(article_id: int) -> Response:
 
     article_content = latest_round.article_content
     if article_content.startswith('/'):
-        article_content = f'<br><embed src="{f"/articles/uploads/{article.id}/{latest_round.round_number}/{article_content}"}" width="800" height="500" type="application/pdf">'
+        url=f_util.url_with_lang_for(
+            f'{'articles' if user_group==U.UserGroupEnum.Author else 'editor_articles'}.uploaded_file',
+            filename=article_content,
+            article_id=article.id,
+            round_num=latest_round.round_number
+        )
+        article_content = f'<br><embed src="{url}" width="800" height="500" type="application/pdf">'
 
     data: dict[str, Any] = {"article": article, "article_content": article_content}
 
@@ -168,7 +186,7 @@ def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewer
     
     confirm_date = datetime.strptime(deadline_confirm, "%Y-%m-%d")
     submit_date = datetime.strptime(deadline_submit, "%Y-%m-%d")
-    date = get_timestamp(ZoneInfo(tz)).date()
+    date = util.get_timestamp(ZoneInfo(tz)).date()
 
     min_date = date + timedelta(days=2)
     if confirm_date.date() < min_date:
@@ -198,20 +216,23 @@ def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewer
     if any(not qc._does_user_has_access(usr, qg.user_id) for qg in question_groups):
         raise MessageException(lang_pkg.QuestionGroupNotFound.value, Exception(f'Illegal access attempt on guestion group'))
 
-    assigned_reviewers_ids = {int(rid) for rid in assigned_reviewers}
-
-    message=f"Reviewer cannot be assigned to the article."
-    if article.editor_id in assigned_reviewers_ids:
-        log_activity(False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article_id}.'})
-        return Response.error_response(message)
-    
-    if article.author_id in assigned_reviewers_ids:
-        log_activity(False, {'err': f'Editor attempted to assign author {article.author_id} to the article {article_id}.'})
-        return Response.error_response(message)
-    
-    usr0=au.get_usr0_or_err()
-    if usr0.id in assigned_reviewers_ids:
-        log_activity(False, {'err': f'Editor attempted to assign default user {usr0.id} to the article {article_id}.'})
+    assigned_reviewers_ids={int(rid) for rid in assigned_reviewers}
+    possible_reviewers_ids=set(aq.get_available_reviewers(article.id).keys())
+    if not possible_reviewers_ids.issuperset(assigned_reviewers_ids):
+        message='Reviewer cannot be assigned to the article.'
+        if article.editor_id in assigned_reviewers_ids:
+            log_activity(False, {'err': f'Editor attempted to assign editor {article.editor_id} to the article {article.id}.'})
+            return Response.error_response(message)
+        
+        if article.author_id in assigned_reviewers_ids:
+            log_activity(False, {'err': f'Editor attempted to assign author {article.author_id} to the article {article.id}.'})
+            return Response.error_response(message)
+        
+        usr0=au.get_usr0_or_err()
+        if usr0.id in assigned_reviewers_ids:
+            log_activity(False, {'err': f'Editor attempted to assign default user {usr0.id} to the article {article.id}.'})
+            return Response.error_response(message)
+        log_activity(False, {'err': f'Editor attempted to assign not-editor user(s) {assigned_reviewers_ids.difference(possible_reviewers_ids)} to the article {article.id}.'})
         return Response.error_response(message)
 
     for reviewer_id in list(assigned_reviewers_ids):
@@ -222,7 +243,9 @@ def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewer
     invited_ids = []
     for email in assigned_emails:
         try:
-            result = uc.invite_user(email)
+            result = uc.invite_user(email, do_after_create=[
+                (au.add_user_to_group, (U.User_params.self, U.UserGroupEnum.Reviewer)), 
+            ])
             if result.success:
                 invited_user_id = result.data["user_id"]
                 invited_ids.append(invited_user_id)
@@ -236,7 +259,7 @@ def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewer
     if not assigned_reviewers_ids and not invited_ids:
         return Response.error_response(message="No valid reviewers could be assigned.")
         
-    aq.set_deadlines_and_qs(article_id = article_id, question_set = question_groups, deadline_confirm = deadline_confirm, deadline_submit = deadline_submit)
+    aq.set_deadlines_and_qs(article.id, question_groups, deadline_confirm, deadline_submit)
 
     update_status_result = set_article_status(article_id, ArticleStatusEnum.InReview)
     if not update_status_result.success:
@@ -362,5 +385,22 @@ def temp_preview(filename: str) -> Response:
     return LatexService.get_file(user_temp_dir, filename)
 
 @decor.log_if_error
-def get_uploaded_file(article_id: int, round_num: int, filename: str) -> Response:
+def get_uploaded_file(article_id: int, round_num: int, filename: str, as_group: U.UserGroupEnum) -> Response:
+    message='Plik nie istnieje'
+    if as_group==U.UserGroupEnum.Author:
+        is_author(article_id)
+    if as_group==U.UserGroupEnum.Editor:
+        is_editor(article_id)
+    if as_group==U.UserGroupEnum.Reviewer:
+        user=au.get_curr_user_or_err()
+        article=aq.get_article(article_id)
+        if article is None:
+            raise MessageException(message)
+        try:
+            round=[r for r in article.rounds if r.round_number==round_num][0]
+        except IndexError as e:
+            raise MessageException.from_exception(e, message)
+        if user.id not in {r.reviewer_id for r in round.reviews}:
+            raise MessageException(message)
+
     return LatexService.get_file(f'{ec.getDocFilesDir()}/{article_id}/{round_num}', filename)
