@@ -109,7 +109,7 @@ def invite_user(email: str, message: str|None=None, do_after_create: list[tuple[
   user=su.get_user_by_email(email)
   if user is not None:
     if sc.active_codes(user, CodePurposeEnum.InviteUserMail) is not None:
-      return Response.success_response(message=message)
+      return Response.success_response(data={"message": message, "user_id": user.id})
     su.delete_user(user)
 
   do=pkl.dumps(do_after_create)
@@ -121,8 +121,8 @@ def invite_user(email: str, message: str|None=None, do_after_create: list[tuple[
   code, code_exp=sc.gen_code(user, CodePurposeEnum.InviteUserMail)
   send_code_by_email(SendMail.sendInvite, email, code, message)
   
-  log_activity(True, {'details': f'Account created successfully: [{email}]'})
-  return Response.success_response(message=message)
+  log_activity(True, {'details': f'Poprawnie stworzono konto: [{email}]'})
+  return Response.success_response(data={"message": message, "user_id": user.id})
 
 @log_if_error
 def accept_invite(email: str, code: str) -> Response:

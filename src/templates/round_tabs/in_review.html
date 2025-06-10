@@ -71,7 +71,13 @@
         <tbody>
             {% for review in reviews %}
                 <tr>
-                    <td>{{ review.reviewer.get_nick() }}</td>
+                    <td>
+                        {% if review.reviewer.get_nick() %}
+                            {{ review.reviewer.get_nick() }}
+                        {% else %}
+                            {{ review.reviewer.get_email() }}
+                        {% endif %}
+                    </td>
                     <td>{{ review.status.stat.value }}</td>
                 </tr>
             {% endfor %}

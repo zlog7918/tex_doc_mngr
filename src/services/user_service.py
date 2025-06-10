@@ -131,13 +131,13 @@ def _exec_funcs(do: t.Callable[P, object], *args: P.args, **kwargs: P.kwargs) ->
 
 def set_user_nick(user: U.User, nick: str) -> None:
     try:
-        user.nick=nick
-        db.session.flush()
         if user.do_after_cr is not None:
             todo: list[tuple[t.Callable[..., object], tuple[object, ...]]]=pkl.loads(user.do_after_cr)
             for do, args in todo:
                 _exec_funcs(do, *map_args(user, args))
             user.do_after_cr=None
+        db.session.flush()
+        user.nick=nick
         db.session.flush()
     except Exception as e:
         lang_pkg=util.get_lang_pkg()

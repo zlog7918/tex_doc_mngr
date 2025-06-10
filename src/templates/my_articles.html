@@ -65,11 +65,42 @@
             background: #4a1e87;
         }
 
+         .no-articles-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 30px;
+            margin: 50px auto;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .no-articles-image {
+            max-width: 200px;
+            height: auto;
+        }
+
+        .no-articles-text {
+            max-width: 500px;
+            text-align: left;
+        }
+
+        .no-articles-text h2 {
+            font-size: 24px;
+            color: #5a3d90;
+            margin-bottom: 10px;
+        }
+
+        .no-articles-text p {
+            font-size: 16px;
+            color: #555;
+        }
     </style>
 
     <div class="main-content">
-        <h1>Lista Artykułów</h1>
+        <h1>Lista moich artykułów</h1>
 
+        {% if articles %}
         <table>
             <thead>
                 <tr>
@@ -90,6 +121,15 @@
                 {% endfor %}
             </tbody>
         </table>
+        {% else %}
+            <div class="no-articles-box">
+                <img src="{{ url_for('static', filename='images/noarticle.svg') }}" alt="Pracujemy nad tym" class="no-articles-image">
+                <div class="no-articles-text">
+                    <h2>Chwilowo brak artykułów do wyświetlenia</h2>
+                    <p>Nie przesłano żadnego artykułu. Prześlij pierwszy artykuł, aby zobaczyć go w systemie.</p>
+                </div>
+            </div>
+        {% endif %}
     </div>
 
 {% endblock %}

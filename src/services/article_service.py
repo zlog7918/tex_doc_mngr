@@ -125,8 +125,8 @@ def get_available_reviewers(article_id: int) -> dict[int, str]:
             .join(U.UsersGroups, U.UsersGroups.user_id==U.User.id)
             .join(U.UserGroup, U.UserGroup.id==U.UsersGroups.group_id)
             .where(and_(
-                U.User.nick!=None,
                 ~U.User.id.in_(select(assigned_reviewers_subquery)),
+                U.User.nick!=None,
                 U.User.id != user_id,
                 U.User.id != user0_id,
                 U.User.id != author_id,
