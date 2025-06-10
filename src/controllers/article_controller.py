@@ -4,7 +4,6 @@ from typing import Any
 from zoneinfo import ZoneInfo
 from models.usr import User as U
 import services.user_service as au
-from flask import send_from_directory
 import services.article_service as aq
 import services.question_service as sq
 from db.db_base import db, log_activity
@@ -244,7 +243,9 @@ def assign_reviewers(article_id: int, question_set: list[str], assigned_reviewer
     invited_ids = []
     for email in assigned_emails:
         try:
-            result = uc.invite_user(email)
+            result = uc.invite_user(email, do_after_create=[
+                (au.add_user_to_group, (U.User_params.self, U.UserGroupEnum.Reviewer)), 
+            ])
             if result.success:
                 invited_user_id = result.data["user_id"]
                 invited_ids.append(invited_user_id)

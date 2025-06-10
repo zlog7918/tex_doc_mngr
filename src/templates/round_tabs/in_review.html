@@ -75,7 +75,7 @@
                         {% if review.reviewer.get_nick() %}
                             {{ review.reviewer.get_nick() }}
                         {% else %}
-                            {{ review.reviewer.get_email() }}
+                            {{ review.reviewer.email }}
                         {% endif %}
                     </td>
                     <td>{{ review.status.stat.value }}</td>
