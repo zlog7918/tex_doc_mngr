@@ -399,7 +399,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   document.getElementById('inviteReviewer').addEventListener('click', function () {
     const inviteForm = document.getElementById("inviteForm");
-    inviteForm.style.display = inviteForm.style.display === "none" ? "block" : "none";
+    inviteForm.classList.toggle("hidden");
   });
 
   function validateEmail(email) {
